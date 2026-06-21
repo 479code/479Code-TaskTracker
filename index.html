@@ -254,6 +254,17 @@
     <div class="userbar">
       <button id="refreshBtn" title="Refresh">⟳ Refresh</button>
       <div class="notif-wrap">
+        <button id="usernameBtn">Set username</button>
+        <div class="notif-dropdown" id="usernameDropdown">
+          <div class="field" style="margin:4px 4px 8px;">
+            <label>Username</label>
+            <input type="text" id="usernameEditInput" placeholder="e.g. amaka479" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:8px;outline:none;">
+          </div>
+          <button id="usernameSaveBtn" style="width:100%;background:var(--accent);color:#1a1206;border:none;border-radius:6px;padding:8px;font-weight:700;cursor:pointer;">Save</button>
+          <div id="usernameMsg" style="font-size:11px;margin-top:6px;min-height:14px;font-family:var(--mono);"></div>
+        </div>
+      </div>
+      <div class="notif-wrap">
         <button id="notifBtn">🔔 <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
         <div class="notif-dropdown" id="notifDropdown"></div>
       </div>
@@ -419,10 +430,47 @@ async function onLoggedIn(){
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('userEmail').textContent = user.email;
   await loadProjects();
+  await refreshUsernameButton();
   await checkDueReminders();
   await loadNotifications();
   setInterval(loadNotifications, 30000);
 }
+
+async function refreshUsernameButton(){
+  const profile = await getProfile(currentUser.id);
+  const btn = document.getElementById('usernameBtn');
+  btn.textContent = profile?.username ? '@'+profile.username : 'Set username';
+  document.getElementById('usernameEditInput').value = profile?.username || '';
+}
+
+document.getElementById('usernameBtn').onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById('notifDropdown').classList.remove('open');
+  document.getElementById('usernameDropdown').classList.toggle('open');
+};
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('.notif-wrap')) document.getElementById('usernameDropdown')?.classList.remove('open');
+});
+
+document.getElementById('usernameSaveBtn').onclick = async () => {
+  const raw = document.getElementById('usernameEditInput').value.trim().toLowerCase();
+  const username = raw.replace(/[^a-z0-9_]/g,'');
+  const msg = document.getElementById('usernameMsg');
+  msg.style.color = 'var(--danger)';
+  if(!username || username.length < 3){ msg.textContent = 'At least 3 characters (letters, numbers, _).'; return; }
+
+  const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
+  if(existing && existing.id !== currentUser.id){ msg.textContent = 'That username is taken.'; return; }
+
+  const { error } = await sb.from('profiles').update({ username }).eq('id', currentUser.id);
+  if(error){ msg.textContent = error.message; return; }
+
+  delete profilesCache[currentUser.id];
+  msg.style.color = 'var(--done)';
+  msg.textContent = 'Saved!';
+  await refreshUsernameButton();
+  setTimeout(()=>{ document.getElementById('usernameDropdown').classList.remove('open'); }, 800);
+};
 
 document.getElementById('refreshBtn').onclick = async () => {
   const btn = document.getElementById('refreshBtn');
