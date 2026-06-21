@@ -128,10 +128,39 @@
     text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono);
     margin-top:30px;
   }
+
+  #lockScreen{
+    position:fixed;inset:0;background:var(--bg);z-index:999;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    gap:14px;
+  }
+  #lockScreen .eyebrow{margin:0;}
+  #lockScreen h2{margin:0 0 4px;font-size:18px;font-weight:650;}
+  #pinInput{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    font-family:var(--mono);font-size:22px;letter-spacing:10px;text-align:center;
+    width:200px;padding:12px 0;border-radius:8px;outline:none;
+  }
+  #pinInput:focus{border-color:var(--accent);}
+  #pinError{color:var(--danger);font-size:12px;font-family:var(--mono);height:14px;}
+  #pinSubmit{
+    background:var(--accent);color:#1a1206;border:none;border-radius:6px;
+    padding:10px 22px;font-weight:700;font-size:13px;cursor:pointer;
+  }
+  #appRoot{display:none;}
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<div id="lockScreen">
+  <p class="eyebrow">479Code · Operations</p>
+  <h2>Enter PIN to continue</h2>
+  <input id="pinInput" type="password" inputmode="numeric" maxlength="6" autocomplete="off" autofocus />
+  <div id="pinError"></div>
+  <button id="pinSubmit">Unlock</button>
+</div>
+
+<div class="wrap" id="appRoot">
 
   <header>
     <div>
@@ -176,6 +205,35 @@
 </div>
 
 <script>
+const APP_PIN = '6965';
+
+function tryUnlock(){
+  const val = document.getElementById('pinInput').value.trim();
+  const err = document.getElementById('pinError');
+  if(val === APP_PIN){
+    localStorage.setItem('tt_unlocked', '1');
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('appRoot').style.display = 'block';
+    loadTasks();
+  } else {
+    err.textContent = 'Incorrect PIN';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+
+document.getElementById('pinSubmit').addEventListener('click', tryUnlock);
+document.getElementById('pinInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') tryUnlock();
+});
+
+if(localStorage.getItem('tt_unlocked') === '1'){
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+} else {
+  document.getElementById('pinInput').focus();
+}
+
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0Fjc9x3S9ETVDs5RHsGm_TN_AWneRlQb0ria_NxadMyrYEF0tPSDLUkqbXRYe_OBYJw/exec';
 
 let tasks = [];
@@ -376,7 +434,9 @@ function render(){
   document.getElementById('statDone').textContent = tasks.filter(t=>t.status==='Done').length;
 }
 
-loadTasks();
+if(localStorage.getItem('tt_unlocked') === '1'){
+  loadTasks();
+}
 </script>
 </body>
 </html>
