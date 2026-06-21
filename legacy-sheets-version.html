@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>479Code Task Tracker</title>
+<link rel="icon" type="image/jpeg" href="assets/479-logo.jpeg">
+<style>
+  :root{
+    --bg:#0c0f12;
+    --panel:#14181d;
+    --panel-2:#1a1f26;
+    --line:#262c34;
+    --text:#e8ebee;
+    --muted:#8b95a1;
+    --accent:#ff8a3d;
+    --accent-dim:#3a2a1c;
+    --done:#3ddc97;
+    --done-dim:#15302a;
+    --prog:#ffd166;
+    --prog-dim:#332c14;
+    --danger:#ff5c5c;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    padding:28px 18px 60px;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:14px;flex-wrap:wrap;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin:0 0 6px;}
+  h1{margin:0;font-size:22px;font-weight:650;letter-spacing:-.01em;}
+  .stats{display:flex;gap:18px;font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .stats b{color:var(--text);font-size:15px;display:block;font-family:var(--sans);}
+
+  .sync-row{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none;}
+  .dot.ok{background:var(--done);}
+  .dot.err{background:var(--danger);}
+  .dot.busy{background:var(--prog);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .sheetlink{color:var(--accent);text-decoration:none;margin-left:auto;}
+  .sheetlink:hover{text-decoration:underline;}
+
+  .addbar{
+    display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:8px;margin-bottom:22px;
+  }
+  .addbar input[type=text]{
+    flex:1;background:transparent;border:none;color:var(--text);
+    font-size:14px;padding:8px 10px;outline:none;font-family:var(--sans);
+  }
+  .addbar input[type=text]::placeholder{color:var(--muted);}
+  .addbar select{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;font-size:12px;padding:0 8px;font-family:var(--sans);
+  }
+  .addbar button{
+    background:var(--accent);color:#1a1206;border:none;border-radius:6px;
+    padding:0 16px;font-weight:700;font-size:13px;cursor:pointer;
+  }
+  .addbar button:hover{opacity:.9;}
+  .addbar button:disabled{opacity:.5;cursor:default;}
+
+  .filters{display:flex;gap:6px;margin-bottom:14px;}
+  .filters button{
+    background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    font-size:12px;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:var(--mono);
+  }
+  .filters button.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+
+  .task{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:14px 14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px;
+    transition:border-color .15s;
+  }
+  .task:hover{border-color:#39414c;}
+  .task.done{opacity:.55;}
+
+  .chk{
+    width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);
+    flex:none;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    background:var(--panel-2);
+  }
+  .chk.checked{background:var(--done);border-color:var(--done);}
+  .chk.checked:after{content:'✓';color:#0c0f12;font-size:13px;font-weight:900;}
+
+  .task-body{flex:1;min-width:0;}
+  .task-title{font-size:14.5px;line-height:1.4;word-break:break-word;}
+  .task.done .task-title{text-decoration:line-through;color:var(--muted);}
+  .task-meta{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;}
+
+  .tag{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;
+    padding:2px 8px;border-radius:20px;text-transform:uppercase;
+  }
+  .tag.todo{background:var(--panel-2);color:var(--muted);border:1px solid var(--line);}
+  .tag.progress{background:var(--prog-dim);color:var(--prog);}
+  .tag.done{background:var(--done-dim);color:var(--done);}
+
+  .status-cycle{
+    font-family:var(--mono);font-size:10.5px;background:none;border:1px solid var(--line);
+    color:var(--muted);padding:2px 8px;border-radius:20px;cursor:pointer;
+  }
+  .status-cycle:hover{border-color:var(--accent);color:var(--accent);}
+
+  .del{
+    background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;
+    padding:2px 6px;flex:none;line-height:1;
+  }
+  .del:hover{color:var(--danger);}
+
+  .empty{
+    text-align:center;color:var(--muted);font-size:13px;padding:40px 0;font-family:var(--mono);
+  }
+
+  .banner{
+    background:#2a1414;border:1px solid #4a2222;color:#ffb3b3;
+    padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:16px;
+    display:none;
+  }
+
+  footer{
+    text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono);
+    margin-top:30px;
+  }
+
+  #lockScreen{
+    position:fixed;inset:0;background:var(--bg);z-index:999;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    gap:14px;
+  }
+  #lockScreen .eyebrow{margin:0;}
+  #lockScreen h2{margin:0 0 4px;font-size:18px;font-weight:650;}
+  #pinInput{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    font-family:var(--mono);font-size:22px;letter-spacing:10px;text-align:center;
+    width:200px;padding:12px 0;border-radius:8px;outline:none;
+  }
+  #pinInput:focus{border-color:var(--accent);}
+  #pinError{color:var(--danger);font-size:12px;font-family:var(--mono);height:14px;}
+  #pinSubmit{
+    background:var(--accent);color:#1a1206;border:none;border-radius:6px;
+    padding:10px 22px;font-weight:700;font-size:13px;cursor:pointer;
+  }
+  #appRoot{display:none; animation: appIn .5s ease both;}
+
+  /* ---------- Logo ---------- */
+  .logo-svg{display:block;}
+  .logo-svg .bar{transform-box:fill-box;transform-origin:bottom;animation:barGrow .55s cubic-bezier(.2,.8,.2,1) both;}
+  .logo-svg .strip{opacity:0;animation:fadeUp .5s ease .55s both;}
+  .logo-svg.idle .bar{animation:barGrow .55s cubic-bezier(.2,.8,.2,1) both, barIdle 2.6s ease-in-out infinite;}
+  .logo-svg .bar:nth-child(1){animation-delay:0s;}
+  .logo-svg .bar:nth-child(2){animation-delay:.05s;}
+  .logo-svg .bar:nth-child(3){animation-delay:.1s;}
+  .logo-svg .bar:nth-child(4){animation-delay:.15s;}
+  .logo-svg .bar:nth-child(5){animation-delay:.2s;}
+  .logo-svg .bar:nth-child(6){animation-delay:.25s;}
+  .logo-svg .bar:nth-child(7){animation-delay:.3s;}
+  .logo-svg .bar:nth-child(8){animation-delay:.35s;}
+  .logo-svg .bar:nth-child(9){animation-delay:.4s;}
+  .logo-svg.idle .bar:nth-child(1){animation-delay:0s, .6s;}
+  .logo-svg.idle .bar:nth-child(2){animation-delay:.05s, .75s;}
+  .logo-svg.idle .bar:nth-child(3){animation-delay:.1s, .9s;}
+  .logo-svg.idle .bar:nth-child(4){animation-delay:.15s, 1.05s;}
+  .logo-svg.idle .bar:nth-child(5){animation-delay:.2s, 1.2s;}
+  .logo-svg.idle .bar:nth-child(6){animation-delay:.25s, 1.35s;}
+  .logo-svg.idle .bar:nth-child(7){animation-delay:.3s, 1.5s;}
+  .logo-svg.idle .bar:nth-child(8){animation-delay:.35s, 1.65s;}
+  .logo-svg.idle .bar:nth-child(9){animation-delay:.4s, 1.8s;}
+
+  @keyframes barGrow{from{transform:scaleY(0);} to{transform:scaleY(1);}}
+  @keyframes barIdle{0%,100%{transform:scaleY(1);} 50%{transform:scaleY(.94);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);}}
+  @keyframes appIn{from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);}}
+
+  .lock-logo{width:180px;height:auto;margin-bottom:6px;}
+  .header-logo{width:46px;height:auto;flex:none;}
+  .header-brand{display:flex;align-items:center;gap:12px;}
+
+  /* ---------- Motion: tasks, controls ---------- */
+  .task{animation:taskIn .35s ease both;}
+  @keyframes taskIn{from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);}}
+
+  .chk{transition:background .2s ease, border-color .2s ease, transform .15s ease;}
+  .chk:active{transform:scale(.88);}
+  .chk.checked{animation:chkPop .3s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes chkPop{0%{transform:scale(.7);} 60%{transform:scale(1.15);} 100%{transform:scale(1);}}
+
+  .tag{transition:background .25s ease, color .25s ease;}
+  .task{transition:opacity .25s ease;}
+
+  .addbar button, .status-cycle, .del, .filters button{transition:transform .12s ease, opacity .15s ease, border-color .15s ease, color .15s ease, background .15s ease;}
+  .addbar button:active{transform:scale(.95);}
+  .filters button:active{transform:scale(.93);}
+  .status-cycle:active, .del:active{transform:scale(.9);}
+
+  .dot{transition:background .25s ease;}
+
+  @media (prefers-reduced-motion: reduce){
+    .logo-svg .bar, .logo-svg .strip, #appRoot, .task, .chk.checked{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <svg class="logo-svg lock-logo idle" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#e8ebee">
+      <rect class="bar" x="195" y="60"  width="40" height="320"/>
+      <rect class="bar" x="250" y="115" width="18" height="265"/>
+      <rect class="bar" x="283" y="92"  width="28" height="288"/>
+      <rect class="bar" x="326" y="118" width="22" height="262"/>
+      <rect class="bar" x="363" y="168" width="34" height="212"/>
+      <rect class="bar" x="412" y="120" width="22" height="260"/>
+      <rect class="bar" x="450" y="58"  width="38" height="322"/>
+      <rect class="bar" x="503" y="205" width="16" height="175"/>
+      <rect class="bar" x="534" y="78"  width="34" height="302"/>
+    </g>
+    <g class="strip">
+      <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
+      <text x="62" y="442" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d">479</text>
+      <text x="556" y="442" text-anchor="end" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
+    </g>
+  </svg>
+  <p class="eyebrow">479Code · Operations</p>
+  <h2>Enter PIN to continue</h2>
+  <input id="pinInput" type="password" inputmode="numeric" maxlength="6" autocomplete="off" autofocus />
+  <div id="pinError"></div>
+  <button id="pinSubmit">Unlock</button>
+</div>
+
+<div class="wrap" id="appRoot">
+
+  <header>
+    <div class="header-brand">
+      <svg class="logo-svg header-logo" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+        <g fill="var(--accent)">
+          <rect class="bar" x="195" y="60"  width="40" height="320"/>
+          <rect class="bar" x="250" y="115" width="18" height="265"/>
+          <rect class="bar" x="283" y="92"  width="28" height="288"/>
+          <rect class="bar" x="326" y="118" width="22" height="262"/>
+          <rect class="bar" x="363" y="168" width="34" height="212"/>
+          <rect class="bar" x="412" y="120" width="22" height="260"/>
+          <rect class="bar" x="450" y="58"  width="38" height="322"/>
+          <rect class="bar" x="503" y="205" width="16" height="175"/>
+          <rect class="bar" x="534" y="78"  width="34" height="302"/>
+        </g>
+        <g class="strip">
+          <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
+          <text x="62" y="442" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d">479</text>
+          <text x="556" y="442" text-anchor="end" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
+        </g>
+      </svg>
+      <div>
+        <p class="eyebrow">479Code · Operations</p>
+        <h1>Task Tracker</h1>
+      </div>
+    </div>
+    <div class="stats">
+      <div><b id="statTotal">0</b>total</div>
+      <div><b id="statProgress">0</b>in progress</div>
+      <div><b id="statDone">0</b>done</div>
+    </div>
+  </header>
+
+  <div class="sync-row">
+    <span class="dot" id="syncDot"></span>
+    <span id="syncText">connecting to sheet…</span>
+    <a class="sheetlink" href="https://docs.google.com/spreadsheets/d/1ijmlWZvY_PQ_RbixTv7qK8bu1cb-Tv7M7BBWwu8Wjd0/edit" target="_blank">Open Google Sheet ↗</a>
+  </div>
+
+  <div class="banner" id="errBanner"></div>
+
+  <div class="addbar">
+    <input type="text" id="newTaskInput" placeholder="Add a task… e.g. Fix invoice export bug on Fuel Station System" />
+    <select id="newTaskStatus">
+      <option value="To do">To do</option>
+      <option value="In progress">In progress</option>
+    </select>
+    <button id="addBtn">Add</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <button data-filter="all" class="active">All</button>
+    <button data-filter="To do">To do</button>
+    <button data-filter="In progress">In progress</button>
+    <button data-filter="Done">Done</button>
+  </div>
+
+  <div id="taskList"></div>
+  <div class="empty" id="emptyState" style="display:none;">Nothing here — add a task above.</div>
+
+  <footer>backed by Google Sheets · refresh anytime to pull the latest</footer>
+</div>
+
+<script>
+const APP_PIN = '6965';
+
+function tryUnlock(){
+  const val = document.getElementById('pinInput').value.trim();
+  const err = document.getElementById('pinError');
+  if(val === APP_PIN){
+    localStorage.setItem('tt_unlocked', '1');
+    const lock = document.getElementById('lockScreen');
+    lock.style.transition = 'opacity .35s ease, transform .35s ease';
+    lock.style.opacity = '0';
+    lock.style.transform = 'scale(.97)';
+    setTimeout(() => {
+      lock.style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+      loadTasks();
+    }, 320);
+  } else {
+    err.textContent = 'Incorrect PIN';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+
+document.getElementById('pinSubmit').addEventListener('click', tryUnlock);
+document.getElementById('pinInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') tryUnlock();
+});
+
+if(localStorage.getItem('tt_unlocked') === '1'){
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+} else {
+  document.getElementById('pinInput').focus();
+}
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby0Fjc9x3S9ETVDs5RHsGm_TN_AWneRlQb0ria_NxadMyrYEF0tPSDLUkqbXRYe_OBYJw/exec';
+
+let tasks = [];
+let currentFilter = 'all';
+
+function uid(){
+  return 't' + Date.now() + Math.random().toString(36).slice(2,7);
+}
+
+function setSync(state, text){
+  const dot = document.getElementById('syncDot');
+  dot.className = 'dot ' + state;
+  document.getElementById('syncText').textContent = text;
+}
+
+function showError(msg){
+  const b = document.getElementById('errBanner');
+  b.textContent = msg;
+  b.style.display = 'block';
+}
+function hideError(){
+  document.getElementById('errBanner').style.display = 'none';
+}
+
+async function apiGet(){
+  const res = await fetch(SCRIPT_URL, { method: 'GET' });
+  if(!res.ok) throw new Error('GET failed: ' + res.status);
+  return res.json();
+}
+
+async function apiPost(payload){
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok) throw new Error('POST failed: ' + res.status);
+  return res.json();
+}
+
+async function loadTasks(){
+  setSync('busy', 'syncing…');
+  try{
+    const data = await apiGet();
+    tasks = (data.tasks || []).map(t => ({
+      id: t.ID,
+      title: t.Task,
+      status: t.Status || 'To do',
+      createdAt: t.CreatedAt,
+      updatedAt: t.UpdatedAt
+    }));
+    hideError();
+    setSync('ok', 'synced with sheet');
+  }catch(e){
+    showError("Couldn't reach the Google Sheet. Check the Apps Script deployment is set to \"Anyone\" can access, then refresh.");
+    setSync('err', 'sync failed');
+  }
+  render();
+}
+
+document.getElementById('addBtn').onclick = async () => {
+  const input = document.getElementById('newTaskInput');
+  const statusSel = document.getElementById('newTaskStatus');
+  const val = input.value.trim();
+  if(!val) return;
+
+  const newTask = {
+    id: uid(),
+    title: val,
+    status: statusSel.value,
+    createdAt: new Date().toISOString().slice(0,10),
+    updatedAt: new Date().toISOString().slice(0,10)
+  };
+
+  tasks.push(newTask);
+  input.value = '';
+  render();
+  setSync('busy', 'saving…');
+  try{
+    await apiPost({ action: 'add', ...newTask });
+    setSync('ok', 'synced with sheet');
+    hideError();
+  }catch(e){
+    showError("Task added locally but couldn't save to the sheet. It may not stick after refresh.");
+    setSync('err', 'sync failed');
+  }
+};
+
+document.getElementById('newTaskInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') document.getElementById('addBtn').click();
+});
+
+document.getElementById('filters').addEventListener('click', (e) => {
+  if(e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  currentFilter = e.target.dataset.filter;
+  render();
+});
+
+function cycleStatus(status){
+  if(status === 'To do') return 'In progress';
+  if(status === 'In progress') return 'Done';
+  return 'To do';
+}
+
+function tagClass(status){
+  if(status === 'Done') return 'done';
+  if(status === 'In progress') return 'progress';
+  return 'todo';
+}
+
+async function updateTask(t, changes){
+  Object.assign(t, changes, { updatedAt: new Date().toISOString().slice(0,10) });
+  render();
+  setSync('busy', 'saving…');
+  try{
+    await apiPost({ action: 'update', id: t.id, status: t.status, title: t.title, updatedAt: t.updatedAt });
+    setSync('ok', 'synced with sheet');
+    hideError();
+  }catch(e){
+    showError("Change made locally but couldn't save to the sheet.");
+    setSync('err', 'sync failed');
+  }
+}
+
+async function deleteTask(t){
+  tasks = tasks.filter(x => x.id !== t.id);
+  render();
+  setSync('busy', 'saving…');
+  try{
+    await apiPost({ action: 'delete', id: t.id });
+    setSync('ok', 'synced with sheet');
+    hideError();
+  }catch(e){
+    showError("Deleted locally but couldn't remove it from the sheet.");
+    setSync('err', 'sync failed');
+  }
+}
+
+function render(){
+  const list = document.getElementById('taskList');
+  const empty = document.getElementById('emptyState');
+  list.innerHTML = '';
+
+  const filtered = tasks.filter(t => currentFilter === 'all' ? true : t.status === currentFilter);
+
+  empty.style.display = filtered.length === 0 ? 'block' : 'none';
+
+  const order = {'In progress':0, 'To do':1, 'Done':2};
+  filtered.sort((a,b) => (order[a.status]??1)-(order[b.status]??1));
+
+  filtered.forEach((t, idx) => {
+    const row = document.createElement('div');
+    row.className = 'task' + (t.status === 'Done' ? ' done' : '');
+    row.style.animationDelay = (idx * 40) + 'ms';
+
+    const chk = document.createElement('div');
+    chk.className = 'chk' + (t.status === 'Done' ? ' checked' : '');
+    chk.onclick = () => updateTask(t, { status: t.status === 'Done' ? 'To do' : 'Done' });
+
+    const body = document.createElement('div');
+    body.className = 'task-body';
+
+    const title = document.createElement('div');
+    title.className = 'task-title';
+    title.textContent = t.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'task-meta';
+
+    const tag = document.createElement('span');
+    tag.className = 'tag ' + tagClass(t.status);
+    tag.textContent = t.status;
+
+    const cycleBtn = document.createElement('button');
+    cycleBtn.className = 'status-cycle';
+    cycleBtn.textContent = 'Change status →';
+    cycleBtn.onclick = () => updateTask(t, { status: cycleStatus(t.status) });
+
+    meta.appendChild(tag);
+    meta.appendChild(cycleBtn);
+    body.appendChild(title);
+    body.appendChild(meta);
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '✕';
+    del.title = 'Delete task';
+    del.onclick = () => deleteTask(t);
+
+    row.appendChild(chk);
+    row.appendChild(body);
+    row.appendChild(del);
+    list.appendChild(row);
+  });
+
+  document.getElementById('statTotal').textContent = tasks.length;
+  document.getElementById('statProgress').textContent = tasks.filter(t=>t.status==='In progress').length;
+  document.getElementById('statDone').textContent = tasks.filter(t=>t.status==='Done').length;
+}
+
+if(localStorage.getItem('tt_unlocked') === '1'){
+  loadTasks();
+}
+</script>
+</body>
+</html>
