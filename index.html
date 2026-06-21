@@ -64,6 +64,29 @@
   .userbar{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--muted);}
   .userbar button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11px;padding:6px 10px;border-radius:6px;cursor:pointer;}
   .userbar button:hover{color:var(--text);border-color:var(--accent);}
+  .notif-wrap{position:relative;}
+  .notif-badge{background:var(--danger);color:#fff;border-radius:20px;font-size:9.5px;padding:1px 5px;margin-left:3px;font-weight:700;}
+  .notif-dropdown{display:none;position:absolute;right:0;top:calc(100% + 8px);width:320px;max-height:420px;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.4);}
+  .notif-dropdown.open{display:block;}
+  .notif-item{padding:10px;border-radius:8px;margin-bottom:4px;background:var(--panel-2);}
+  .notif-item.unread{border-left:3px solid var(--accent);}
+  .notif-text{font-size:12.5px;line-height:1.4;color:var(--text);}
+  .notif-time{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;}
+  .notif-actions{display:flex;gap:6px;margin-top:8px;}
+  .notif-actions button{font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer;}
+  .notif-actions button.accept{background:var(--done-dim);color:var(--done);border-color:var(--done);}
+  .notif-actions button.reject{background:#2a1414;color:var(--danger);border-color:var(--danger);}
+  .notif-empty{text-align:center;color:var(--muted);font-size:12px;padding:20px;font-family:var(--mono);}
+
+  .addbar input[type=date]{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:0 8px;font-size:12px;}
+  .tl-item{display:flex;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;align-items:center;animation:fadeIn .3s ease both;}
+  .tl-date{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:90px;flex:none;}
+  .tl-date.overdue{color:var(--danger);font-weight:700;}
+  .tl-date.soon{color:var(--prog);font-weight:700;}
+  .tl-bar{flex:1;height:6px;border-radius:4px;background:var(--panel-2);position:relative;overflow:hidden;}
+  .tl-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent);}
+  .tl-title{flex:2;font-size:13.5px;}
+  .tl-title.done{text-decoration:line-through;color:var(--muted);}
 
   .banner{background:#2a1414;border:1px solid #4a2222;color:#ffb3b3;padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:16px;display:none;}
   .banner.ok{background:#142a1f;border-color:#225e3c;color:#a8f0c6;}
@@ -185,6 +208,10 @@
       <label>Full name</label>
       <input type="text" id="fullNameInput" placeholder="Your name" autocomplete="name">
     </div>
+    <div id="usernameField" class="field" style="display:none;">
+      <label>Username</label>
+      <input type="text" id="usernameInput" placeholder="e.g. amaka479" autocomplete="off">
+    </div>
     <div class="field">
       <label>Email</label>
       <input type="email" id="emailInput" placeholder="you@479code.com" autocomplete="email">
@@ -225,6 +252,11 @@
       </div>
     </div>
     <div class="userbar">
+      <button id="refreshBtn" title="Refresh">⟳ Refresh</button>
+      <div class="notif-wrap">
+        <button id="notifBtn">🔔 <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
+        <div class="notif-dropdown" id="notifDropdown"></div>
+      </div>
       <span id="userEmail"></span>
       <button id="signOutBtn">Sign out</button>
     </div>
@@ -253,6 +285,7 @@
 
     <div class="tabs">
       <button class="tabbtn active" data-tab="tasks">Tasks</button>
+      <button class="tabbtn" data-tab="timeline">Timeline</button>
       <button class="tabbtn" data-tab="notes">Notes</button>
       <button class="tabbtn" data-tab="members">Members</button>
     </div>
@@ -261,10 +294,16 @@
       <div class="addbar">
         <input type="text" id="newTaskInput" placeholder="Add a task…">
         <select id="newTaskAssignee"><option value="">Unassigned</option></select>
+        <input type="date" id="newTaskDue" title="Due date (optional)">
         <button id="addTaskBtn">Add</button>
       </div>
       <div id="taskList"></div>
       <div class="empty" id="tasksEmpty" style="display:none;">No tasks yet — add one above.</div>
+    </div>
+
+    <div class="tabpane" id="pane-timeline">
+      <div id="timelineList"></div>
+      <div class="empty" id="timelineEmpty" style="display:none;">No tasks with due dates yet — add due dates to tasks to see them here.</div>
     </div>
 
     <div class="tabpane" id="pane-notes">
@@ -278,13 +317,14 @@
 
     <div class="tabpane" id="pane-members">
       <div class="invite-row">
-        <input type="text" id="inviteEmail" placeholder="Teammate's email (must have an account already)">
+        <input type="text" id="inviteEmail" placeholder="Teammate's email or @username (must have an account already)">
         <select id="inviteRole">
           <option value="editor">Editor</option>
           <option value="viewer">Viewer</option>
         </select>
-        <button id="inviteBtn">Add</button>
+        <button id="inviteBtn">Invite</button>
       </div>
+      <div id="pendingInvitesList"></div>
       <div id="memberList"></div>
     </div>
   </div>
@@ -314,6 +354,7 @@ function setAuthMode(mode){
   document.getElementById('tabSignIn').classList.toggle('active', mode==='signin');
   document.getElementById('tabSignUp').classList.toggle('active', mode==='signup');
   document.getElementById('fullNameField').style.display = mode==='signup' ? 'block' : 'none';
+  document.getElementById('usernameField').style.display = mode==='signup' ? 'block' : 'none';
   document.getElementById('authSubmit').textContent = mode==='signin' ? 'Sign in' : 'Create account';
   document.getElementById('authErr').textContent = '';
   document.getElementById('authMsg').textContent = '';
@@ -323,6 +364,7 @@ document.getElementById('authSubmit').onclick = async () => {
   const email = document.getElementById('emailInput').value.trim();
   const password = document.getElementById('passwordInput').value;
   const fullName = document.getElementById('fullNameInput').value.trim();
+  const username = document.getElementById('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   const err = document.getElementById('authErr');
   const msg = document.getElementById('authMsg');
   err.textContent = ''; msg.textContent = '';
@@ -333,11 +375,24 @@ document.getElementById('authSubmit').onclick = async () => {
   btn.disabled = true;
 
   if(authMode === 'signup'){
+    if(username){
+      const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
+      if(existing){ err.textContent = 'That username is taken — try another.'; btn.disabled = false; return; }
+    }
     const { data, error } = await sb.auth.signUp({
       email, password,
       options: { data: { full_name: fullName || email.split('@')[0] } }
     });
     if(error){ err.textContent = error.message; btn.disabled = false; return; }
+    const newUserId = data.user?.id;
+    if(newUserId && username){
+      // profile row may take a moment to be created by the trigger; retry briefly
+      for(let i=0;i<5;i++){
+        const { error: upErr } = await sb.from('profiles').update({ username }).eq('id', newUserId);
+        if(!upErr) break;
+        await new Promise(r=>setTimeout(r,400));
+      }
+    }
     if(data.session){
       await onLoggedIn();
     } else {
@@ -364,7 +419,34 @@ async function onLoggedIn(){
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('userEmail').textContent = user.email;
   await loadProjects();
+  await checkDueReminders();
+  await loadNotifications();
+  setInterval(loadNotifications, 30000);
 }
+
+document.getElementById('refreshBtn').onclick = async () => {
+  const btn = document.getElementById('refreshBtn');
+  btn.textContent = '⟳ Refreshing…';
+  if(document.getElementById('projectView').style.display !== 'none' && currentProject){
+    await loadMembers(); await loadTasks(); await loadNotes();
+  } else {
+    await loadProjects();
+  }
+  await checkDueReminders();
+  await loadNotifications();
+  btn.textContent = '⟳ Refresh';
+};
+
+document.getElementById('notifBtn').onclick = (e) => {
+  e.stopPropagation();
+  const dd = document.getElementById('notifDropdown');
+  dd.classList.toggle('open');
+  if(dd.classList.contains('open')) loadNotifications();
+};
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('notifDropdown');
+  if(!e.target.closest('.notif-wrap')) dd.classList.remove('open');
+});
 
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
@@ -451,6 +533,8 @@ async function openProject(project, role){
   await loadMembers();
   await loadTasks();
   await loadNotes();
+  await loadPendingInvites();
+  await loadTimeline();
 }
 
 /* ---------------- TABS ---------------- */
@@ -511,17 +595,142 @@ async function loadMembers(){
 }
 
 document.getElementById('inviteBtn').onclick = async () => {
-  const email = document.getElementById('inviteEmail').value.trim();
+  const handle = document.getElementById('inviteEmail').value.trim();
   const role = document.getElementById('inviteRole').value;
-  if(!email) return;
-  const { data: profile, error: pErr } = await sb.from('profiles').select('*').eq('email', email).maybeSingle();
-  if(pErr || !profile){ showError('No account found with that email — they need to sign up first.'); return; }
-  const { error } = await sb.from('project_members').insert({ project_id: currentProject.id, user_id: profile.id, role });
-  if(error){ showError(error.message); return; }
+  if(!handle) return;
+  const lookup = handle.includes('@')
+    ? sb.from('profiles').select('*').eq('email', handle).maybeSingle()
+    : sb.from('profiles').select('*').eq('username', handle.toLowerCase().replace(/^@/,'')).maybeSingle();
+  const { data: profile, error: pErr } = await lookup;
+  if(pErr || !profile){ showError('No account found with that email/username — they need to sign up first.'); return; }
+  if(profile.id === currentUser.id){ showError("That's you."); return; }
+  const already = projectMembers.find(m => m.user_id === profile.id);
+  if(already){ showError('Already a member of this project.'); return; }
+  const { error } = await sb.from('project_invites').insert({
+    project_id: currentProject.id, invited_user_id: profile.id, invited_by: currentUser.id, role
+  });
+  if(error){
+    if(error.message.includes('duplicate')) showError('They already have a pending invite.');
+    else showError(error.message);
+    return;
+  }
   document.getElementById('inviteEmail').value = '';
-  showOk('Added ' + email);
-  await loadMembers();
+  showOk('Invite sent to ' + (profile.full_name || profile.email) + ' — pending their acceptance');
+  await loadPendingInvites();
 };
+
+async function loadPendingInvites(){
+  if(currentProject.myRole !== 'owner') return;
+  const { data } = await sb.from('project_invites')
+    .select('*, profiles:invited_user_id(*)')
+    .eq('project_id', currentProject.id).eq('status','pending');
+  const wrap = document.getElementById('pendingInvitesList');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  (data||[]).forEach(inv => {
+    const row = document.createElement('div');
+    row.className = 'member-row';
+    row.innerHTML = `
+      <div class="member-info">
+        <span class="member-email">${escapeHtml(inv.profiles?.full_name || inv.profiles?.email)}</span>
+        <span class="member-role">pending · invited as ${inv.role}</span>
+      </div>
+    `;
+    const cancel = document.createElement('button');
+    cancel.className = 'del';
+    cancel.textContent = '✕';
+    cancel.title = 'Cancel invite';
+    cancel.onclick = async () => { await sb.from('project_invites').delete().eq('id', inv.id); await loadPendingInvites(); };
+    row.appendChild(cancel);
+    wrap.appendChild(row);
+  });
+}
+
+/* ---------------- NOTIFICATIONS ---------------- */
+async function loadNotifications(){
+  const { data, error } = await sb.from('notifications')
+    .select('*, projects(name)')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending:false })
+    .limit(30);
+  if(error) return;
+
+  const unread = (data||[]).filter(n=>!n.read).length;
+  const badge = document.getElementById('notifBadge');
+  badge.textContent = unread;
+  badge.style.display = unread > 0 ? 'inline-block' : 'none';
+
+  const dd = document.getElementById('notifDropdown');
+  dd.innerHTML = '';
+  if(!data || data.length===0){
+    dd.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    return;
+  }
+
+  for(const n of data){
+    const item = document.createElement('div');
+    item.className = 'notif-item' + (n.read ? '' : ' unread');
+    item.innerHTML = `
+      <div class="notif-text">${escapeHtml(n.content)}</div>
+      <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
+    `;
+    if(n.type === 'invite'){
+      const { data: invite } = await sb.from('project_invites').select('status').eq('id', n.invite_id).maybeSingle();
+      if(invite && invite.status === 'pending'){
+        const actions = document.createElement('div');
+        actions.className = 'notif-actions';
+        actions.innerHTML = `<button class="accept">Accept</button><button class="reject">Reject</button>`;
+        actions.querySelector('.accept').onclick = async () => { await respondInvite(n.invite_id, 'accepted'); };
+        actions.querySelector('.reject').onclick = async () => { await respondInvite(n.invite_id, 'rejected'); };
+        item.appendChild(actions);
+      }
+    }
+    item.onclick = async (e) => {
+      if(e.target.tagName === 'BUTTON') return;
+      if(!n.read){ await sb.from('notifications').update({ read:true }).eq('id', n.id); n.read = true; item.classList.remove('unread'); }
+    };
+    dd.appendChild(item);
+  }
+}
+
+async function respondInvite(inviteId, status){
+  const { error } = await sb.from('project_invites').update({ status, responded_at: new Date().toISOString() }).eq('id', inviteId);
+  if(error){ showError(error.message); return; }
+  showOk(status === 'accepted' ? 'Joined the project!' : 'Invite declined');
+  await loadNotifications();
+  await loadProjects();
+}
+
+async function checkDueReminders(){
+  const { data: memberships } = await sb.from('project_members').select('project_id').eq('user_id', currentUser.id);
+  const projectIds = (memberships||[]).map(m=>m.project_id);
+  if(projectIds.length===0) return;
+
+  const soon = new Date(); soon.setDate(soon.getDate()+2);
+  const soonStr = soon.toISOString().slice(0,10);
+
+  const { data: dueTasks } = await sb.from('tasks')
+    .select('*')
+    .in('project_id', projectIds)
+    .not('due_date','is',null)
+    .neq('status','done')
+    .lte('due_date', soonStr);
+
+  if(!dueTasks) return;
+  const todayStr = new Date().toISOString().slice(0,10);
+
+  for(const t of dueTasks){
+    const { data: existing } = await sb.from('notifications')
+      .select('id').eq('task_id', t.id).eq('type','due_reminder').eq('user_id', currentUser.id)
+      .gte('created_at', todayStr).maybeSingle();
+    if(existing) continue;
+    const overdue = t.due_date < todayStr;
+    await sb.from('notifications').insert({
+      user_id: currentUser.id, type: 'due_reminder', project_id: t.project_id, task_id: t.id,
+      content: (overdue ? '⚠️ Overdue: ' : '⏰ Due soon: ') + '"' + t.title + '"' + (overdue ? '' : ' (due ' + t.due_date + ')')
+    });
+  }
+}
 
 /* ---------------- TASKS & SUBTASKS ---------------- */
 function assigneeName(id){
@@ -533,15 +742,56 @@ function assigneeName(id){
 document.getElementById('addTaskBtn').onclick = async () => {
   const input = document.getElementById('newTaskInput');
   const assignee = document.getElementById('newTaskAssignee').value || null;
+  const dueInput = document.getElementById('newTaskDue');
+  const due = dueInput.value || null;
   const title = input.value.trim();
   if(!title) return;
   const { error } = await sb.from('tasks').insert({
-    project_id: currentProject.id, title, assignee_id: assignee, created_by: currentUser.id
+    project_id: currentProject.id, title, assignee_id: assignee, due_date: due, created_by: currentUser.id
   });
   if(error){ showError(error.message); return; }
   input.value = '';
+  dueInput.value = '';
   await loadTasks();
+  await loadTimeline();
 };
+
+async function loadTimeline(){
+  const { data, error } = await sb.from('tasks')
+    .select('*')
+    .eq('project_id', currentProject.id)
+    .order('due_date', { ascending: true, nullsFirst: false });
+  if(error) return;
+
+  const withDue = (data||[]).filter(t => t.due_date);
+  const list = document.getElementById('timelineList');
+  const empty = document.getElementById('timelineEmpty');
+  list.innerHTML = '';
+  empty.style.display = withDue.length === 0 ? 'block' : 'none';
+
+  if(withDue.length === 0) return;
+  const todayStr = new Date().toISOString().slice(0,10);
+  const soon = new Date(); soon.setDate(soon.getDate()+2);
+  const soonStr = soon.toISOString().slice(0,10);
+
+  const minDate = withDue[0].due_date;
+  const maxDate = withDue[withDue.length-1].due_date;
+  const span = Math.max(1, (new Date(maxDate) - new Date(minDate)) / 86400000);
+
+  withDue.forEach(t => {
+    const overdue = t.status !== 'done' && t.due_date < todayStr;
+    const soonFlag = t.status !== 'done' && t.due_date >= todayStr && t.due_date <= soonStr;
+    const pct = Math.min(100, Math.max(2, ((new Date(t.due_date) - new Date(minDate)) / 86400000 / span) * 100));
+    const row = document.createElement('div');
+    row.className = 'tl-item';
+    row.innerHTML = `
+      <span class="tl-date ${overdue?'overdue':soonFlag?'soon':''}">${t.due_date}</span>
+      <span class="tl-title ${t.status==='done'?'done':''}">${escapeHtml(t.title)}</span>
+      <div class="tl-bar"><div class="tl-bar-fill" style="width:${pct}%; background:${t.status==='done' ? 'var(--done)' : overdue ? 'var(--danger)' : soonFlag ? 'var(--prog)' : 'var(--accent)'}"></div></div>
+    `;
+    list.appendChild(row);
+  });
+}
 
 async function loadTasks(){
   const { data, error } = await sb.from('tasks').select('*').eq('project_id', currentProject.id).order('created_at');
