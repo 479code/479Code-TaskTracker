@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>479Code Task Tracker</title>
+<link rel="icon" type="image/jpeg" href="assets/479-logo.jpeg">
 <style>
   :root{
     --bg:#0c0f12;
@@ -147,12 +148,86 @@
     background:var(--accent);color:#1a1206;border:none;border-radius:6px;
     padding:10px 22px;font-weight:700;font-size:13px;cursor:pointer;
   }
-  #appRoot{display:none;}
+  #appRoot{display:none; animation: appIn .5s ease both;}
+
+  /* ---------- Logo ---------- */
+  .logo-svg{display:block;}
+  .logo-svg .bar{transform-box:fill-box;transform-origin:bottom;animation:barGrow .55s cubic-bezier(.2,.8,.2,1) both;}
+  .logo-svg .strip{opacity:0;animation:fadeUp .5s ease .55s both;}
+  .logo-svg.idle .bar{animation:barGrow .55s cubic-bezier(.2,.8,.2,1) both, barIdle 2.6s ease-in-out infinite;}
+  .logo-svg .bar:nth-child(1){animation-delay:0s;}
+  .logo-svg .bar:nth-child(2){animation-delay:.05s;}
+  .logo-svg .bar:nth-child(3){animation-delay:.1s;}
+  .logo-svg .bar:nth-child(4){animation-delay:.15s;}
+  .logo-svg .bar:nth-child(5){animation-delay:.2s;}
+  .logo-svg .bar:nth-child(6){animation-delay:.25s;}
+  .logo-svg .bar:nth-child(7){animation-delay:.3s;}
+  .logo-svg .bar:nth-child(8){animation-delay:.35s;}
+  .logo-svg .bar:nth-child(9){animation-delay:.4s;}
+  .logo-svg.idle .bar:nth-child(1){animation-delay:0s, .6s;}
+  .logo-svg.idle .bar:nth-child(2){animation-delay:.05s, .75s;}
+  .logo-svg.idle .bar:nth-child(3){animation-delay:.1s, .9s;}
+  .logo-svg.idle .bar:nth-child(4){animation-delay:.15s, 1.05s;}
+  .logo-svg.idle .bar:nth-child(5){animation-delay:.2s, 1.2s;}
+  .logo-svg.idle .bar:nth-child(6){animation-delay:.25s, 1.35s;}
+  .logo-svg.idle .bar:nth-child(7){animation-delay:.3s, 1.5s;}
+  .logo-svg.idle .bar:nth-child(8){animation-delay:.35s, 1.65s;}
+  .logo-svg.idle .bar:nth-child(9){animation-delay:.4s, 1.8s;}
+
+  @keyframes barGrow{from{transform:scaleY(0);} to{transform:scaleY(1);}}
+  @keyframes barIdle{0%,100%{transform:scaleY(1);} 50%{transform:scaleY(.94);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);}}
+  @keyframes appIn{from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);}}
+
+  .lock-logo{width:180px;height:auto;margin-bottom:6px;}
+  .header-logo{width:46px;height:auto;flex:none;}
+  .header-brand{display:flex;align-items:center;gap:12px;}
+
+  /* ---------- Motion: tasks, controls ---------- */
+  .task{animation:taskIn .35s ease both;}
+  @keyframes taskIn{from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);}}
+
+  .chk{transition:background .2s ease, border-color .2s ease, transform .15s ease;}
+  .chk:active{transform:scale(.88);}
+  .chk.checked{animation:chkPop .3s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes chkPop{0%{transform:scale(.7);} 60%{transform:scale(1.15);} 100%{transform:scale(1);}}
+
+  .tag{transition:background .25s ease, color .25s ease;}
+  .task{transition:opacity .25s ease;}
+
+  .addbar button, .status-cycle, .del, .filters button{transition:transform .12s ease, opacity .15s ease, border-color .15s ease, color .15s ease, background .15s ease;}
+  .addbar button:active{transform:scale(.95);}
+  .filters button:active{transform:scale(.93);}
+  .status-cycle:active, .del:active{transform:scale(.9);}
+
+  .dot{transition:background .25s ease;}
+
+  @media (prefers-reduced-motion: reduce){
+    .logo-svg .bar, .logo-svg .strip, #appRoot, .task, .chk.checked{animation:none !important;}
+  }
 </style>
 </head>
 <body>
 
 <div id="lockScreen">
+  <svg class="logo-svg lock-logo idle" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#e8ebee">
+      <rect class="bar" x="195" y="60"  width="40" height="320"/>
+      <rect class="bar" x="250" y="115" width="18" height="265"/>
+      <rect class="bar" x="283" y="92"  width="28" height="288"/>
+      <rect class="bar" x="326" y="118" width="22" height="262"/>
+      <rect class="bar" x="363" y="168" width="34" height="212"/>
+      <rect class="bar" x="412" y="120" width="22" height="260"/>
+      <rect class="bar" x="450" y="58"  width="38" height="322"/>
+      <rect class="bar" x="503" y="205" width="16" height="175"/>
+      <rect class="bar" x="534" y="78"  width="34" height="302"/>
+    </g>
+    <g class="strip">
+      <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
+      <text x="62" y="442" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d">479</text>
+      <text x="556" y="442" text-anchor="end" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
+    </g>
+  </svg>
   <p class="eyebrow">479Code · Operations</p>
   <h2>Enter PIN to continue</h2>
   <input id="pinInput" type="password" inputmode="numeric" maxlength="6" autocomplete="off" autofocus />
@@ -163,9 +238,29 @@
 <div class="wrap" id="appRoot">
 
   <header>
-    <div>
-      <p class="eyebrow">479Code · Operations</p>
-      <h1>Task Tracker</h1>
+    <div class="header-brand">
+      <svg class="logo-svg header-logo" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+        <g fill="var(--accent)">
+          <rect class="bar" x="195" y="60"  width="40" height="320"/>
+          <rect class="bar" x="250" y="115" width="18" height="265"/>
+          <rect class="bar" x="283" y="92"  width="28" height="288"/>
+          <rect class="bar" x="326" y="118" width="22" height="262"/>
+          <rect class="bar" x="363" y="168" width="34" height="212"/>
+          <rect class="bar" x="412" y="120" width="22" height="260"/>
+          <rect class="bar" x="450" y="58"  width="38" height="322"/>
+          <rect class="bar" x="503" y="205" width="16" height="175"/>
+          <rect class="bar" x="534" y="78"  width="34" height="302"/>
+        </g>
+        <g class="strip">
+          <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
+          <text x="62" y="442" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d">479</text>
+          <text x="556" y="442" text-anchor="end" font-family="'SFMono-Regular',Consolas,monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
+        </g>
+      </svg>
+      <div>
+        <p class="eyebrow">479Code · Operations</p>
+        <h1>Task Tracker</h1>
+      </div>
     </div>
     <div class="stats">
       <div><b id="statTotal">0</b>total</div>
@@ -212,9 +307,15 @@ function tryUnlock(){
   const err = document.getElementById('pinError');
   if(val === APP_PIN){
     localStorage.setItem('tt_unlocked', '1');
-    document.getElementById('lockScreen').style.display = 'none';
-    document.getElementById('appRoot').style.display = 'block';
-    loadTasks();
+    const lock = document.getElementById('lockScreen');
+    lock.style.transition = 'opacity .35s ease, transform .35s ease';
+    lock.style.opacity = '0';
+    lock.style.transform = 'scale(.97)';
+    setTimeout(() => {
+      lock.style.display = 'none';
+      document.getElementById('appRoot').style.display = 'block';
+      loadTasks();
+    }, 320);
   } else {
     err.textContent = 'Incorrect PIN';
     document.getElementById('pinInput').value = '';
@@ -385,9 +486,10 @@ function render(){
   const order = {'In progress':0, 'To do':1, 'Done':2};
   filtered.sort((a,b) => (order[a.status]??1)-(order[b.status]??1));
 
-  filtered.forEach(t => {
+  filtered.forEach((t, idx) => {
     const row = document.createElement('div');
     row.className = 'task' + (t.status === 'Done' ? ' done' : '');
+    row.style.animationDelay = (idx * 40) + 'ms';
 
     const chk = document.createElement('div');
     chk.className = 'chk' + (t.status === 'Done' ? ' checked' : '');
