@@ -578,7 +578,7 @@ async function loadTasks(){
             <span class="tag ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
             <button class="status-cycle" data-cycle="${t.id}">Change status →</button>
             ${aName ? `<span class="tag todo">👤 ${escapeHtml(aName)}</span>` : ''}
-            ${subs.length ? `<button class="exp-btn" data-exp="${t.id}">${subs.length} subtask${subs.length>1?'s':''} ▾</button>` : ''}
+            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' subtask' + (subs.length>1?'s':'') : '+ Subtask'} ▾</button>
           </div>
           ${subs.length ? `
             <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(doneCount/subs.length*100)}%"></div></div>
