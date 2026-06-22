@@ -186,6 +186,105 @@
   footer{text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono);margin-top:30px;}
 
   @media (prefers-reduced-motion: reduce){ *{animation:none !important;} }
+
+  /* ============ MOBILE RESPONSIVE ============ */
+  @media (max-width: 600px){
+    body{ padding: 0 0 80px; }
+    .wrap{ padding: 14px 12px; }
+
+    /* --- Auth --- */
+    #authScreen{ padding: 16px 12px; gap: 10px; }
+    .auth-logo{ width: 120px; }
+    .authbox{ padding: 16px; }
+
+    /* --- Header --- */
+    header.app{
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+      position: sticky; top: 0; z-index: 40;
+      background: var(--bg);
+      padding: 12px 0 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand{ gap: 8px; }
+    .header-logo{ width: 32px; }
+    h1{ font-size: 17px; }
+    .eyebrow{ font-size: 10px; margin-bottom: 2px; }
+
+    .userbar{
+      width: 100%;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .userbar #userEmail{ display: none; }
+    .userbar button{ font-size: 11px; padding: 6px 10px; }
+
+    /* notification dropdown full-width on mobile */
+    .notif-dropdown{ width: calc(100vw - 24px); right: auto; left: 0; }
+    #usernameDropdown{ width: 240px; }
+
+    /* --- Add bars --- */
+    .addbar{
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+    }
+    .addbar input[type=text],
+    .addbar textarea{ width: 100%; flex: none; font-size: 15px; padding: 10px; }
+    .addbar select{ flex: 1; font-size: 13px; padding: 8px; }
+    .addbar input[type=date]{ flex: 1; font-size: 13px; padding: 8px; }
+    .addbar button{ width: 100%; padding: 11px; font-size: 14px; }
+
+    /* invite row */
+    .invite-row{ flex-wrap: wrap; }
+    .invite-row input{ width: 100%; flex: none; }
+    .invite-row select{ flex: 1; }
+    .invite-row button{ flex: 1; padding: 10px; }
+
+    /* --- Projects grid --- */
+    .projects-grid{ grid-template-columns: 1fr; gap: 10px; }
+    .project-card{ padding: 14px; }
+    .project-card h3{ font-size: 15px; }
+
+    /* --- Tabs --- */
+    .tabs{ gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tabs button{ font-size: 12px; padding: 10px 10px; margin-right: 8px; white-space: nowrap; }
+
+    /* --- Tasks --- */
+    .task{ padding: 12px; }
+    .task-title{ font-size: 14px; }
+    .task-meta{ gap: 6px; }
+    .tag{ font-size: 10px; padding: 2px 7px; }
+    .status-cycle, .exp-btn{ font-size: 10px; padding: 2px 7px; }
+
+    /* subtask add bar */
+    .subaddbar{ flex-wrap: wrap; }
+    .subaddbar input{ width: 100%; flex: none; }
+    .subaddbar button{ width: 100%; padding: 8px; }
+
+    /* --- Timeline --- */
+    .tl-item{ flex-wrap: wrap; gap: 8px; }
+    .tl-date{ min-width: auto; font-size: 11px; }
+    .tl-title{ flex: none; width: 100%; order: -1; }
+    .tl-bar{ width: 100%; flex: none; }
+
+    /* --- Notes --- */
+    .note-meta{ flex-direction: column; align-items: flex-start; }
+
+    /* --- Member rows --- */
+    .member-row{ flex-wrap: wrap; gap: 8px; }
+
+    /* --- Bottom nav safe area (PWA) --- */
+    footer{ padding-bottom: env(safe-area-inset-bottom, 12px); }
+
+    /* bigger tap targets */
+    .chk{ width: 24px; height: 24px; border-radius: 7px; }
+    .del{ font-size: 18px; padding: 4px 8px; }
+    .backbtn{ font-size: 13px; padding: 4px 0; margin-bottom: 10px; }
+  }
 </style>
 </head>
 <body>
