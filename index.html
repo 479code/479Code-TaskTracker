@@ -288,6 +288,18 @@
   .status-cycle:hover,.exp-btn:hover{border-color:var(--accent);color:var(--accent);}
   .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;flex:none;}
   .del:hover{color:var(--danger);}
+  .del-project-btn{background:#2a1414;border:1px solid var(--danger);color:var(--danger);font-size:12px;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:var(--mono);white-space:nowrap;}
+  .del-project-btn:hover{background:var(--danger);color:#fff;}
+
+  /* Task inline edit */
+  .task-title-edit{background:var(--panel-2);border:1px solid var(--accent);color:var(--text);border-radius:6px;padding:5px 8px;font-size:14.5px;width:100%;outline:none;font-family:var(--sans);}
+  .task-due{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:6px;}
+  .task-due.overdue{color:var(--danger);}
+  .task-due.soon{color:var(--prog);}
+  .task-due-edit{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px;font-family:var(--mono);outline:none;}
+  .task-due-edit:focus{border-color:var(--accent);}
+  .edit-task-btn{font-family:var(--mono);font-size:10.5px;background:none;border:1px solid var(--line);color:var(--muted);padding:2px 8px;border-radius:20px;cursor:pointer;}
+  .edit-task-btn:hover{border-color:var(--accent);color:var(--accent);}
 
   .progress-bar{height:5px;background:var(--panel-2);border-radius:4px;overflow:hidden;margin-top:8px;}
   .progress-fill{height:100%;background:var(--done);transition:width .3s ease;border-radius:4px;}
@@ -517,9 +529,12 @@
   <!-- PROJECT DETAIL VIEW -->
   <div id="projectView" style="display:none;">
     <button class="backbtn" id="backBtn">← All projects</button>
-    <div class="project-head">
-      <h2 id="projectName"></h2>
-      <p id="projectDesc"></p>
+    <div class="project-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h2 id="projectName"></h2>
+        <p id="projectDesc"></p>
+      </div>
+      <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Delete Project</button>
     </div>
 
     <div class="tabs">
@@ -953,6 +968,7 @@ async function openProject(project, role){
   document.getElementById('projectView').style.display = 'block';
   document.getElementById('projectName').textContent = project.name;
   document.getElementById('projectDesc').textContent = project.description || '';
+  document.getElementById('deleteProjectBtn').style.display = role === 'owner' ? 'block' : 'none';
   switchTab('tasks');
   await loadMembers();
   await loadTasks();
@@ -960,6 +976,16 @@ async function openProject(project, role){
   await loadPendingInvites();
   await loadTimeline();
 }
+
+document.getElementById('deleteProjectBtn').onclick = async () => {
+  if(!confirm(`Delete "${currentProject.name}"?\n\nThis will permanently remove all tasks, subtasks, notes and members. This cannot be undone.`)) return;
+  const { error } = await sb.from('projects').delete().eq('id', currentProject.id);
+  if(error){ showError(error.message); return; }
+  showOk('Project deleted');
+  document.getElementById('projectView').style.display = 'none';
+  document.getElementById('projectsView').style.display = 'block';
+  await loadProjects();
+};
 
 /* ---------------- TABS ---------------- */
 document.querySelectorAll('.tabbtn').forEach(btn => {
@@ -1242,15 +1268,24 @@ async function loadTasks(){
     row.className = 'task' + (t.status==='done' ? ' done':'');
 
     const aName = assigneeName(t.assignee_id);
+    const today = new Date().toISOString().slice(0,10);
+    const soon = new Date(); soon.setDate(soon.getDate()+2);
+    const soonStr = soon.toISOString().slice(0,10);
+    const dueClass = t.due_date ? (t.due_date < today && t.status!=='done' ? 'overdue' : t.due_date <= soonStr && t.status!=='done' ? 'soon' : '') : '';
+    const dueHtml = t.due_date
+      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue:':dueClass==='soon'?'⏰ Due soon:':'Due:'} ${t.due_date}</div>`
+      : '';
 
     row.innerHTML = `
       <div class="task-row">
         <div class="chk ${t.status==='done'?'checked':''}" data-id="${t.id}"></div>
         <div class="task-body">
-          <div class="task-title">${escapeHtml(t.title)}</div>
+          <div class="task-title" id="ttitle-${t.id}">${escapeHtml(t.title)}</div>
+          ${dueHtml}
           <div class="task-meta">
             <span class="tag ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
             <button class="status-cycle" data-cycle="${t.id}">Change status →</button>
+            <button class="edit-task-btn" data-edit="${t.id}">✏️ Edit</button>
             ${aName ? `<span class="tag todo">👤 ${escapeHtml(aName)}</span>` : ''}
             <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' subtask' + (subs.length>1?'s':'') : '+ Subtask'} ▾</button>
           </div>
@@ -1282,6 +1317,39 @@ async function loadTasks(){
   list.querySelectorAll('[data-addsub]').forEach(el => el.onclick = () => addSubtask(el.dataset.addsub));
   list.querySelectorAll('[data-subchk]').forEach(el => el.onclick = () => toggleTaskDone(el.dataset.subchk, data));
   list.querySelectorAll('[data-subdel]').forEach(el => el.onclick = () => deleteTask(el.dataset.subdel));
+  list.querySelectorAll('[data-edit]').forEach(el => el.onclick = () => openTaskEdit(el.dataset.edit, data));
+}
+
+function openTaskEdit(taskId, allTasks){
+  const t = allTasks.find(x=>x.id===taskId);
+  if(!t) return;
+  const titleEl = document.getElementById('ttitle-'+taskId);
+  if(!titleEl) return;
+  const body = titleEl.parentElement;
+
+  // Replace title with input
+  titleEl.outerHTML = `<input class="task-title-edit" id="tedit-${taskId}" value="${escapeHtml(t.title)}" type="text">`;
+
+  // Add due date editor below
+  const dueWrap = document.createElement('div');
+  dueWrap.className = 'task-due';
+  dueWrap.innerHTML = `📅 Due date: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
+    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done);border-color:var(--done);">Save</button>
+    <button class="edit-task-btn" data-canceledit="${taskId}">Cancel</button>`;
+  const metaEl = body.querySelector('.task-meta');
+  body.insertBefore(dueWrap, metaEl);
+
+  const input = document.getElementById('tedit-'+taskId);
+  if(input){ input.focus(); input.select(); }
+
+  dueWrap.querySelector('[data-save]').onclick = async () => {
+    const newTitle = document.getElementById('tedit-'+taskId)?.value.trim() || t.title;
+    const newDue = document.getElementById('tdue-'+taskId)?.value || null;
+    const { error } = await sb.from('tasks').update({ title: newTitle, due_date: newDue, updated_at: new Date().toISOString() }).eq('id', taskId);
+    if(error){ showError(error.message); return; }
+    await loadTasks(); await loadTimeline();
+  };
+  dueWrap.querySelector('[data-canceledit]').onclick = () => loadTasks();
 }
 
 function subtaskHtml(s){
