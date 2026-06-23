@@ -215,7 +215,7 @@
   .inv-field.full{ grid-column:1/-1; }
 
   /* Line items */
-  .inv-items-head{ display:grid; grid-template-columns:3fr 1fr 1fr 1fr 32px; gap:8px; margin-bottom:6px; }
+  .inv-items-head{ display:grid; grid-template-columns:32px 3fr 1fr 1fr 1fr 32px; gap:6px; margin-bottom:6px; }
   .inv-items-head span{ font-size:10.5px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; }
   .inv-item-row{ display:grid; grid-template-columns:3fr 1fr 1fr 1fr 32px; gap:8px; margin-bottom:6px; align-items:center; }
   .inv-item-row input{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-size:13px; outline:none; width:100%; }
@@ -523,30 +523,19 @@
 
     <!-- Create / Edit form -->
     <div id="invoiceForm" style="display:none;">
-      <div class="inv-form">
-        <h3>Client Details</h3>
-        <div class="inv-grid">
-          <div class="inv-field"><label>Client Name *</label><input type="text" id="inv_client_name" placeholder="Company or person name"></div>
-          <div class="inv-field"><label>Client Email</label><input type="email" id="inv_client_email" placeholder="client@example.com"></div>
-          <div class="inv-field"><label>Client Phone</label><input type="text" id="inv_client_phone" placeholder="+1 234 567 8900"></div>
-          <div class="inv-field"><label>Currency</label>
-            <select id="inv_currency">
-              <option value="USD">USD — US Dollar</option>
-              <option value="NGN">NGN — Nigerian Naira</option>
-              <option value="GBP">GBP — British Pound</option>
-              <option value="EUR">EUR — Euro</option>
-              <option value="KES">KES — Kenyan Shilling</option>
-              <option value="GHS">GHS — Ghana Cedi</option>
-            </select>
-          </div>
-          <div class="inv-field full"><label>Client Address</label><textarea id="inv_client_address" rows="2" placeholder="Street, City, Country"></textarea></div>
-        </div>
-      </div>
 
       <div class="inv-form">
-        <h3>Invoice Details</h3>
+        <h3>Invoice Header</h3>
         <div class="inv-grid">
-          <div class="inv-field"><label>Invoice Number *</label><input type="text" id="inv_number" placeholder="INV-001"></div>
+          <div class="inv-field full"><label>Invoice Title / Subject *</label>
+            <input type="text" id="inv_title" placeholder="e.g. INVOICE TO TRANSBORDER LOGISTICS FOR MONTH OF JUNE 2026">
+          </div>
+          <div class="inv-field"><label>Receipt / Invoice No. *</label>
+            <input type="text" id="inv_number" placeholder="e.g. TR/00F/C/06/26">
+          </div>
+          <div class="inv-field"><label>Date *</label>
+            <input type="date" id="inv_issue_date">
+          </div>
           <div class="inv-field"><label>Status</label>
             <select id="inv_status">
               <option value="draft">Draft</option>
@@ -554,29 +543,72 @@
               <option value="paid">Paid</option>
             </select>
           </div>
-          <div class="inv-field"><label>Issue Date *</label><input type="date" id="inv_issue_date"></div>
-          <div class="inv-field"><label>Due Date</label><input type="date" id="inv_due_date"></div>
-          <div class="inv-field full"><label>Notes / Payment Instructions</label><textarea id="inv_notes" rows="2" placeholder="Bank details, payment terms, thank you message…"></textarea></div>
+          <div class="inv-field"><label>Currency</label>
+            <select id="inv_currency">
+              <option value="NGN">NGN — Nigerian Naira (₦)</option>
+              <option value="USD">USD — US Dollar ($)</option>
+              <option value="GBP">GBP — British Pound (£)</option>
+              <option value="EUR">EUR — Euro (€)</option>
+              <option value="KES">KES — Kenyan Shilling</option>
+              <option value="GHS">GHS — Ghana Cedi (₵)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-form">
+        <h3>Bill To</h3>
+        <div class="inv-grid">
+          <div class="inv-field"><label>Client / Company Name *</label>
+            <input type="text" id="inv_client_name" placeholder="e.g. Transborder Logistics Limited">
+          </div>
+          <div class="inv-field"><label>Client Email</label>
+            <input type="email" id="inv_client_email" placeholder="client@company.com">
+          </div>
+          <div class="inv-field"><label>Client Phone</label>
+            <input type="text" id="inv_client_phone" placeholder="+234 000 000 0000">
+          </div>
+          <div class="inv-field full"><label>Client Address</label>
+            <textarea id="inv_client_address" rows="2" placeholder="Street, City, State"></textarea>
+          </div>
         </div>
       </div>
 
       <div class="inv-form">
         <h3>Line Items</h3>
         <div class="inv-items-head">
-          <span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span>
+          <span>No.</span><span style="flex:3">Description</span><span>Qty</span><span>Unit Price</span><span>Total</span><span></span>
         </div>
         <div id="invItemsContainer"></div>
         <button class="inv-add-item" id="addInvItem">+ Add line item</button>
         <div class="inv-totals">
-          <div class="inv-total-row"><span>Subtotal</span><span id="invSubtotal">0.00</span></div>
-          <div class="inv-total-row grand"><span>TOTAL</span><span id="invTotal">0.00</span></div>
+          <div class="inv-total-row"><span>SUBTOTAL</span><span id="invSubtotal">₦0.00</span></div>
+          <div class="inv-total-row grand"><span>TOTAL</span><span id="invTotal">₦0.00</span></div>
+        </div>
+      </div>
+
+      <div class="inv-form">
+        <h3>Payment Details</h3>
+        <div class="inv-grid">
+          <div class="inv-field"><label>Account Name</label>
+            <input type="text" id="inv_account_name" value="479Code Tech Solutions Ltd">
+          </div>
+          <div class="inv-field"><label>Account Number</label>
+            <input type="text" id="inv_account_number" value="0013942057">
+          </div>
+          <div class="inv-field"><label>Bank Name</label>
+            <input type="text" id="inv_bank_name" value="TAJ Bank">
+          </div>
+          <div class="inv-field full"><label>Additional Notes</label>
+            <textarea id="inv_notes" rows="2" placeholder="Any other payment instructions or notes…"></textarea>
+          </div>
         </div>
       </div>
 
       <div class="inv-actions">
         <button class="inv-btn primary" id="saveInvoiceBtn">Save Invoice</button>
-        <button class="inv-btn secondary" id="previewInvoiceBtn">Preview & Download PDF</button>
-        <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Delete Invoice</button>
+        <button class="inv-btn secondary" id="previewInvoiceBtn">🖨 Preview & Download PDF</button>
+        <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Delete</button>
         <button class="inv-btn secondary" id="cancelInvoiceBtn">Cancel</button>
       </div>
     </div>
@@ -1267,6 +1299,359 @@ if('serviceWorker' in navigator){
 const INVOICE_OWNER_EMAIL = '479code@gmail.com';
 let editingInvoiceId = null;
 let invItems = [];
+
+function showInvoiceView(){
+  document.getElementById('projectsView').style.display = 'none';
+  document.getElementById('projectView').style.display = 'none';
+  document.getElementById('invoiceView').style.display = 'block';
+  document.getElementById('invoiceForm').style.display = 'none';
+  document.getElementById('invoiceList').style.display = 'block';
+  document.getElementById('invViewTitle').textContent = 'Invoices';
+  loadInvoices();
+}
+
+document.getElementById('invoiceNavBtn').onclick = showInvoiceView;
+
+document.getElementById('invBackBtn').onclick = () => {
+  if(document.getElementById('invoiceForm').style.display !== 'none'){
+    document.getElementById('invoiceForm').style.display = 'none';
+    document.getElementById('invoiceList').style.display = 'block';
+    document.getElementById('newInvoiceBtn').style.display = 'block';
+    document.getElementById('invViewTitle').textContent = 'Invoices';
+  } else {
+    document.getElementById('invoiceView').style.display = 'none';
+    document.getElementById('projectsView').style.display = 'block';
+  }
+};
+
+document.getElementById('newInvoiceBtn').onclick = () => openInvoiceForm(null);
+document.getElementById('cancelInvoiceBtn').onclick = () => document.getElementById('invBackBtn').click();
+document.getElementById('addInvItem').onclick = () => { invItems.push({desc:'',qty:'',rate:''}); renderInvItems(); };
+
+document.getElementById('saveInvoiceBtn').onclick = async () => {
+  const inv = gatherInvoiceForm();
+  if(!inv) return;
+  if(editingInvoiceId){
+    const { error } = await sb.from('invoices').update({...inv, updated_at: new Date().toISOString()}).eq('id', editingInvoiceId);
+    if(error){ showError(error.message); return; }
+  } else {
+    const { error } = await sb.from('invoices').insert({...inv, created_by: currentUser.id});
+    if(error){ showError(error.message); return; }
+  }
+  showOk('Invoice saved');
+  document.getElementById('invBackBtn').click();
+};
+
+document.getElementById('previewInvoiceBtn').onclick = () => {
+  const inv = gatherInvoiceForm(true);
+  if(!inv){ showError('Fill in at least the Invoice No., Client Name, and Date first.'); return; }
+  printInvoice(inv);
+};
+
+document.getElementById('deleteInvoiceBtn').onclick = async () => {
+  if(!editingInvoiceId) return;
+  if(!confirm('Delete this invoice? This cannot be undone.')) return;
+  await sb.from('invoices').delete().eq('id', editingInvoiceId);
+  showOk('Invoice deleted');
+  document.getElementById('invBackBtn').click();
+};
+
+function gatherInvoiceForm(preview = false){
+  const num    = document.getElementById('inv_number').value.trim();
+  const client = document.getElementById('inv_client_name').value.trim();
+  const issue  = document.getElementById('inv_issue_date').value;
+  if(!num || !client || !issue) return null;
+  return {
+    invoice_number   : num,
+    invoice_title    : document.getElementById('inv_title').value.trim(),
+    receipt_number   : num,
+    client_name      : client,
+    client_email     : document.getElementById('inv_client_email').value.trim(),
+    client_phone     : document.getElementById('inv_client_phone').value.trim(),
+    client_address   : document.getElementById('inv_client_address').value.trim(),
+    issue_date       : issue,
+    due_date         : null,
+    currency         : document.getElementById('inv_currency').value,
+    status           : document.getElementById('inv_status').value,
+    account_name     : document.getElementById('inv_account_name').value.trim(),
+    account_number   : document.getElementById('inv_account_number').value.trim(),
+    bank_name        : document.getElementById('inv_bank_name').value.trim(),
+    notes            : document.getElementById('inv_notes').value.trim(),
+    items            : JSON.parse(JSON.stringify(invItems))
+  };
+}
+
+function openInvoiceForm(invoice){
+  editingInvoiceId = invoice?.id || null;
+  invItems = invoice?.items?.length ? JSON.parse(JSON.stringify(invoice.items)) : [
+    {desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''}
+  ];
+
+  document.getElementById('inv_title').value          = invoice?.invoice_title || '';
+  document.getElementById('inv_number').value         = invoice?.invoice_number || autoInvNumber();
+  document.getElementById('inv_client_name').value    = invoice?.client_name || '';
+  document.getElementById('inv_client_email').value   = invoice?.client_email || '';
+  document.getElementById('inv_client_phone').value   = invoice?.client_phone || '';
+  document.getElementById('inv_client_address').value = invoice?.client_address || '';
+  document.getElementById('inv_issue_date').value     = invoice?.issue_date || new Date().toISOString().slice(0,10);
+  document.getElementById('inv_currency').value       = invoice?.currency || 'NGN';
+  document.getElementById('inv_status').value         = invoice?.status || 'draft';
+  document.getElementById('inv_account_name').value   = invoice?.account_name || '479Code Tech Solutions Ltd';
+  document.getElementById('inv_account_number').value = invoice?.account_number || '0013942057';
+  document.getElementById('inv_bank_name').value      = invoice?.bank_name || 'TAJ Bank';
+  document.getElementById('inv_notes').value          = invoice?.notes || '';
+  document.getElementById('deleteInvoiceBtn').style.display = editingInvoiceId ? 'block' : 'none';
+
+  renderInvItems();
+  document.getElementById('invoiceList').style.display = 'none';
+  document.getElementById('newInvoiceBtn').style.display = 'none';
+  document.getElementById('invoiceForm').style.display = 'block';
+  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Edit Invoice' : 'New Invoice';
+}
+
+function autoInvNumber(){
+  const now = new Date();
+  return `INV/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+}
+
+function renderInvItems(){
+  const container = document.getElementById('invItemsContainer');
+  container.innerHTML = '';
+  invItems.forEach((item, i) => {
+    const qty  = parseFloat(item.qty)  || 0;
+    const rate = parseFloat(item.rate) || 0;
+    const amt  = (qty * rate).toFixed(2);
+    const row = document.createElement('div');
+    row.className = 'inv-item-row';
+    row.style.cssText = 'display:grid;grid-template-columns:32px 3fr 1fr 1fr 1fr 32px;gap:6px;margin-bottom:6px;align-items:center;';
+    row.innerHTML = `
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;">${i+1}</span>
+      <input type="text"   placeholder="Description"   value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
+      <input type="number" placeholder="Qty"            value="${item.qty||''}"  min="0"        data-i="${i}" data-f="qty">
+      <input type="number" placeholder="Unit Price"     value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
+      <span class="inv-item-total" style="font-size:13px;font-family:var(--mono);text-align:right;">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
+      <button class="del" data-rmi="${i}">✕</button>
+    `;
+    container.appendChild(row);
+  });
+  container.querySelectorAll('input').forEach(inp => {
+    inp.oninput = () => {
+      const i = parseInt(inp.dataset.i);
+      invItems[i][inp.dataset.f] = inp.value;
+      const q = parseFloat(invItems[i].qty)||0;
+      const r = parseFloat(invItems[i].rate)||0;
+      const sym = currSymbol(document.getElementById('inv_currency').value);
+      inp.closest('.inv-item-row').querySelector('.inv-item-total').textContent = q&&r ? sym+(q*r).toLocaleString('en',{minimumFractionDigits:2}) : '—';
+      updateInvTotals();
+    };
+  });
+  container.querySelectorAll('[data-rmi]').forEach(btn => {
+    btn.onclick = () => { invItems.splice(parseInt(btn.dataset.rmi),1); renderInvItems(); };
+  });
+  updateInvTotals();
+}
+
+function updateInvTotals(){
+  const cur = document.getElementById('inv_currency')?.value || 'NGN';
+  const sym = currSymbol(cur);
+  const subtotal = invItems.reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
+  const fmt = n => sym + n.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('invSubtotal').textContent = fmt(subtotal);
+  document.getElementById('invTotal').textContent    = fmt(subtotal);
+}
+document.getElementById('inv_currency').onchange = () => { renderInvItems(); };
+
+function currSymbol(c){ return {USD:'$',NGN:'₦',GBP:'£',EUR:'€',KES:'KSh ',GHS:'₵'}[c]||c+' '; }
+
+async function loadInvoices(){
+  const { data, error } = await sb.from('invoices').select('*').eq('created_by', currentUser.id).order('created_at',{ascending:false});
+  if(error){ showError(error.message); return; }
+  const list  = document.getElementById('invoiceList');
+  const empty = document.getElementById('invoicesEmpty');
+  list.innerHTML = '';
+  empty.style.display = (!data||data.length===0) ? 'block' : 'none';
+  (data||[]).forEach(inv => {
+    const total = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
+    const sym   = currSymbol(inv.currency||'NGN');
+    const row   = document.createElement('div');
+    row.className = 'inv-list-item';
+    row.innerHTML = `
+      <div class="inv-list-info">
+        <div class="inv-list-num">${escapeHtml(inv.invoice_number)}</div>
+        <div class="inv-list-client">${escapeHtml(inv.client_name)}</div>
+        <div class="inv-list-date">${escapeHtml(inv.invoice_title||'')} &nbsp;·&nbsp; ${inv.issue_date}</div>
+      </div>
+      <div class="inv-list-right">
+        <span class="inv-amount">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</span>
+        <span class="inv-status ${inv.status}">${inv.status}</span>
+      </div>
+    `;
+    row.onclick = () => openInvoiceForm(inv);
+    list.appendChild(row);
+  });
+}
+
+/* ---- Print / PDF: exact 479Code template ---- */
+function printInvoice(inv){
+  const sym     = currSymbol(inv.currency||'NGN');
+  const cur     = inv.currency || 'NGN';
+  const subtotal = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
+  const fmtNum  = n => n ? sym + parseFloat(n).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
+
+  const itemRows = (inv.items||[]).map((it,i) => {
+    const qty   = parseFloat(it.qty)||0;
+    const rate  = parseFloat(it.rate)||0;
+    const total = qty && rate ? sym + (qty*rate).toLocaleString('en',{minimumFractionDigits:2}) : '—';
+    const unitP = rate ? sym + rate.toLocaleString('en',{minimumFractionDigits:2}) : '—';
+    return `<tr>
+      <td style="text-align:center;border:1px solid #ccc;padding:8px 6px;">${i+1}</td>
+      <td style="border:1px solid #ccc;padding:8px 10px;">${escapeHtml(it.desc||'')}</td>
+      <td style="text-align:center;border:1px solid #ccc;padding:8px 6px;">${qty||'—'}</td>
+      <td style="text-align:right;border:1px solid #ccc;padding:8px 10px;">${unitP}</td>
+      <td style="text-align:right;border:1px solid #ccc;padding:8px 10px;font-weight:600;">${total}</td>
+    </tr>`;
+  }).join('');
+
+  const logoSVG = `<svg width="90" height="78" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#1a1a1a">
+      <rect x="195" y="60" width="40" height="320"/><rect x="250" y="115" width="18" height="265"/>
+      <rect x="283" y="92" width="28" height="288"/><rect x="326" y="118" width="22" height="262"/>
+      <rect x="363" y="168" width="34" height="212"/><rect x="412" y="120" width="22" height="260"/>
+      <rect x="450" y="58" width="38" height="322"/><rect x="503" y="205" width="16" height="175"/>
+      <rect x="534" y="78" width="34" height="302"/>
+    </g>
+    <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
+    <text x="62" y="442" font-family="monospace" font-weight="800" font-size="58" fill="#1a1a1a">479</text>
+    <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="800" font-size="58" fill="#1a1a1a" letter-spacing="2">CODE</text>
+  </svg>`;
+
+  const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Invoice ${escapeHtml(inv.invoice_number)}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;background:#fff;padding:30px 40px;max-width:850px;margin:0 auto;font-size:13px;}
+  .top-line{border-top:2.5px solid #1a1a1a;margin-bottom:0;}
+  .bottom-line{border-bottom:2.5px solid #1a1a1a;margin-top:0;}
+  .header-band{display:flex;align-items:center;padding:14px 0 10px;border-bottom:1.5px solid #1a1a1a;margin-bottom:0;}
+  .header-logo{margin-right:20px;flex:none;}
+  .header-company{flex:1;text-align:center;}
+  .header-company h1{font-size:15px;font-weight:700;letter-spacing:.03em;margin-bottom:3px;}
+  .header-company p{font-size:12px;line-height:1.6;color:#333;}
+  .inv-title-bar{text-align:center;padding:14px 0 12px;border-bottom:1px solid #ccc;}
+  .inv-title-bar h2{font-size:13.5px;font-weight:700;text-decoration:underline;text-transform:uppercase;letter-spacing:.04em;}
+  .meta-row{display:flex;justify-content:flex-end;gap:40px;padding:10px 0 8px;font-size:12.5px;}
+  .meta-row div{text-align:right;}
+  .meta-row strong{text-decoration:underline;}
+  .bill-to{margin:10px 0 16px;}
+  .bill-to .label{font-size:12px;font-weight:700;text-decoration:underline;margin-bottom:4px;}
+  .bill-to .client{font-size:13px;font-weight:700;}
+  table.items{width:100%;border-collapse:collapse;margin-bottom:0;}
+  table.items thead tr{background:#333;color:#fff;}
+  table.items thead th{padding:9px 10px;font-size:12px;font-weight:700;text-align:center;border:1px solid #ccc;text-transform:uppercase;letter-spacing:.04em;}
+  table.items thead th:nth-child(2){text-align:left;}
+  table.items tbody tr:nth-child(even){background:#f9f9f9;}
+  table.items tfoot tr{background:#f0f0f0;}
+  table.items tfoot td{padding:9px 10px;font-weight:700;font-size:12.5px;border:1px solid #ccc;text-transform:uppercase;}
+  .totals-box{display:flex;justify-content:flex-end;margin:20px 0 24px;}
+  .totals-inner{border:1.5px solid #1a1a1a;min-width:260px;}
+  .totals-inner tr td{padding:9px 16px;font-size:13px;border-bottom:1px solid #ccc;}
+  .totals-inner tr:last-child td{border-bottom:none;font-weight:700;font-size:14px;background:#f5f5f5;}
+  .totals-inner td:last-child{text-align:right;font-family:'Courier New',monospace;font-weight:600;}
+  .payment-section{margin:10px 0 24px;}
+  .payment-section h3{font-size:13px;font-weight:700;text-decoration:underline;text-transform:uppercase;margin-bottom:8px;}
+  .payment-section p{font-size:13px;line-height:1.8;}
+  .payment-section strong{font-weight:700;}
+  .sig-section{margin:16px 0 24px;}
+  .sig-section p{font-size:13px;font-weight:700;margin-top:4px;}
+  .footer-band{border-top:2.5px solid #1a1a1a;padding:10px 0 4px;text-align:center;}
+  .footer-band p{font-size:11.5px;color:#333;}
+  .footer-band a{color:#1a1a1a;}
+  @media print{
+    body{padding:15px 20px;}
+    @page{margin:10mm;}
+  }
+</style>
+</head>
+<body>
+
+<div class="top-line"></div>
+<div class="header-band">
+  <div class="header-logo">${logoSVG}</div>
+  <div class="header-company">
+    <h1>479Code Tech. Solution Ltd.</h1>
+    <p>Address: NO. 98 Norman Williams Street, Ikoyi, Lagos State</p>
+    <p>Phone: 07069655288, 07074733491</p>
+  </div>
+</div>
+
+${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title)}</h2></div>` : ''}
+
+<div class="meta-row">
+  <div><strong>Receipt:</strong> ${escapeHtml(inv.invoice_number)}</div>
+  <div><strong>Date:</strong> ${fmtDate(inv.issue_date)}</div>
+</div>
+
+<div class="bill-to">
+  <div class="label">BILL TO:</div>
+  <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400;font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
+</div>
+
+<table class="items">
+  <thead>
+    <tr>
+      <th style="width:60px;">Item No.</th>
+      <th style="text-align:left;">Description</th>
+      <th style="width:60px;">QTY</th>
+      <th style="width:130px;">Unit Price</th>
+      <th style="width:130px;">Total</th>
+    </tr>
+  </thead>
+  <tbody>${itemRows}</tbody>
+  <tfoot>
+    <tr>
+      <td colspan="3"></td>
+      <td style="text-align:right;">SUBTOTAL</td>
+      <td style="text-align:right;font-family:'Courier New',monospace;">${cur} — ${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="totals-box">
+  <table class="totals-inner">
+    <tr><td>SUBTOTAL</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>TOTAL</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+  </table>
+</div>
+
+${(inv.account_name||inv.account_number||inv.bank_name) ? `
+<div class="payment-section">
+  <h3>Payment Details:</h3>
+  ${inv.account_name   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
+  ${inv.account_number ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
+  ${inv.bank_name      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
+  ${inv.notes          ? `<p style="margin-top:6px;">${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</p>` : ''}
+</div>` : ''}
+
+<div class="sig-section">
+  <div style="height:44px;"></div>
+  <p>479CODE TECH. SOLUTIONS LTD.</p>
+</div>
+
+<div class="footer-band">
+  <p>E-mail: <a href="mailto:479code@gmail.com">479code@gmail.com</a> &nbsp;&nbsp; Tel: +2347069655288</p>
+</div>
+
+<script>window.onload=()=>{ window.print(); }<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=960,height=760');
+  if(!w){ showError('Pop-up blocked — please allow pop-ups for this site to print invoices.'); return; }
+  w.document.write(html);
+  w.document.close();
+}
 
 function showInvoiceView(){
   document.getElementById('projectsView').style.display = 'none';
