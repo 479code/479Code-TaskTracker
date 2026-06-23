@@ -63,15 +63,49 @@
   .autherr{color:var(--danger);font-size:12px;margin-top:8px;min-height:14px;}
   .authmsg{color:var(--done);font-size:12px;margin-top:8px;}
 
-  /* ---------- App shell ---------- */
-  #appRoot{display:none;animation:fadeIn .4s ease both;}
-  header.app{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
-  .brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
-  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin:0 0 4px;}
-  h1{margin:0;font-size:20px;font-weight:650;}
-  .userbar{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--muted);}
-  .userbar button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11px;padding:6px 10px;border-radius:6px;cursor:pointer;}
-  .userbar button:hover{color:var(--text);border-color:var(--accent);}
+  /* ============ SIDEBAR LAYOUT ============ */
+  #appRoot{ display:none; animation:fadeIn .4s ease both; display:flex; flex-direction:row; min-height:100vh; }
+  .sidebar{
+    width:220px; flex:none; background:var(--panel); border-right:1px solid var(--line);
+    display:flex; flex-direction:column; padding:16px 10px; position:fixed; top:0; left:0; bottom:0; z-index:100;
+    transform:translateX(0); transition:transform .25s ease;
+  }
+  .sidebar.hidden{ transform:translateX(-100%); }
+  .sidebar-logo{ display:flex; align-items:center; gap:10px; padding:6px 6px 18px; cursor:pointer; border-bottom:1px solid var(--line); margin-bottom:14px; }
+  .sidebar-brand-text{ display:flex; flex-direction:column; }
+  .sidebar-appname{ font-size:15px; font-weight:700; color:var(--text); margin-top:1px; }
+  .sidebar-section-label{ font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); padding:0 8px; margin-bottom:6px; margin-top:4px; }
+  .sidebar-spacer{ flex:1; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; width:100%; background:none; border:none;
+    color:var(--muted); font-size:13.5px; padding:10px 10px; border-radius:8px; cursor:pointer;
+    text-align:left; transition:background .15s, color .15s; margin-bottom:2px;
+  }
+  .nav-item:hover{ background:var(--panel-2); color:var(--text); }
+  .nav-item.active{ background:var(--accent-dim); color:var(--accent); font-weight:600; }
+  .nav-icon{ font-size:16px; flex:none; }
+  .nav-label{ font-size:13px; }
+  .nav-user-row{ width:100%; }
+
+  .main-area{ margin-left:220px; flex:1; min-height:100vh; display:flex; flex-direction:column; }
+  .topbar{
+    display:flex; align-items:center; gap:10px; padding:0 18px; height:54px;
+    background:var(--bg); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:50; flex:none;
+  }
+  .topbar-menu{ display:none; background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; padding:4px 8px; }
+  .topbar-title{ font-size:16px; font-weight:700; flex:1; color:var(--text); }
+  .topbar-right{ display:flex; align-items:center; gap:8px; }
+  .topbar-btn{ background:var(--panel); border:1px solid var(--line); color:var(--muted); font-size:13px; padding:6px 10px; border-radius:6px; cursor:pointer; }
+  .topbar-btn:hover{ color:var(--text); border-color:var(--accent); }
+  .topbar-email{ font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .wrap{ flex:1; max-width:920px; padding:24px 20px; }
+
+  /* mobile sidebar overlay */
+  .sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:99; }
+  .sidebar-overlay.show{ display:block; }
+
+  header.app{ display:none; } /* hide old header */
   .notif-wrap{position:relative;}
   .notif-badge{background:var(--danger);color:#fff;border-radius:20px;font-size:9.5px;padding:1px 5px;margin-left:3px;font-weight:700;}
   .notif-dropdown{display:none;position:absolute;right:0;top:calc(100% + 8px);width:320px;max-height:420px;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.4);}
@@ -238,111 +272,53 @@
   .inv-btn.success{ background:var(--done-dim); color:var(--done); border:1px solid var(--done); }
   .inv-btn.danger{ background:#2a1414; color:var(--danger); border:1px solid var(--danger); }
 
-  @media(max-width:600px){
+  @media (max-width: 700px){
+    .sidebar{ transform:translateX(-100%); }
+    .sidebar.open{ transform:translateX(0); }
+    .sidebar-overlay.show{ display:block; }
+    .main-area{ margin-left:0; }
+    .topbar-menu{ display:block; }
+    .topbar-email{ display:none; }
+    .wrap{ padding:14px 12px; }
+    #authScreen{ padding:16px 12px; gap:10px; }
+    .auth-logo{ width:120px; }
+    .authbox{ padding:16px; }
+    .addbar{ flex-wrap:wrap; gap:6px; padding:8px; }
+    .addbar input[type=text],.addbar textarea{ width:100%; flex:none; font-size:15px; padding:10px; }
+    .addbar select{ flex:1; font-size:13px; padding:8px; }
+    .addbar input[type=date]{ flex:1; font-size:13px; padding:8px; }
+    .addbar button{ width:100%; padding:11px; font-size:14px; }
+    .invite-row{ flex-wrap:wrap; }
+    .invite-row input{ width:100%; flex:none; }
+    .invite-row select{ flex:1; }
+    .invite-row button{ flex:1; padding:10px; }
+    .projects-grid{ grid-template-columns:1fr; gap:10px; }
+    .project-card{ padding:14px; }
+    .tabs{ gap:0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .tabs button{ font-size:12px; padding:10px; margin-right:8px; white-space:nowrap; }
+    .task{ padding:12px; }
+    .task-title{ font-size:14px; }
+    .task-meta{ gap:6px; }
+    .tag{ font-size:10px; padding:2px 7px; }
+    .status-cycle,.exp-btn{ font-size:10px; padding:2px 7px; }
+    .subaddbar{ flex-wrap:wrap; }
+    .subaddbar input{ width:100%; flex:none; }
+    .subaddbar button{ width:100%; padding:8px; }
+    .tl-item{ flex-wrap:wrap; gap:8px; }
+    .tl-date{ min-width:auto; font-size:11px; }
+    .tl-title{ flex:none; width:100%; order:-1; }
+    .tl-bar{ width:100%; flex:none; }
+    .note-meta{ flex-direction:column; align-items:flex-start; }
+    .member-row{ flex-wrap:wrap; gap:8px; }
     .inv-grid{ grid-template-columns:1fr; }
-    .inv-items-head{ grid-template-columns:2fr 1fr 1fr 32px; }
-    .inv-items-head span:nth-child(3){ display:none; }
-    .inv-item-row{ grid-template-columns:2fr 1fr 1fr 32px; }
-    .inv-item-row input:nth-child(3){ display:none; }
+    .inv-items-head{ display:none; }
     .inv-actions{ flex-direction:column; }
     .inv-btn{ width:100%; text-align:center; }
-  }
-  @media (max-width: 600px){
-    body{ padding: 0 0 80px; }
-    .wrap{ padding: 14px 12px; }
-
-    /* --- Auth --- */
-    #authScreen{ padding: 16px 12px; gap: 10px; }
-    .auth-logo{ width: 120px; }
-    .authbox{ padding: 16px; }
-
-    /* --- Header --- */
-    header.app{
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 14px;
-      position: sticky; top: 0; z-index: 40;
-      background: var(--bg);
-      padding: 12px 0 10px;
-      border-bottom: 1px solid var(--line);
-    }
-    .brand{ gap: 8px; }
-    .header-logo{ width: 32px; }
-    h1{ font-size: 17px; }
-    .eyebrow{ font-size: 10px; margin-bottom: 2px; }
-
-    .userbar{
-      width: 100%;
-      justify-content: flex-start;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .userbar #userEmail{ display: none; }
-    .userbar button{ font-size: 11px; padding: 6px 10px; }
-
-    /* notification dropdown full-width on mobile */
-    .notif-dropdown{ width: calc(100vw - 24px); right: auto; left: 0; }
-    #usernameDropdown{ width: 240px; }
-
-    /* --- Add bars --- */
-    .addbar{
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 8px;
-    }
-    .addbar input[type=text],
-    .addbar textarea{ width: 100%; flex: none; font-size: 15px; padding: 10px; }
-    .addbar select{ flex: 1; font-size: 13px; padding: 8px; }
-    .addbar input[type=date]{ flex: 1; font-size: 13px; padding: 8px; }
-    .addbar button{ width: 100%; padding: 11px; font-size: 14px; }
-
-    /* invite row */
-    .invite-row{ flex-wrap: wrap; }
-    .invite-row input{ width: 100%; flex: none; }
-    .invite-row select{ flex: 1; }
-    .invite-row button{ flex: 1; padding: 10px; }
-
-    /* --- Projects grid --- */
-    .projects-grid{ grid-template-columns: 1fr; gap: 10px; }
-    .project-card{ padding: 14px; }
-    .project-card h3{ font-size: 15px; }
-
-    /* --- Tabs --- */
-    .tabs{ gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .tabs button{ font-size: 12px; padding: 10px 10px; margin-right: 8px; white-space: nowrap; }
-
-    /* --- Tasks --- */
-    .task{ padding: 12px; }
-    .task-title{ font-size: 14px; }
-    .task-meta{ gap: 6px; }
-    .tag{ font-size: 10px; padding: 2px 7px; }
-    .status-cycle, .exp-btn{ font-size: 10px; padding: 2px 7px; }
-
-    /* subtask add bar */
-    .subaddbar{ flex-wrap: wrap; }
-    .subaddbar input{ width: 100%; flex: none; }
-    .subaddbar button{ width: 100%; padding: 8px; }
-
-    /* --- Timeline --- */
-    .tl-item{ flex-wrap: wrap; gap: 8px; }
-    .tl-date{ min-width: auto; font-size: 11px; }
-    .tl-title{ flex: none; width: 100%; order: -1; }
-    .tl-bar{ width: 100%; flex: none; }
-
-    /* --- Notes --- */
-    .note-meta{ flex-direction: column; align-items: flex-start; }
-
-    /* --- Member rows --- */
-    .member-row{ flex-wrap: wrap; gap: 8px; }
-
-    /* --- Bottom nav safe area (PWA) --- */
-    footer{ padding-bottom: env(safe-area-inset-bottom, 12px); }
-
-    /* bigger tap targets */
-    .chk{ width: 24px; height: 24px; border-radius: 7px; }
-    .del{ font-size: 18px; padding: 4px 8px; }
-    .backbtn{ font-size: 13px; padding: 4px 0; margin-bottom: 10px; }
+    .chk{ width:24px; height:24px; border-radius:7px; }
+    .del{ font-size:18px; padding:4px 8px; }
+    .backbtn{ font-size:13px; padding:4px 0; margin-bottom:10px; }
+    footer{ padding-bottom:env(safe-area-inset-bottom, 12px); }
+    .notif-dropdown{ width:calc(100vw - 24px); right:auto; left:0; }
   }
 </style>
 </head>
@@ -392,13 +368,15 @@
   </div>
 </div>
 
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- ============ APP ROOT ============ -->
 <div id="appRoot">
-<div class="wrap">
 
-  <header class="app">
-    <div class="brand" id="brandHome">
-      <svg class="logo-svg header-logo" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo" id="brandHome">
+      <svg class="logo-svg" style="width:38px;height:auto;" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
         <g fill="var(--accent)">
           <rect class="bar" x="195" y="60" width="40" height="320"/><rect class="bar" x="250" y="115" width="18" height="265"/>
           <rect class="bar" x="283" y="92" width="28" height="288"/><rect class="bar" x="326" y="118" width="22" height="262"/>
@@ -412,17 +390,29 @@
           <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
         </g>
       </svg>
-      <div>
-        <p class="eyebrow">479Code · Operations</p>
-        <h1>Task Tracker</h1>
+      <div class="sidebar-brand-text">
+        <span class="eyebrow" style="margin:0;">479Code</span>
+        <span class="sidebar-appname">Operations</span>
       </div>
     </div>
-    <div class="userbar">
-      <button id="refreshBtn" title="Refresh">⟳ Refresh</button>
-      <button id="invoiceNavBtn" style="display:none;">🧾 Invoices</button>
-      <div class="notif-wrap">
-        <button id="usernameBtn">Set username</button>
-        <div class="notif-dropdown" id="usernameDropdown">
+
+    <div class="sidebar-section-label">Modules</div>
+    <button class="nav-item active" id="navProjects" onclick="switchModule('projects')">
+      <span class="nav-icon">📋</span><span class="nav-label">Task Tracker</span>
+    </button>
+    <button class="nav-item" id="navInvoices" onclick="switchModule('invoices')" style="display:none;">
+      <span class="nav-icon">🧾</span><span class="nav-label">Invoice Generator</span>
+    </button>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="sidebar-section-label">Account</div>
+    <div class="nav-user-row">
+      <div class="notif-wrap" style="width:100%;">
+        <button class="nav-item" id="usernameBtn" style="width:100%;">
+          <span class="nav-icon">👤</span><span class="nav-label" id="usernameLabel">Set username</span>
+        </button>
+        <div class="notif-dropdown" id="usernameDropdown" style="left:0;right:auto;width:220px;">
           <div class="field" style="margin:4px 4px 8px;">
             <label>Username</label>
             <input type="text" id="usernameEditInput" placeholder="e.g. Uthy479" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:8px;outline:none;">
@@ -431,15 +421,28 @@
           <div id="usernameMsg" style="font-size:11px;margin-top:6px;min-height:14px;font-family:var(--mono);"></div>
         </div>
       </div>
-      <div class="notif-wrap">
-        <button id="notifBtn">🔔 <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
-        <div class="notif-dropdown" id="notifDropdown"></div>
-      </div>
-      <span id="userEmail"></span>
-      <button id="signOutBtn">Sign out</button>
     </div>
-  </header>
+    <button class="nav-item" id="signOutBtn"><span class="nav-icon">↩</span><span class="nav-label">Sign out</span></button>
+  </nav>
 
+  <!-- MAIN AREA -->
+  <div class="main-area">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <button class="topbar-menu" id="menuToggle">☰</button>
+      <div class="topbar-title" id="topbarTitle">Task Tracker</div>
+      <div class="topbar-right">
+        <button id="refreshBtn" class="topbar-btn" title="Refresh">⟳</button>
+        <div class="notif-wrap">
+          <button id="notifBtn" class="topbar-btn">🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
+          <div class="notif-dropdown" id="notifDropdown"></div>
+        </div>
+        <span id="userEmail" class="topbar-email"></span>
+      </div>
+    </div>
+
+  <div class="wrap">
   <div class="banner" id="errBanner"></div>
 
   <!-- PROJECTS LIST VIEW -->
@@ -613,8 +616,11 @@
       </div>
     </div>
   </div>
-</div>
-</div>
+
+  <footer>backed by Supabase · 479Code Operations</footer>
+  </div><!-- end .wrap -->
+  </div><!-- end .main-area -->
+</div><!-- end #appRoot -->
 
 <script>
 const SUPABASE_URL = 'https://ztkdzudunwlhkrclejot.supabase.co';
@@ -695,6 +701,41 @@ document.getElementById('signOutBtn').onclick = async () => {
   location.reload();
 };
 
+document.getElementById('brandHome').onclick = () => switchModule('projects');
+
+// Mobile sidebar toggle
+document.getElementById('menuToggle').onclick = () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+};
+document.getElementById('sidebarOverlay').onclick = () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+};
+
+function switchModule(module){
+  // close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+
+  // update nav active state
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if(module === 'projects'){
+    document.getElementById('navProjects').classList.add('active');
+    document.getElementById('topbarTitle').textContent = 'Task Tracker';
+    document.getElementById('invoiceView').style.display = 'none';
+    document.getElementById('projectView').style.display = 'none';
+    document.getElementById('projectsView').style.display = 'block';
+    loadProjects();
+  } else if(module === 'invoices'){
+    document.getElementById('navInvoices').classList.add('active');
+    document.getElementById('topbarTitle').textContent = 'Invoice Generator';
+    document.getElementById('projectsView').style.display = 'none';
+    document.getElementById('projectView').style.display = 'none';
+    showInvoiceView();
+  }
+}
+
 async function onLoggedIn(){
   const { data: { user } } = await sb.auth.getUser();
   currentUser = user;
@@ -702,7 +743,7 @@ async function onLoggedIn(){
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('userEmail').textContent = user.email;
   if(user.email === INVOICE_OWNER_EMAIL){
-    document.getElementById('invoiceNavBtn').style.display = 'block';
+    document.getElementById('navInvoices').style.display = 'flex';
   }
   await loadProjects();
   await refreshUsernameButton();
@@ -714,7 +755,9 @@ async function onLoggedIn(){
 async function refreshUsernameButton(){
   const profile = await getProfile(currentUser.id);
   const btn = document.getElementById('usernameBtn');
-  btn.textContent = profile?.username ? '@'+profile.username : 'Set username';
+  const lbl = document.getElementById('usernameLabel');
+  const display = profile?.username ? '@'+profile.username : 'Set username';
+  if(lbl) lbl.textContent = display;
   document.getElementById('usernameEditInput').value = profile?.username || '';
 }
 
@@ -1310,7 +1353,6 @@ function showInvoiceView(){
   loadInvoices();
 }
 
-document.getElementById('invoiceNavBtn').onclick = showInvoiceView;
 
 document.getElementById('invBackBtn').onclick = () => {
   if(document.getElementById('invoiceForm').style.display !== 'none'){
@@ -1653,17 +1695,6 @@ ${(inv.account_name||inv.account_number||inv.bank_name) ? `
   w.document.close();
 }
 
-function showInvoiceView(){
-  document.getElementById('projectsView').style.display = 'none';
-  document.getElementById('projectView').style.display = 'none';
-  document.getElementById('invoiceView').style.display = 'block';
-  document.getElementById('invoiceForm').style.display = 'none';
-  document.getElementById('invoiceList').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = 'Invoices';
-  loadInvoices();
-}
-
-document.getElementById('invoiceNavBtn').onclick = showInvoiceView;
 
 document.getElementById('invBackBtn').onclick = () => {
   if(document.getElementById('invoiceForm').style.display !== 'none'){
