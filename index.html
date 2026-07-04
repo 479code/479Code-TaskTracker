@@ -435,6 +435,24 @@
     <button class="authsubmit" id="authSubmit">Sign in</button>
     <div class="autherr" id="authErr"></div>
     <div class="authmsg" id="authMsg"></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button id="forgotBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--mono);">Forgot password?</button>
+    </div>
+  </div>
+
+  <!-- Forgot password panel -->
+  <div id="forgotPanel" style="display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:340px;">
+    <h3 style="margin:0 0 14px;font-size:15px;color:var(--text);">Reset your password</h3>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="forgotEmail" placeholder="479code@gmail.com" autocomplete="email">
+    </div>
+    <button class="authsubmit" id="forgotSubmit">Send reset link</button>
+    <div class="autherr" id="forgotErr"></div>
+    <div class="authmsg" id="forgotMsg"></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button id="backToLoginBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--mono);">← Back to sign in</button>
+    </div>
   </div>
 </div>
 
@@ -706,6 +724,19 @@ let profilesCache = {};
 
 /* ---------------- AUTH ---------------- */
 let authMode = 'signin';
+
+document.getElementById('forgotBtn').onclick = () => {
+  document.getElementById('authScreen').querySelector('.authbox').style.display = 'none';
+  document.getElementById('forgotPanel').style.display = 'block';
+  document.getElementById('forgotEmail').value = document.getElementById('emailInput').value || '';
+  document.getElementById('forgotErr').textContent = '';
+  document.getElementById('forgotMsg').textContent = '';
+};
+
+document.getElementById('backToLoginBtn').onclick = () => {
+  document.getElementById('forgotPanel').style.display = 'none';
+  document.getElementById('authScreen').querySelector('.authbox').style.display = 'block';
+};
 
 document.getElementById('tabSignIn').onclick = () => setAuthMode('signin');
 document.getElementById('tabSignUp').onclick = () => setAuthMode('signup');
