@@ -166,9 +166,22 @@
   .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 99; }
   .mobile-trigger { display: none; font-size: 24px; cursor: pointer; color: var(--text); background: none; border: none; }
 
-  /* ============ CONTENT STRUCTURAL ARRAYS ============ */
-  .banner { background: var(--danger-dim); border: 1px solid rgba(231, 76, 60, 0.2); color: var(--danger); padding: 16px 20px; border-radius: var(--radius-md); font-size: 14.5px; font-family: var(--mono); margin-bottom: 32px; display: none; }
-  .banner.ok { background: var(--done-dim); border-color: rgba(46, 204, 113, 0.2); color: var(--done); }
+  /* ============ TELEMETRY GLOBAL METRICS DASHBOARD SECTION ============ */
+  .dashboard-metrics-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 36px; animation: stageReveal 0.45s var(--fluid) both; }
+  .metric-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+  .metric-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--line); }
+  .metric-card.completed-metrics::after { background: var(--done); }
+  .metric-card.pending-metrics::after { background: var(--prog); }
+  .metric-card.breached-metrics::after { background: var(--danger); }
+  .metric-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+  .metric-value-row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 8px; }
+  .metric-number { font-size: 32px; font-weight: 950; color: var(--text); font-family: var(--mono); line-height: 1; }
+  .metric-percentage { font-size: 14px; font-weight: 700; color: var(--muted); font-family: var(--mono); }
+  .metric-progress-track { width: 100%; height: 4px; background: var(--canvas); border-radius: 10px; margin-top: 14px; overflow: hidden; position: relative; }
+  .metric-progress-fill { height: 100%; width: 0%; border-radius: 10px; transition: width 0.6s var(--fluid); }
+  .metric-progress-fill.done-fill { background: var(--done); box-shadow: 0 0 8px var(--done); }
+  .metric-progress-fill.pending-fill { background: var(--prog); box-shadow: 0 0 8px var(--prog); }
+  .metric-progress-fill.breached-fill { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
 
   /* Spatial Grid Control Matrix Blocks */
   .workspace-bar { display: grid; grid-template-columns: 1fr auto; gap: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); align-items: center; }
@@ -244,11 +257,12 @@
   /* ============ ADAPTIVE MOBILE CANVAS INTERFACES ============ */
   @media screen and (max-width: 1024px) {
     #appRoot { grid-template-columns: 1fr; }
-    .control-desk { transform: translateX(-100%); width: 300px; position: fixed; top: 0; bottom: 0; left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.7); }
+    .control-desk { transform: translateX(-100%); width: 300px; position: fixed; top: 0; bottom: 0; left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.7); z-index: 150; }
     .control-desk.open { transform: translateX(0); }
     .mobile-trigger { display: block; }
     .command-deck { padding: 0 24px; }
     .layout-canvas { padding: 24px; }
+    .dashboard-metrics-container { grid-template-columns: 1fr; gap: 12px; }
   }
 
   @media screen and (max-width: 768px) {
@@ -425,6 +439,48 @@
 
     <div class="layout-canvas">
       <div class="banner" id="errBanner"></div>
+
+      <!-- GLOBAL TELEMETRY DASHBOARD CONTROL ROW -->
+      <section class="dashboard-metrics-container" id="globalDashboardDeck">
+        <div class="metric-card completed-metrics">
+          <div>
+            <div class="metric-label">Completed Targets Array</div>
+            <div class="metric-value-row">
+              <div class="metric-number" id="dashCompletedCount">00</div>
+              <div class="metric-percentage" id="dashCompletedPct">0%</div>
+            </div>
+          </div>
+          <div class="metric-progress-track">
+            <div class="metric-progress-fill done-fill" id="dashCompletedBar"></div>
+          </div>
+        </div>
+        
+        <div class="metric-card pending-metrics">
+          <div>
+            <div class="metric-label">Active Pending Pipelines</div>
+            <div class="metric-value-row">
+              <div class="metric-number" id="dashPendingCount">00</div>
+              <div class="metric-percentage" id="dashPendingPct">0%</div>
+            </div>
+          </div>
+          <div class="metric-progress-track">
+            <div class="metric-progress-fill pending-fill" id="dashPendingBar"></div>
+          </div>
+        </div>
+
+        <div class="metric-card breached-metrics">
+          <div>
+            <div class="metric-label">Chrono Matrix Breaches</div>
+            <div class="metric-value-row">
+              <div class="metric-number" id="dashBreachedCount">00</div>
+              <div class="metric-percentage" style="color: var(--danger);" id="dashBreachedLabel">Passed Timelines</div>
+            </div>
+          </div>
+          <div class="metric-progress-track">
+            <div class="metric-progress-fill breached-fill" id="dashBreachedBar"></div>
+          </div>
+        </div>
+      </section>
 
       <!-- MASTER LAYER MODULE: PROJECT FRAME GRID -->
       <div id="projectsView">
@@ -771,12 +827,14 @@ function switchModule(module){
     document.getElementById('invoiceView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
     document.getElementById('projectsView').style.display = 'block';
+    document.getElementById('globalDashboardDeck').style.display = 'grid';
     loadProjects();
   } else if(module === 'invoices'){
     document.getElementById('navInvoices').classList.add('active');
     document.getElementById('topbarTitle').textContent = 'Financial Balances Ledger Array';
     document.getElementById('projectsView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
+    document.getElementById('globalDashboardDeck').style.display = 'none';
     showInvoiceView();
   }
 }
@@ -895,7 +953,7 @@ document.getElementById('notifBtn').onclick = (e) => {
   if(session){ await onLoggedIn(); }
 })();
 
-/* ---------------- TELEMETRY PLATFORM GLOBAL CONTEXT ALERTS ---------------- */
+/* ---------------- TELEMETRY PLATFORM GLOBAL CONTEXT ALERTS & DASHBOARD CALCS ---------------- */
 function showError(msg){
   const b = document.getElementById('errBanner');
   b.className = 'banner';
@@ -917,6 +975,57 @@ async function getProfile(userId){
   return data;
 }
 
+/* Dynamic Global Telemetry Dashboard Calculations */
+async function compileGlobalDashboardMetrics(projectIds) {
+  if (!projectIds || projectIds.length === 0) {
+    updateDashboardUI(0, 0, 0);
+    return;
+  }
+
+  const { data: tasks, error } = await sb.from('tasks')
+    .select('status, due_date')
+    .in('project_id', projectIds);
+
+  if (error || !tasks) return;
+
+  let completed = 0;
+  let pending = 0;
+  let breached = 0;
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  tasks.forEach(t => {
+    if (t.status === 'done') {
+      completed++;
+    } else {
+      pending++;
+      if (t.due_date && t.due_date < todayStr) {
+        breached++;
+      }
+    }
+  });
+
+  updateDashboardUI(completed, pending, breached);
+}
+
+function updateDashboardUI(completed, pending, breached) {
+  const total = completed + pending;
+  const completedPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const pendingPct = total > 0 ? Math.round((pending / total) * 100) : 0;
+
+  document.getElementById('dashCompletedCount').textContent = String(completed).padStart(2, '0');
+  document.getElementById('dashCompletedPct').textContent = completedPct + '%';
+  document.getElementById('dashCompletedBar').style.width = completedPct + '%';
+
+  document.getElementById('dashPendingCount').textContent = String(pending).padStart(2, '0');
+  document.getElementById('dashPendingPct').textContent = pendingPct + '%';
+  document.getElementById('dashPendingBar').style.width = pendingPct + '%';
+
+  document.getElementById('dashBreachedCount').textContent = String(breached).padStart(2, '0');
+  // Breaches are treated as an absolute warning load out of pending items
+  const breachedPct = pending > 0 ? Math.round((breached / pending) * 100) : 0;
+  document.getElementById('dashBreachedBar').style.width = (total > 0 ? Math.round((breached / total) * 100) : 0) + '%';
+}
+
 /* ---------------- TACTICAL OPERATIONS SCOPE ARCHITECTURES ---------------- */
 document.getElementById('addProjectBtn').onclick = async () => {
   const input = document.getElementById('newProjectName');
@@ -931,6 +1040,8 @@ document.getElementById('addProjectBtn').onclick = async () => {
 document.getElementById('backBtn').onclick = () => {
   document.getElementById('projectView').style.display = 'none';
   document.getElementById('projectsView').style.display = 'block';
+  document.getElementById('globalDashboardDeck').style.display = 'grid';
+  loadProjects(); // Recalculate global scope upon return
 };
 
 async function loadProjects(){
@@ -946,8 +1057,10 @@ async function loadProjects(){
   grid.innerHTML = '';
   empty.style.display = (!memberships || memberships.length===0) ? 'block' : 'none';
 
+  const projectIds = [];
   (memberships||[]).forEach(m => {
     if(!m.projects) return;
+    projectIds.push(m.projects.id);
     const card = document.createElement('div');
     card.className = 'ecosystem-card';
     card.innerHTML = `
@@ -961,11 +1074,15 @@ async function loadProjects(){
     card.onclick = () => openProject(m.projects, m.role);
     grid.appendChild(card);
   });
+
+  // Execute global layout dashboard data extraction passes
+  await compileGlobalDashboardMetrics(projectIds);
 }
 
 async function openProject(project, role){
   currentProject = { ...project, myRole: role };
   document.getElementById('projectsView').style.display = 'none';
+  document.getElementById('globalDashboardDeck').style.display = 'none'; // isolate workspace viewport
   document.getElementById('projectView').style.display = 'block';
   document.getElementById('projectName').textContent = project.name;
   document.getElementById('projectDesc').textContent = project.description || '';
@@ -985,6 +1102,7 @@ document.getElementById('deleteProjectBtn').onclick = async () => {
   showOk('System target frame successfully unmapped from database registry blocks.');
   document.getElementById('projectView').style.display = 'none';
   document.getElementById('projectsView').style.display = 'block';
+  document.getElementById('globalDashboardDeck').style.display = 'grid';
   await loadProjects();
 };
 
