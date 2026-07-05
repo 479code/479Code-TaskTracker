@@ -8,463 +8,466 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0c0f12">
+<meta name="theme-color" content="#06080a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="479Code Tasks">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{
-    --bg:#0c0f12; --panel:#14181d; --panel-2:#1a1f26; --line:#262c34;
-    --text:#e8ebee; --muted:#8b95a1; --accent:#ff8a3d; --accent-dim:#3a2a1c;
-    --done:#3ddc97; --done-dim:#15302a; --prog:#ffd166; --prog-dim:#332c14;
-    --danger:#ff5c5c; --owner:#a78bfa;
-    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
-    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);padding:0 0 60px;}
-  .wrap{max-width:920px;margin:0 auto;padding:24px 18px;}
-  a{color:var(--accent);}
-  input,select,textarea,button{font-family:var(--sans);}
-
-  /* ---------- Logo ---------- */
-  .logo-svg{display:block;}
-  .logo-svg .bar{transform-box:fill-box;transform-origin:bottom;animation:barGrow .55s cubic-bezier(.2,.8,.2,1) both;}
-  .logo-svg .strip{opacity:0;animation:fadeUp .5s ease .55s both;}
-  .logo-svg.idle .bar{animation:barGrow .55s cubic-bezier(.2,.8,.2,1) both, barIdle 2.6s ease-in-out infinite;}
-  .logo-svg .bar:nth-child(1){animation-delay:0s;} .logo-svg .bar:nth-child(2){animation-delay:.05s;}
-  .logo-svg .bar:nth-child(3){animation-delay:.1s;} .logo-svg .bar:nth-child(4){animation-delay:.15s;}
-  .logo-svg .bar:nth-child(5){animation-delay:.2s;} .logo-svg .bar:nth-child(6){animation-delay:.25s;}
-  .logo-svg .bar:nth-child(7){animation-delay:.3s;} .logo-svg .bar:nth-child(8){animation-delay:.35s;}
-  .logo-svg .bar:nth-child(9){animation-delay:.4s;}
-  @keyframes barGrow{from{transform:scaleY(0);} to{transform:scaleY(1);}}
-  @keyframes barIdle{0%,100%{transform:scaleY(1);} 50%{transform:scaleY(.94);}}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);}}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);}}
-  .auth-logo{width:170px;height:auto;margin-bottom:4px;}
-  .header-logo{width:40px;height:auto;flex:none;}
-
-  /* ---------- Auth screen ---------- */
-  #authScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:20px;}
-  #authScreen .eyebrow{margin:0;}
-  #authScreen h2{margin:0;font-size:18px;font-weight:650;}
-  .authbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:340px;}
-  .authtabs{display:flex;gap:4px;background:var(--panel-2);border-radius:8px;padding:3px;margin-bottom:16px;}
-  .authtabs button{flex:1;background:none;border:none;color:var(--muted);padding:8px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600;}
-  .authtabs button.active{background:var(--accent);color:#1a1206;}
-  .field{margin-bottom:10px;}
-  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;font-family:var(--mono);}
-  .field input{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 10px;font-size:14px;outline:none;}
-  .field input:focus{border-color:var(--accent);}
-  .authsubmit{width:100%;background:var(--accent);color:#1a1206;border:none;border-radius:6px;padding:10px;font-weight:700;font-size:14px;cursor:pointer;margin-top:6px;}
-  .authsubmit:disabled{opacity:.6;}
-  .autherr{color:var(--danger);font-size:12px;margin-top:8px;min-height:14px;}
-  .authmsg{color:var(--done);font-size:12px;margin-top:8px;}
-
-  /* ============ LAYOUT ============ */
-  #appRoot{ display:none; min-height:100vh; width:100%; }
-
-  /* Sidebar - fixed, out of document flow entirely */
-  .sidebar{
-    width:220px; background:var(--panel); border-right:1px solid var(--line);
-    display:flex; flex-direction:column; padding:16px 10px;
-    position:fixed; top:0; left:0; bottom:0; z-index:100; overflow-y:auto;
-    transition:transform .28s cubic-bezier(.4,0,.2,1);
-  }
-  .sidebar-logo{ display:flex; align-items:center; gap:10px; padding:6px 6px 18px; cursor:pointer; border-bottom:1px solid var(--line); margin-bottom:14px; flex:none; }
-  .sidebar-brand-text{ display:flex; flex-direction:column; }
-  .sidebar-appname{ font-size:15px; font-weight:700; color:var(--text); margin-top:1px; }
-  .sidebar-section-label{ font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); padding:0 8px; margin-bottom:6px; margin-top:4px; }
-  .sidebar-spacer{ flex:1; min-height:20px; }
-  .nav-item{ display:flex; align-items:center; gap:10px; width:100%; background:none; border:none; color:var(--muted); font-size:13.5px; padding:10px; border-radius:8px; cursor:pointer; text-align:left; transition:background .15s, color .15s; margin-bottom:2px; flex:none; }
-  .nav-item:hover{ background:var(--panel-2); color:var(--text); }
-  .nav-item.active{ background:var(--accent-dim); color:var(--accent); font-weight:600; }
-  .nav-icon{ font-size:16px; flex:none; }
-  .nav-label{ font-size:13px; }
-  .nav-user-row{ width:100%; flex:none; }
-
-  /* Main area - offset from sidebar on desktop */
-  .main-area{ display:flex; flex-direction:column; min-height:100vh; margin-left:220px; }
-  .topbar{ display:flex; align-items:center; gap:8px; padding:0 20px; height:56px; background:var(--bg); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:50; flex:none; }
-  .topbar-menu{ display:none; background:none; border:none; color:var(--text); font-size:24px; cursor:pointer; padding:4px 8px; flex:none; }
-  .topbar-title{ font-size:16px; font-weight:700; flex:1; color:var(--text); }
-  .topbar-right{ display:flex; align-items:center; gap:8px; flex:none; }
-  .topbar-btn{ background:var(--panel); border:1px solid var(--line); color:var(--muted); font-size:13px; padding:6px 12px; border-radius:6px; cursor:pointer; }
-  .topbar-btn:hover{ color:var(--text); border-color:var(--accent); }
-  .topbar-email{ font-family:var(--mono); font-size:11px; color:var(--muted); }
-  .wrap{ flex:1; max-width:960px; padding:24px 24px; width:100%; box-sizing:border-box; }
-
-  .sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:99; }
-  .sidebar-overlay.show{ display:block; }
-  header.app{ display:none; }
-
-  /* ============ MOBILE (≤768px) ============ */
-  @media screen and (max-width:768px){
-    /* Sidebar hidden off-left as a slide-in drawer */
-    .sidebar{ transform:translateX(-100%); width:78vw; max-width:290px; border-right:none; }
-    .sidebar.open{ transform:translateX(0); box-shadow:8px 0 40px rgba(0,0,0,.7); }
-
-    /* Main: full screen, no offset */
-    .main-area{ margin-left:0; width:100vw; max-width:100vw; overflow-x:hidden; }
-    .topbar{ padding:0 14px; height:52px; }
-    .topbar-menu{ display:flex; align-items:center; justify-content:center; }
-    .topbar-title{ font-size:15px; }
-    .topbar-email{ display:none; }
-    .topbar-btn{ font-size:12px; padding:6px 10px; }
-    .notif-dropdown{ width:calc(100vw - 20px); right:0; left:auto; max-height:60vh; }
-
-    .wrap{ padding:16px 16px 80px; }
-
-    /* Auth */
-    #authScreen{ padding:24px 20px; }
-    .auth-logo{ width:130px; }
-    .authbox{ padding:20px 18px; }
-    .field input{ font-size:16px; padding:13px; }
-    .authsubmit{ padding:14px; font-size:16px; }
-
-    /* Add bars — full column */
-    .addbar{ flex-direction:column; gap:10px; padding:12px; }
-    .addbar input[type=text],
-    .addbar textarea{ width:100%; font-size:16px; padding:14px 12px; }
-    .addbar input[type=date],
-    .addbar select{ width:100%; font-size:15px; padding:13px 12px; }
-    .addbar button{ width:100%; padding:15px; font-size:16px; font-weight:700; }
-
-    /* Invite */
-    .invite-row{ flex-direction:column; gap:10px; }
-    .invite-row input{ font-size:16px; padding:13px; }
-    .invite-row select{ padding:13px; font-size:15px; }
-    .invite-row button{ width:100%; padding:13px; font-size:15px; }
-
-    /* Projects */
-    .section-title{ font-size:13px; }
-    .projects-grid{ grid-template-columns:1fr; gap:14px; }
-    .project-card{ padding:20px; border-radius:14px; }
-    .project-card h3{ font-size:17px; }
-    .project-card p{ font-size:14px; }
-    .rolepill{ font-size:11px; padding:4px 10px; }
-
-    /* Project detail */
-    .backbtn{ font-size:15px; padding:8px 0; margin-bottom:14px; display:block; }
-    .project-head h2{ font-size:22px; }
-
-    /* Tabs */
-    .tabs{ overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; margin:0 -16px; padding:0 16px; }
-    .tabs::-webkit-scrollbar{ display:none; }
-    .tabs button{ font-size:14px; padding:12px 16px; white-space:nowrap; }
-
-    /* Tasks */
-    .task{ padding:16px 14px; margin-bottom:12px; }
-    .chk{ width:26px; height:26px; flex:none; }
-    .task-title{ font-size:15px; line-height:1.45; }
-    .task-meta{ gap:8px; margin-top:12px; }
-    .tag{ font-size:12px; padding:4px 10px; }
-    .status-cycle,.exp-btn{ font-size:12px; padding:4px 10px; }
-    .del{ font-size:20px; padding:5px 10px; }
-
-    /* Subtasks */
-    .subaddbar{ flex-direction:column; gap:8px; }
-    .subaddbar input{ font-size:15px; padding:12px; }
-    .subaddbar button{ width:100%; padding:12px; font-size:15px; }
-
-    /* Timeline */
-    .tl-item{ flex-wrap:wrap; gap:8px; padding:14px; }
-    .tl-title{ width:100%; order:-1; font-size:15px; font-weight:600; }
-    .tl-date{ font-size:13px; }
-    .tl-bar{ width:100%; height:8px; }
-
-    /* Notes */
-    .note{ padding:16px 14px; }
-    .note-text{ font-size:15px; }
-    .note-meta{ flex-direction:column; gap:10px; }
-    .note-actions button{ font-size:13px; padding:7px 14px; }
-
-    /* Members */
-    .member-row{ padding:14px; gap:10px; }
-    .member-email{ font-size:15px; }
-
-    /* Invoice */
-    .inv-toolbar{ flex-direction:column; gap:12px; }
-    .inv-toolbar #newInvoiceBtn{ width:100%; text-align:center; padding:15px; font-size:16px; }
-    .inv-list-item{ flex-direction:column; gap:10px; padding:16px; }
-    .inv-amount{ font-size:18px; }
-    .inv-list-right{ flex-direction:row; align-items:center; gap:12px; }
-    .inv-form{ padding:16px 14px; }
-    .inv-grid{ grid-template-columns:1fr; gap:12px; }
-    .inv-field input,.inv-field select,.inv-field textarea{ font-size:16px; padding:13px 12px; }
-    .inv-items-head{ display:none; }
-    .inv-item-row{ display:grid !important; grid-template-columns:26px 1fr 54px 70px 26px !important; gap:6px !important; }
-    .inv-item-row input{ padding:10px 6px !important; font-size:14px !important; }
-    .inv-item-total{ display:none; }
-    .inv-totals{ margin-top:20px; }
-    .inv-total-row{ font-size:15px; }
-    .inv-total-row.grand{ font-size:18px; }
-    .inv-actions{ flex-direction:column; gap:10px; }
-    .inv-btn{ width:100%; padding:15px; font-size:16px; }
-
-    footer{ padding:20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  :root {
+    --bg: #06080a;
+    --panel: #0d1117;
+    --panel-2: #161b22;
+    --line: #21262d;
+    --line-glow: #30363d;
+    --text: #f0f6fc;
+    --muted: #8b949e;
+    --accent: #ff8a3d;
+    --accent-glow: rgba(255, 138, 61, 0.15);
+    --accent-dim: rgba(255, 138, 61, 0.08);
+    --done: #3ddc97;
+    --done-dim: rgba(61, 220, 151, 0.1);
+    --prog: #ffd166;
+    --prog-dim: rgba(255, 209, 102, 0.1);
+    --danger: #ff5c5c;
+    --danger-dim: rgba(255, 92, 92, 0.1);
+    --owner: #a78bfa;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
   }
 
-  @media screen and (max-width:360px){
-    .wrap{ padding:12px 12px 80px; }
-    .project-card h3{ font-size:16px; }
-    .task-title{ font-size:14px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
   }
-  .notif-wrap{position:relative;}
-  .notif-badge{background:var(--danger);color:#fff;border-radius:20px;font-size:9.5px;padding:1px 5px;margin-left:3px;font-weight:700;}
-  .notif-dropdown{display:none;position:absolute;right:0;top:calc(100% + 8px);width:320px;max-height:420px;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.4);}
-  .notif-dropdown.open{display:block;}
-  .notif-item{padding:10px;border-radius:8px;margin-bottom:4px;background:var(--panel-2);}
-  .notif-item.unread{border-left:3px solid var(--accent);}
-  .notif-text{font-size:12.5px;line-height:1.4;color:var(--text);}
-  .notif-time{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;}
-  .notif-actions{display:flex;gap:6px;margin-top:8px;}
-  .notif-actions button{font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer;}
-  .notif-actions button.accept{background:var(--done-dim);color:var(--done);border-color:var(--done);}
-  .notif-actions button.reject{background:#2a1414;color:var(--danger);border-color:var(--danger);}
-  .notif-empty{text-align:center;color:var(--muted);font-size:12px;padding:20px;font-family:var(--mono);}
 
-  .addbar input[type=date]{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:0 8px;font-size:12px;}
-  .tl-item{display:flex;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;align-items:center;animation:fadeIn .3s ease both;}
-  .tl-date{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:90px;flex:none;}
-  .tl-date.overdue{color:var(--danger);font-weight:700;}
-  .tl-date.soon{color:var(--prog);font-weight:700;}
-  .tl-bar{flex:1;height:6px;border-radius:4px;background:var(--panel-2);position:relative;overflow:hidden;}
-  .tl-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--accent);}
-  .tl-title{flex:2;font-size:13.5px;}
-  .tl-title.done{text-decoration:line-through;color:var(--muted);}
+  input, select, textarea, button {
+    font-family: var(--sans);
+    color: var(--text);
+    background: none;
+    border: none;
+    outline: none;
+  }
 
-  .banner{background:#2a1414;border:1px solid #4a2222;color:#ffb3b3;padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:16px;display:none;}
-  .banner.ok{background:#142a1f;border-color:#225e3c;color:#a8f0c6;}
+  a { color: var(--accent); text-decoration: none; transition: color 0.2s ease; }
+  a:hover { color: #ff9e59; }
 
-  /* ---------- Projects grid ---------- */
-  .section-title{font-size:13px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin:22px 0 10px;}
-  .addbar{display:flex;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:18px;}
-  .addbar input[type=text],.addbar textarea{flex:1;background:transparent;border:none;color:var(--text);font-size:14px;padding:8px 10px;outline:none;}
-  .addbar button{background:var(--accent);color:#1a1206;border:none;border-radius:6px;padding:0 16px;font-weight:700;font-size:13px;cursor:pointer;}
-  .addbar select{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;font-size:12px;padding:0 8px;}
+  /* Smooth Scroll System */
+  html { scroll-behavior: smooth; }
 
-  .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
-  .project-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;transition:border-color .15s, transform .15s;animation:fadeIn .3s ease both;}
-  .project-card:hover{border-color:var(--accent);transform:translateY(-2px);}
-  .project-card h3{margin:0 0 6px;font-size:15px;}
-  .project-card p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.4;}
-  .project-card .pc-meta{display:flex;gap:8px;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--muted);}
-  .rolepill{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--panel-2);border:1px solid var(--line);}
-  .rolepill.owner{color:var(--owner);border-color:var(--owner);}
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--panel-2); border-radius: 4px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--line); }
 
-  /* ---------- Project detail ---------- */
-  .backbtn{background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer;margin-bottom:14px;padding:0;}
-  .backbtn:hover{color:var(--accent);}
-  .project-head h2{margin:0 0 4px;font-size:22px;}
-  .project-head p{margin:0;color:var(--muted);font-size:13px;}
+  /* ---------- Motion Keyframes ---------- */
+  @keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes barIdle { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.85); } }
+  @keyframes stripSlide { from { opacity: 0; transform: translateY(15px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+  @keyframes screenFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes floatEffect { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes glowPulse { 0%, 100% { border-color: var(--line); box-shadow: 0 0 0 rgba(255,138,61,0); } 50% { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); } }
 
-  .tabs{display:flex;gap:6px;margin:18px 0 16px;border-bottom:1px solid var(--line);}
-  .tabs button{background:none;border:none;color:var(--muted);font-size:13px;padding:9px 4px;margin-right:18px;cursor:pointer;border-bottom:2px solid transparent;font-weight:600;}
-  .tabs button.active{color:var(--accent);border-color:var(--accent);}
-  .tabpane{display:none;}
-  .tabpane.active{display:block;animation:fadeIn .25s ease both;}
+  /* ---------- Animated Logo Engine ---------- */
+  .logo-svg { display: block; overflow: visible; }
+  .logo-svg .bar { transform-box: fill-box; transform-origin: bottom; animation: barGrow 0.7s var(--ease-out) both; }
+  .logo-svg .strip { animation: stripSlide 0.6s var(--ease-out) 0.5s both; }
+  .logo-svg.idle { animation: floatEffect 5s ease-in-out infinite; }
+  .logo-svg.idle .bar { animation: barGrow 0.7s var(--ease-out) both, barIdle 3s ease-in-out infinite; }
+  .logo-svg .bar:nth-child(1) { animation-delay: 0.04s; }
+  .logo-svg .bar:nth-child(2) { animation-delay: 0.08s; }
+  .logo-svg .bar:nth-child(3) { animation-delay: 0.12s; }
+  .logo-svg .bar:nth-child(4) { animation-delay: 0.16s; }
+  .logo-svg .bar:nth-child(5) { animation-delay: 0.20s; }
+  .logo-svg .bar:nth-child(6) { animation-delay: 0.24s; }
+  .logo-svg .bar:nth-child(7) { animation-delay: 0.28s; }
+  .logo-svg .bar:nth-child(8) { animation-delay: 0.32s; }
+  .logo-svg .bar:nth-child(9) { animation-delay: 0.36s; }
 
-  /* ---------- Tasks ---------- */
-  .task{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn .3s ease both;}
-  .task.done{opacity:.55;}
-  .task-row{display:flex;align-items:flex-start;gap:12px;}
-  .chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);flex:none;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:var(--panel-2);transition:transform .15s;}
-  .chk:active{transform:scale(.88);}
-  .chk.checked{background:var(--done);border-color:var(--done);}
-  .chk.checked:after{content:'✓';color:#0c0f12;font-size:13px;font-weight:900;}
-  .task-body{flex:1;min-width:0;}
-  .task-title{font-size:14.5px;line-height:1.4;word-break:break-word;}
-  .task.done .task-title{text-decoration:line-through;color:var(--muted);}
-  .task-meta{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;}
-  .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;padding:2px 8px;border-radius:20px;text-transform:uppercase;}
-  .tag.todo{background:var(--panel-2);color:var(--muted);border:1px solid var(--line);}
-  .tag.progress{background:var(--prog-dim);color:var(--prog);}
-  .tag.done{background:var(--done-dim);color:var(--done);}
-  .status-cycle,.assign-select,.exp-btn{font-family:var(--mono);font-size:10.5px;background:none;border:1px solid var(--line);color:var(--muted);padding:2px 8px;border-radius:20px;cursor:pointer;}
-  .assign-select{background:var(--panel-2);color:var(--text);padding:2px 6px;}
-  .status-cycle:hover,.exp-btn:hover{border-color:var(--accent);color:var(--accent);}
-  .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;flex:none;}
-  .del:hover{color:var(--danger);}
-  .del-project-btn{background:#2a1414;border:1px solid var(--danger);color:var(--danger);font-size:12px;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:var(--mono);white-space:nowrap;}
-  .del-project-btn:hover{background:var(--danger);color:#fff;}
+  /* ---------- Master Components UI ---------- */
+  .btn-premium {
+    background: var(--accent);
+    color: #06080a;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s var(--ease-out), background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .btn-premium:hover { background: #ff9e59; box-shadow: 0 4px 15px var(--accent-glow); transform: translateY(-1px); }
+  .btn-premium:active { transform: translateY(1px) scale(0.98); }
+  .btn-premium:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  /* Task inline edit */
-  .task-title-edit{background:var(--panel-2);border:1px solid var(--accent);color:var(--text);border-radius:6px;padding:5px 8px;font-size:14.5px;width:100%;outline:none;font-family:var(--sans);}
-  .task-due{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:6px;}
-  .task-due.overdue{color:var(--danger);}
-  .task-due.soon{color:var(--prog);}
-  .task-due-edit{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px;font-family:var(--mono);outline:none;}
-  .task-due-edit:focus{border-color:var(--accent);}
-  .edit-task-btn{font-family:var(--mono);font-size:10.5px;background:none;border:1px solid var(--line);color:var(--muted);padding:2px 8px;border-radius:20px;cursor:pointer;}
-  .edit-task-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .input-premium {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-size: 14px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  }
+  .input-premium:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: var(--panel); }
 
-  .progress-bar{height:5px;background:var(--panel-2);border-radius:4px;overflow:hidden;margin-top:8px;}
-  .progress-fill{height:100%;background:var(--done);transition:width .3s ease;border-radius:4px;}
-  .progress-label{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;}
+  /* ---------- Auth Architecture ---------- */
+  #authScreen { min-height: 100vh; display: flex; align-items: center; justify-content:center; flex-direction:column; gap:20px; padding:24px; position:relative; }
+  #authScreen::before { content:''; position:absolute; width:450px; height:450px; background:radial-gradient(circle, var(--accent-glow) 0%, rgba(0,0,0,0) 70%); top:50%; left:50%; transform:translate(-50%, -50%); z-index:-1; pointer-events:none; }
+  .auth-logo { width: 190px; height: auto; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); }
+  .authbox { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 32px; width: 100%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); animation: screenFadeIn 0.5s var(--ease-out) both; }
+  .authtabs { display: flex; gap: 6px; background: var(--panel-2); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 24px; }
+  .authtabs button { flex: 1; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s ease; }
+  .authtabs button.active { background: var(--accent); color: #06080a; font-weight: 700; }
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--mono); }
+  .autherr { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 16px; font-family: var(--mono); text-align: center; }
+  .authmsg { color: var(--done); font-size: 13px; margin-top: 12px; text-align: center; }
 
-  .subtasks{margin-top:12px;padding-left:14px;border-left:2px solid var(--line);display:none;}
-  .subtasks.open{display:block;}
-  .subtask{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);}
-  .subtask:last-child{border-bottom:none;}
-  .subtask .task-title{font-size:13px;}
-  .subaddbar{display:flex;gap:6px;margin-top:8px;}
-  .subaddbar input{flex:1;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 8px;font-size:12.5px;outline:none;}
-  .subaddbar button{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:0 10px;font-size:12px;cursor:pointer;}
+  /* ---------- App Layout Strategy ---------- */
+  #appRoot { display: none; min-height: 100vh; width: 100%; position: relative; }
+  
+  .sidebar {
+    width: 260px; background: var(--panel); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 24px 16px;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    transition: transform 0.4s var(--ease-out);
+  }
+  .sidebar-logo { display: flex; align-items: center; gap: 14px; padding: 0 8px 24px; border-bottom: 1px solid var(--line); margin-bottom: 20px; cursor: pointer; }
+  .sidebar-appname { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+  .sidebar-section-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); padding: 12px 10px 6px; }
+  .sidebar-spacer { flex: 1; min-height: 24px; }
+  
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: var(--radius-sm); color: var(--muted); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease-out); margin-bottom: 4px;
+  }
+  .nav-item:hover { background: var(--panel-2); color: var(--text); transform: translateX(2px); }
+  .nav-item.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; border-left: 3px solid var(--accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding-left: 11px; }
+  .nav-icon { font-size: 16px; }
+  
+  .main-area { display: flex; flex-direction: column; min-height: 100vh; margin-left: 260px; transition: margin-left 0.4s var(--ease-out); }
+  
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 70px; background: rgba(6, 8, 10, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 90;
+  }
+  .topbar-menu { display: none; font-size: 24px; cursor: pointer; color: var(--text); }
+  .topbar-title { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-btn { background: var(--panel); border: 1px solid var(--line); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+  .topbar-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .topbar-email { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: 8px; }
 
-  /* ---------- Notes ---------- */
-  .note{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn .3s ease both;}
-  .note-text{font-size:14px;line-height:1.5;white-space:pre-wrap;}
-  .note-meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px;}
-  .note-author{font-family:var(--mono);font-size:11px;color:var(--muted);}
-  .note-actions{display:flex;gap:8px;}
-  .note-actions button{font-family:var(--mono);font-size:10.5px;background:none;border:1px solid var(--line);color:var(--muted);padding:3px 9px;border-radius:20px;cursor:pointer;}
-  .note-actions button:hover{border-color:var(--accent);color:var(--accent);}
-  .note-converted{font-family:var(--mono);font-size:10.5px;color:var(--done);}
+  .wrap { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 32px; animation: screenFadeIn 0.4s var(--ease-out) both; }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 99; }
 
-  /* ---------- Members ---------- */
-  .member-row{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
-  .member-info{display:flex;flex-direction:column;}
-  .member-email{font-size:13.5px;}
-  .member-role{font-family:var(--mono);font-size:10.5px;color:var(--muted);}
-  .invite-row{display:flex;gap:8px;margin-bottom:18px;}
-  .invite-row input{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13.5px;outline:none;}
-  .invite-row select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:0 10px;font-size:12.5px;}
-  .invite-row button{background:var(--accent);color:#1a1206;border:none;border-radius:8px;padding:0 16px;font-weight:700;cursor:pointer;}
+  /* ---------- Modern Control Panels & Cards ---------- */
+  .banner { background: var(--danger-dim); border: 1px solid var(--danger); color: var(--danger); padding: 14px 18px; border-radius: var(--radius-sm); font-size: 14px; font-family: var(--mono); margin-bottom: 24px; display: none; animation: screenFadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .banner.ok { background: var(--done-dim); border-color: var(--done); color: var(--done); }
 
-  .empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 0;font-family:var(--mono);}
-  footer{text-align:center;color:var(--muted);font-size:11px;font-family:var(--mono);margin-top:30px;}
+  .addbar { display: flex; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 10px; margin-bottom: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); align-items: center; }
+  .addbar input[type=text], .addbar textarea { flex: 1; padding: 10px; font-size: 14px; }
+  .addbar select, .addbar input[type=date] { background: var(--panel-2); border: 1px solid var(--line); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13px; }
 
-  @media (prefers-reduced-motion: reduce){ *{animation:none !important;} }
+  .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .project-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; cursor: pointer; transition: all 0.3s var(--ease-out); position: relative; overflow: hidden;
+  }
+  .project-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+  .project-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+  .project-card p { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+  .rolepill { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+  .rolepill.owner { color: var(--owner); border-color: var(--owner); background: rgba(167, 139, 250, 0.05); }
 
-  /* ============ INVOICES ============ */
-  #invoiceView{ display:none; }
-  .inv-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
-  .inv-toolbar h2{ margin:0; font-size:18px; }
-  .inv-list-item{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; transition:border-color .15s; animation:fadeIn .3s ease both; flex-wrap:wrap; }
-  .inv-list-item:hover{ border-color:var(--accent); }
-  .inv-list-info{ flex:1; min-width:0; }
-  .inv-list-num{ font-family:var(--mono); font-size:11px; color:var(--accent); margin-bottom:3px; }
-  .inv-list-client{ font-size:15px; font-weight:600; }
-  .inv-list-date{ font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:3px; }
-  .inv-list-right{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-  .inv-amount{ font-size:16px; font-weight:700; }
-  .inv-status{ font-family:var(--mono); font-size:10px; text-transform:uppercase; padding:2px 8px; border-radius:20px; }
-  .inv-status.draft{ background:var(--panel-2); color:var(--muted); border:1px solid var(--line); }
-  .inv-status.sent{ background:var(--prog-dim); color:var(--prog); }
-  .inv-status.paid{ background:var(--done-dim); color:var(--done); }
+  /* ---------- Advanced Modules Tab System ---------- */
+  .section-head-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .backbtn { font-family: var(--mono); font-size: 12px; text-transform: uppercase; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: color 0.2s; }
+  .backbtn:hover { color: var(--accent); }
+  
+  .project-head h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+  .project-head p { color: var(--muted); font-size: 14.5px; }
 
-  /* Form */
-  .inv-form{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; margin-bottom:16px; }
-  .inv-form h3{ margin:0 0 16px; font-size:15px; color:var(--accent); font-family:var(--mono); text-transform:uppercase; letter-spacing:.08em; }
-  .inv-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-  .inv-field{ display:flex; flex-direction:column; gap:4px; }
-  .inv-field label{ font-size:11px; color:var(--muted); font-family:var(--mono); }
-  .inv-field input, .inv-field select, .inv-field textarea{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:9px 10px; font-size:13.5px; outline:none; font-family:var(--sans); }
-  .inv-field input:focus, .inv-field select:focus, .inv-field textarea:focus{ border-color:var(--accent); }
-  .inv-field.full{ grid-column:1/-1; }
+  .tabs { display: flex; gap: 8px; margin: 24px 0; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+  .tabs button { background: none; color: var(--muted); font-size: 14px; font-weight: 600; padding: 10px 16px; cursor: pointer; position: relative; transition: color 0.2s ease; }
+  .tabs button:hover { color: var(--text); }
+  .tabs button.active { color: var(--accent); }
+  .tabs button.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
-  /* Line items */
-  .inv-items-head{ display:grid; grid-template-columns:32px 3fr 1fr 1fr 1fr 32px; gap:6px; margin-bottom:6px; }
-  .inv-items-head span{ font-size:10.5px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; }
-  .inv-item-row{ display:grid; grid-template-columns:3fr 1fr 1fr 1fr 32px; gap:8px; margin-bottom:6px; align-items:center; }
-  .inv-item-row input{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-size:13px; outline:none; width:100%; }
-  .inv-item-row input:focus{ border-color:var(--accent); }
-  .inv-item-total{ font-size:13px; color:var(--text); font-family:var(--mono); text-align:right; }
-  .inv-add-item{ background:none; border:1px dashed var(--line); color:var(--muted); width:100%; padding:9px; border-radius:6px; cursor:pointer; font-size:13px; margin-top:4px; }
-  .inv-add-item:hover{ border-color:var(--accent); color:var(--accent); }
+  .tabpane { display: none; }
+  .tabpane.active { display: block; animation: screenFadeIn 0.35s var(--ease-out) both; }
 
-  /* Totals */
-  .inv-totals{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
-  .inv-total-row{ display:flex; gap:20px; font-family:var(--mono); font-size:13px; }
-  .inv-total-row span:first-child{ color:var(--muted); }
-  .inv-total-row.grand{ font-size:16px; color:var(--text); font-weight:700; }
+  /* ---------- Modernized Task Rows ---------- */
+  .task { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; transition: all 0.25s ease; }
+  .task:hover { border-color: var(--line-glow); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+  .task.done { opacity: 0.5; }
+  .task-row { display: flex; align-items: flex-start; gap: 16px; }
+  
+  .chk { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--panel-2); transition: all 0.2s var(--ease-out); flex-shrink: 0; margin-top: 2px; }
+  .chk:hover { border-color: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+  .chk:active { transform: scale(0.9); }
+  .chk.checked { background: var(--done); border-color: var(--done); box-shadow: 0 0 8px var(--done-dim); }
+  .chk.checked::after { content: '✓'; color: #06080a; font-size: 14px; font-weight: 900; }
+  
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 15.5px; font-weight: 600; line-height: 1.5; color: var(--text); transition: color 0.2s; }
+  .task.done .task-title { text-decoration: line-through; color: var(--muted); }
+  .task-meta { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  
+  .tag { font-family: var(--mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; padding: 3px 9px; border-radius: 20px; }
+  .tag.todo { background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
+  .tag.progress { background: var(--prog-dim); color: var(--prog); border: 1px solid rgba(255,209,102,0.2); }
+  .tag.done { background: var(--done-dim); color: var(--done); border: 1px solid rgba(61,220,151,0.2); }
+  
+  .status-cycle, .assign-select, .exp-btn, .edit-task-btn { font-family: var(--mono); font-size: 10.5px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
+  .status-cycle:hover, .exp-btn:hover, .edit-task-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .assign-select { color: var(--text); padding-right: 6px; }
+  
+  .del { background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 2px 8px; transition: color 0.2s; }
+  .del:hover { color: var(--danger); }
+  .del-project-btn { background: var(--danger-dim); border: 1px solid var(--danger); color: var(--danger); font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; }
+  .del-project-btn:hover { background: var(--danger); color: #fff; }
 
-  /* Action buttons */
-  .inv-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
-  .inv-btn{ border:none; border-radius:6px; padding:10px 18px; font-weight:700; font-size:13px; cursor:pointer; }
-  .inv-btn.primary{ background:var(--accent); color:#1a1206; }
-  .inv-btn.secondary{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); }
-  .inv-btn.success{ background:var(--done-dim); color:var(--done); border:1px solid var(--done); }
-  .inv-btn.danger{ background:#2a1414; color:var(--danger); border:1px solid var(--danger); }
+  /* Subtasks Infrastructure */
+  .subtasks { margin-top: 16px; padding-left: 20px; border-left: 2px solid var(--line); display: none; }
+  .subtasks.open { display: block; animation: screenFadeIn 0.25s var(--ease-out); }
+  .subtask { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .subtask:last-child { border-bottom: none; }
+  .subtask .task-title { font-size: 14px; }
+  .subaddbar { display: flex; gap: 8px; margin-top: 12px; }
+  
+  .progress-bar { height: 6px; background: var(--panel-2); border-radius: 20px; overflow: hidden; margin-top: 12px; }
+  .progress-fill { height: 100%; background: var(--done); transition: width 0.4s var(--ease-out); }
+  .progress-label { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
 
+  /* Task Inline Mutation */
+  .task-title-edit { background: var(--panel-2); border: 1px solid var(--accent); color: var(--text); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 15px; width: 100%; }
+  .task-due { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+  .task-due.overdue { color: var(--danger); font-weight: 700; }
+  .task-due.soon { color: var(--prog); font-weight: 700; }
+  .task-due-edit { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 4px 8px; border-radius: 6px; font-family: var(--mono); }
+
+  /* ---------- Notification Matrix ---------- */
+  .notif-wrap { position: relative; }
+  .notif-badge { background: var(--danger); color: #fff; border-radius: 20px; font-size: 10px; padding: 2px 6px; font-weight: 700; margin-left: 4px; border: 2px solid var(--panel); }
+  .notif-dropdown {
+    display: none; position: absolute; right: 0; top: calc(100% + 12px); width: 340px; max-height: 460px; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px; z-index: 110; box-shadow: 0 15px 40px rgba(0,0,0,0.5); animation: screenFadeIn 0.25s var(--ease-out);
+  }
+  .notif-dropdown.open { display: block; }
+  .notif-item { padding: 12px; border-radius: var(--radius-sm); margin-bottom: 6px; background: var(--panel-2); border: 1px solid transparent; transition: all 0.2s; }
+  .notif-item.unread { border-left: 3px solid var(--accent); background: rgba(255,138,61,0.02); }
+  .notif-text { font-size: 13px; line-height: 1.45; color: var(--text); }
+  .notif-time { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+  .notif-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .notif-actions button { font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
+  .notif-actions button.accept { background: var(--done-dim); color: var(--done); border-color: rgba(61,220,151,0.3); }
+  .notif-actions button.reject { background: var(--danger-dim); color: var(--danger); border-color: rgba(255,92,92,0.3); }
+  .notif-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 32px 0; font-family: var(--mono); }
+
+  /* ---------- Timeline Engine ---------- */
+  .tl-item { display: flex; gap: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px; margin-bottom: 10px; align-items: center; }
+  .tl-date { font-family: var(--mono); font-size: 12.5px; color: var(--muted); min-width: 100px; flex-shrink: 0; }
+  .tl-date.overdue { color: var(--danger); font-weight: 700; }
+  .tl-date.soon { color: var(--prog); font-weight: 700; }
+  .tl-bar { flex: 1; height: 8px; border-radius: 10px; background: var(--panel-2); position: relative; overflow: hidden; }
+  .tl-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 10px; background: var(--accent); transition: width 0.5s var(--ease-out); }
+  .tl-title { flex: 2; font-size: 14.5px; font-weight: 600; }
+  .tl-title.done { text-decoration: line-through; color: var(--muted); }
+
+  /* ---------- Notes Architecture ---------- */
+  .note { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; margin-bottom: 12px; }
+  .note-text { font-size: 14.5px; line-height: 1.6; color: var(--text); white-space: pre-wrap; }
+  .note-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 12px; flex-wrap: wrap; gap: 10px; }
+  .note-author { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .note-actions { display: flex; gap: 8px; }
+  .note-actions button { font-family: var(--mono); font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
+  .note-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .note-converted { font-family: var(--mono); font-size: 11px; color: var(--done); font-weight: 600; }
+
+  /* ---------- Team & Collaboration Matrix ---------- */
+  .member-row { display: flex; align-items: center; justify-content: space-between; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 8px; }
+  .member-info { display: flex; flex-direction: column; gap: 4px; }
+  .member-email { font-size: 14.5px; font-weight: 600; color: var(--text); }
+  .member-role { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .invite-row { display: flex; gap: 10px; margin-bottom: 24px; background: var(--panel); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--line); }
+  .invite-row input { flex: 1; }
+
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 60px 0; font-family: var(--mono); border: 1px dashed var(--line); border-radius: var(--radius-md); background: rgba(255,255,255,0.01); }
+  footer { text-align: center; color: var(--muted); font-size: 12px; font-family: var(--mono); padding: 40px 0 20px; border-top: 1px solid var(--line); margin-top: 60px; }
+
+  /* ============ INVOICES ADVANCED LAYER ============ */
+  #invoiceView { display: none; }
+  .inv-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px; }
+  .inv-toolbar h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  
+  .inv-list-item {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; transition: all 0.25s var(--ease-out); flex-wrap: wrap;
+  }
+  .inv-list-item:hover { border-color: var(--accent); transform: translateX(3px); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .inv-list-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+  .inv-list-client { font-size: 16px; font-weight: 700; }
+  .inv-list-date { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .inv-list-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .inv-amount { font-size: 18px; font-weight: 800; color: var(--text); }
+  .inv-status { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; }
+  .inv-status.draft { background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
+  .inv-status.sent { background: var(--prog-dim); color: var(--prog); border: 1px solid rgba(255,209,102,0.2); }
+  .inv-status.paid { background: var(--done-dim); color: var(--done); border: 1px solid rgba(61,220,151,0.2); }
+
+  .inv-form { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 28px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .inv-form h3 { margin-bottom: 20px; font-size: 13.5px; color: var(--accent); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .inv-field { display: flex; flex-direction: column; gap: 6px; }
+  .inv-field label { font-size: 11.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
+  .inv-field.full { grid-column: 1 / -1; }
+  
+  .inv-items-head { display: grid; grid-template-columns: 40px 3fr 1fr 1fr 1fr 40px; gap: 10px; margin-bottom: 10px; padding: 0 10px; }
+  .inv-items-head span { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
+  .inv-item-row { display: grid; grid-template-columns: 40px 3fr 1fr 1fr 1fr 40px; gap: 10px; margin-bottom: 8px; align-items: center; background: var(--panel-2); padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--line); }
+  .inv-item-row input { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 13.5px; width: 100%; }
+  .inv-item-row input:focus { border-color: var(--accent); }
+  .inv-item-total { font-size: 14px; color: var(--text); font-family: var(--mono); text-align: right; font-weight: 600; }
+  .inv-add-item { background: none; border: 1px dashed var(--line); color: var(--muted); width: 100%; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13.5px; font-weight: 600; margin-top: 8px; transition: all 0.2s; }
+  .inv-add-item:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  
+  .inv-totals { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .inv-total-row { display: flex; gap: 32px; font-family: var(--mono); font-size: 14px; min-width: 240px; justify-content: space-between; }
+  .inv-total-row span:first-child { color: var(--muted); }
+  .inv-total-row.grand { font-size: 18px; color: var(--text); font-weight: 800; border-top: 1px solid var(--line-glow); padding-top: 8px; margin-top: 4px; }
+  
+  .inv-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+  .inv-btn { border: none; border-radius: var(--radius-sm); padding: 12px 24px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+  .inv-btn.primary { background: var(--accent); color: #06080a; }
+  .inv-btn.primary:hover { background: #ff9e59; }
+  .inv-btn.secondary { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); }
+  .inv-btn.secondary:hover { border-color: var(--line-glow); background: var(--panel); }
+  .inv-btn.danger { background: var(--danger-dim); border: 1px solid var(--danger); color: var(--danger); }
+  .inv-btn.danger:hover { background: var(--danger); color: #fff; }
+
+  /* ============ MOBILE MEDIA LAYER ============ */
+  @media screen and (max-width: 992px) {
+    .sidebar { transform: translateX(-100%); width: 280px; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+    .sidebar.open { transform: translateX(0); }
+    .main-area { margin-left: 0; }
+    .topbar-menu { display: block; }
+    .topbar { padding: 0 20px; }
+    .wrap { padding: 20px; }
+    .inv-items-head { display: none; }
+    .inv-item-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
+    .inv-item-row *:nth-child(1) { grid-column: 1 / -1; text-align: left; font-size: 11px; }
+    .inv-item-row *:nth-child(2) { grid-column: 1 / -1; }
+    .inv-item-row .inv-item-total { text-align: left; padding-top: 6px; }
+  }
+
+  @media screen and (max-width: 576px) {
+    .addbar { flex-direction: column; align-items: stretch; padding: 16px; }
+    .addbar button { width: 100%; padding: 12px; }
+    .inv-grid { grid-template-columns: 1fr; }
+    .inv-actions button { width: 100%; justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
 
-<!-- ============ AUTH SCREEN ============ -->
+<!-- ============ AUTH ARCHITECTURE SCREEN ============ -->
 <div id="authScreen">
   <svg class="logo-svg auth-logo idle" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
-    <g fill="#e8ebee">
-      <rect class="bar" x="195" y="60" width="40" height="320"/><rect class="bar" x="250" y="115" width="18" height="265"/>
-      <rect class="bar" x="283" y="92" width="28" height="288"/><rect class="bar" x="326" y="118" width="22" height="262"/>
-      <rect class="bar" x="363" y="168" width="34" height="212"/><rect class="bar" x="412" y="120" width="22" height="260"/>
-      <rect class="bar" x="450" y="58" width="38" height="322"/><rect class="bar" x="503" y="205" width="16" height="175"/>
+    <g fill="#f0f6fc">
+      <rect class="bar" x="195" y="60" width="40" height="320"/>
+      <rect class="bar" x="250" y="115" width="18" height="265"/>
+      <rect class="bar" x="283" y="92" width="28" height="288"/>
+      <rect class="bar" x="326" y="118" width="22" height="262"/>
+      <rect class="bar" x="363" y="168" width="34" height="212"/>
+      <rect class="bar" x="412" y="120" width="22" height="260"/>
+      <rect class="bar" x="450" y="58" width="38" height="322"/>
+      <rect class="bar" x="503" y="205" width="16" height="175"/>
       <rect class="bar" x="534" y="78" width="34" height="302"/>
     </g>
     <g class="strip">
-      <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
-      <text x="62" y="442" font-family="monospace" font-weight="800" font-size="58" fill="#14181d">479</text>
-      <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
+      <rect x="40" y="380" width="528" height="86" fill="#8b949e" rx="6"/>
+      <text x="62" y="442" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117">479</text>
+      <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117" letter-spacing="2">CODE</text>
     </g>
   </svg>
-  <p class="eyebrow">479Code · Operations</p>
+  <p class="eyebrow">479Code · Operations System</p>
+  
   <div class="authbox">
     <div class="authtabs">
-      <button id="tabSignIn" class="active">Sign in</button>
-      <button id="tabSignUp">Sign up</button>
+      <button id="tabSignIn" class="active">Sign In</button>
+      <button id="tabSignUp">Sign Up</button>
     </div>
+    
     <div id="fullNameField" class="field" style="display:none;">
-      <label>Full name</label>
-      <input type="text" id="fullNameInput" placeholder="Your name" autocomplete="name">
+      <label>Full Name</label>
+      <input type="text" id="fullNameInput" class="input-premium" placeholder="Your full name" autocomplete="name">
     </div>
     <div id="usernameField" class="field" style="display:none;">
       <label>Username</label>
-      <input type="text" id="usernameInput" placeholder="e.g. Uthy479" autocomplete="off">
+      <input type="text" id="usernameInput" class="input-premium" placeholder="e.g. Uthy479" autocomplete="off">
     </div>
     <div class="field">
-      <label>Email</label>
-      <input type="email" id="emailInput" placeholder="you@479code.com" autocomplete="email">
+      <label>Email Address</label>
+      <input type="email" id="emailInput" class="input-premium" placeholder="you@479code.com" autocomplete="email">
     </div>
     <div class="field">
       <label>Password</label>
-      <input type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password">
+      <input type="password" id="passwordInput" class="input-premium" placeholder="••••••••" autocomplete="current-password">
     </div>
-    <button class="authsubmit" id="authSubmit">Sign in</button>
+    
+    <button class="btn-premium" id="authSubmit" style="width: 100%;">Sign In</button>
     <div class="autherr" id="authErr"></div>
     <div class="authmsg" id="authMsg"></div>
-    <div style="text-align:center;margin-top:12px;">
-      <button id="forgotBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--mono);">Forgot password?</button>
+    
+    <div style="text-align:center; margin-top:16px;">
+      <button id="forgotBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">Forgot password?</button>
     </div>
   </div>
 
-  <!-- Forgot password panel -->
-  <div id="forgotPanel" style="display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:340px;">
-    <h3 style="margin:0 0 14px;font-size:15px;color:var(--text);">Reset your password</h3>
+  <!-- Forgot Password Panel Layer -->
+  <div id="forgotPanel" style="display:none;" class="authbox">
+    <h3 style="margin-bottom:12px; font-size:16px; font-weight:700;">Reset Password</h3>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:18px; line-height:1.4;">Enter your email to receive a recovery window link.</p>
     <div class="field">
-      <label>Email address</label>
-      <input type="email" id="forgotEmail" placeholder="479code@gmail.com" autocomplete="email">
+      <label>Email Address</label>
+      <input type="email" id="forgotEmail" class="input-premium" placeholder="479code@gmail.com" autocomplete="email">
     </div>
-    <button class="authsubmit" id="forgotSubmit">Send reset link</button>
+    <button class="btn-premium" id="forgotSubmit" style="width:100%;">Send Reset Link</button>
     <div class="autherr" id="forgotErr"></div>
     <div class="authmsg" id="forgotMsg"></div>
-    <div style="text-align:center;margin-top:12px;">
-      <button id="backToLoginBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--mono);">← Back to sign in</button>
+    <div style="text-align:center; margin-top:16px;">
+      <button id="backToLoginBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">← Back to sign in</button>
     </div>
   </div>
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- ============ APP ROOT ============ -->
+<!-- ============ OPERATIONS APPLICATION CORE APP ROOT ============ -->
 <div id="appRoot">
 
-  <!-- SIDEBAR -->
+  <!-- NAVIGATION SIDEBAR ENGINE -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo" id="brandHome">
-      <svg class="logo-svg" style="width:38px;height:auto;" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+      <svg class="logo-svg" style="width:42px; height:auto;" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
         <g fill="var(--accent)">
           <rect class="bar" x="195" y="60" width="40" height="320"/><rect class="bar" x="250" y="115" width="18" height="265"/>
           <rect class="bar" x="283" y="92" width="28" height="288"/><rect class="bar" x="326" y="118" width="22" height="262"/>
@@ -473,264 +476,277 @@
           <rect class="bar" x="534" y="78" width="34" height="302"/>
         </g>
         <g class="strip">
-          <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
-          <text x="62" y="442" font-family="monospace" font-weight="800" font-size="58" fill="#14181d">479</text>
-          <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
+          <rect x="40" y="380" width="528" height="86" fill="#8b949e" rx="6"/>
+          <text x="62" y="442" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117">479</text>
+          <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117" letter-spacing="2">CODE</text>
         </g>
       </svg>
-      <div class="sidebar-brand-text">
-        <span class="eyebrow" style="margin:0;">479Code</span>
+      <div style="display:flex; flex-direction:column;">
+        <span class="eyebrow" style="margin:0; font-size:10px;">479Code</span>
         <span class="sidebar-appname">Operations</span>
       </div>
     </div>
 
-    <div class="sidebar-section-label">Modules</div>
+    <div class="sidebar-section-label">Enterprise Modules</div>
     <button class="nav-item active" id="navProjects" onclick="switchModule('projects')">
-      <span class="nav-icon">📋</span><span class="nav-label">Task Tracker</span>
+      <span class="nav-icon">📋</span><span>Task Tracker</span>
     </button>
     <button class="nav-item" id="navInvoices" onclick="switchModule('invoices')" style="display:none;">
-      <span class="nav-icon">🧾</span><span class="nav-label">Invoice Generator</span>
+      <span class="nav-icon">🧾</span><span>Invoice Generator</span>
     </button>
 
     <div class="sidebar-spacer"></div>
 
-    <div class="sidebar-section-label">Account</div>
-    <div class="nav-user-row">
-      <div class="notif-wrap" style="width:100%;">
-        <button class="nav-item" id="usernameBtn" style="width:100%;">
-          <span class="nav-icon">👤</span><span class="nav-label" id="usernameLabel">Set username</span>
-        </button>
-        <div class="notif-dropdown" id="usernameDropdown" style="left:0;right:auto;width:220px;">
-          <div class="field" style="margin:4px 4px 8px;">
-            <label>Username</label>
-            <input type="text" id="usernameEditInput" placeholder="e.g. Uthy479" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:8px;outline:none;">
-          </div>
-          <button id="usernameSaveBtn" style="width:100%;background:var(--accent);color:#1a1206;border:none;border-radius:6px;padding:8px;font-weight:700;cursor:pointer;">Save</button>
-          <div id="usernameMsg" style="font-size:11px;margin-top:6px;min-height:14px;font-family:var(--mono);"></div>
+    <div class="sidebar-section-label">Identity Config</div>
+    
+    <div class="notif-wrap" style="width:100%;">
+      <button class="nav-item" id="usernameBtn">
+        <span class="nav-icon">👤</span><span id="usernameLabel">Set username</span>
+      </button>
+      <div class="notif-dropdown" id="usernameDropdown" style="left:0; right:auto; width:100%;">
+        <div class="field" style="margin:4px;">
+          <label>Modify Username</label>
+          <input type="text" id="usernameEditInput" class="input-premium" placeholder="e.g. Uthy479">
         </div>
+        <button id="usernameSaveBtn" class="btn-premium" style="width:100%; padding:8px; margin-top:6px;">Save Target</button>
+        <div id="usernameMsg" style="font-size:11px; margin-top:6px; font-family:var(--mono); text-align:center;"></div>
       </div>
     </div>
 
     <div class="notif-wrap" style="width:100%;">
-      <button class="nav-item" id="changePwdBtn" style="width:100%;">
-        <span class="nav-icon">🔑</span><span class="nav-label">Change password</span>
+      <button class="nav-item" id="changePwdBtn">
+        <span class="nav-icon">🔑</span><span>Update Security</span>
       </button>
-      <div class="notif-dropdown" id="changePwdDropdown" style="left:0;right:auto;width:240px;padding:14px;">
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em;">Set new password</div>
+      <div class="notif-dropdown" id="changePwdDropdown" style="left:0; right:auto; width:230px; padding:16px;">
+        <div style="font-size:11px; color:var(--accent); font-family:var(--mono); margin-bottom:12px; text-transform:uppercase;">Change Password</div>
         <div style="margin-bottom:8px;">
-          <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">New password</label>
-          <input type="password" id="newPwdInput" placeholder="Min. 6 characters" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 10px;outline:none;font-size:14px;box-sizing:border-box;">
+          <input type="password" id="newPwdInput" class="input-premium" placeholder="New Password" style="padding:6px 10px; font-size:13px;">
         </div>
         <div style="margin-bottom:12px;">
-          <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">Confirm password</label>
-          <input type="password" id="confirmPwdInput" placeholder="Repeat password" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 10px;outline:none;font-size:14px;box-sizing:border-box;">
+          <input type="password" id="confirmPwdInput" class="input-premium" placeholder="Repeat Password" style="padding:6px 10px; font-size:13px;">
         </div>
-        <button id="savePwdBtn" style="width:100%;background:var(--accent);color:#1a1206;border:none;border-radius:6px;padding:10px;font-weight:700;cursor:pointer;font-size:13px;">Update password</button>
-        <div id="pwdMsg" style="font-size:11px;margin-top:8px;min-height:14px;font-family:var(--mono);"></div>
+        <button id="savePwdBtn" class="btn-premium" style="width:100%; padding:8px; font-size:12px;">Execute Patch</button>
+        <div id="pwdMsg" style="font-size:11px; margin-top:8px; font-family:var(--mono); text-align:center;"></div>
       </div>
     </div>
 
-    <button class="nav-item" id="signOutBtn"><span class="nav-icon">↩</span><span class="nav-label">Sign out</span></button>
+    <button class="nav-item" id="signOutBtn" style="color:var(--danger);"><span class="nav-icon">↩</span><span>Sign Out Terminal</span></button>
   </nav>
 
-  <!-- MAIN AREA -->
+  <!-- WORKSPACE MAIN HUB -->
   <div class="main-area">
 
-    <!-- TOP BAR -->
+    <!-- MASTER GLASS TOPBAR -->
     <div class="topbar">
       <button class="topbar-menu" id="menuToggle">☰</button>
       <div class="topbar-title" id="topbarTitle">Task Tracker</div>
       <div class="topbar-right">
-        <button id="refreshBtn" class="topbar-btn" title="Refresh">⟳</button>
+        <button id="refreshBtn" class="topbar-btn">⟳ Sync Data</button>
         <div class="notif-wrap">
-          <button id="notifBtn" class="topbar-btn">🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
+          <button id="notifBtn" class="topbar-btn">🔔 Alerts <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
           <div class="notif-dropdown" id="notifDropdown"></div>
         </div>
         <span id="userEmail" class="topbar-email"></span>
       </div>
     </div>
 
-  <div class="wrap">
-  <div class="banner" id="errBanner"></div>
+    <div class="wrap">
+      <div class="banner" id="errBanner"></div>
 
-  <!-- PROJECTS LIST VIEW -->
-  <div id="projectsView">
-    <div class="addbar">
-      <input type="text" id="newProjectName" placeholder="New project name…">
-      <button id="addProjectBtn">Create project</button>
-    </div>
-    <div class="section-title">Your projects</div>
-    <div class="projects-grid" id="projectsGrid"></div>
-    <div class="empty" id="projectsEmpty" style="display:none;">No projects yet — create your first one above.</div>
-  </div>
-
-  <!-- PROJECT DETAIL VIEW -->
-  <div id="projectView" style="display:none;">
-    <button class="backbtn" id="backBtn">← All projects</button>
-    <div class="project-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-      <div>
-        <h2 id="projectName"></h2>
-        <p id="projectDesc"></p>
+      <!-- MASTER WORKSPACE MODULE: PROJECTS LIST -->
+      <div id="projectsView">
+        <div class="addbar">
+          <input type="text" id="newProjectName" class="input-premium" placeholder="Initialize execution blueprint / project name…">
+          <button id="addProjectBtn" class="btn-premium">+ Create Project</button>
+        </div>
+        <div class="sidebar-section-label" style="padding-left:0; margin-bottom:12px;">Active Operational Ecosystems</div>
+        <div class="projects-grid" id="projectsGrid"></div>
+        <div class="empty" id="projectsEmpty" style="display:none;">No systems mapped yet. Launch a new project environment matrix using the compiler above.</div>
       </div>
-      <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Delete Project</button>
-    </div>
 
-    <div class="tabs">
-      <button class="tabbtn active" data-tab="tasks">Tasks</button>
-      <button class="tabbtn" data-tab="timeline">Timeline</button>
-      <button class="tabbtn" data-tab="notes">Notes</button>
-      <button class="tabbtn" data-tab="members">Members</button>
-    </div>
+      <!-- MASTER BLUEPRINT DETAIL MODULE -->
+      <div id="projectView" style="display:none;">
+        <div class="section-head-nav">
+          <button class="backbtn" id="backBtn">← Return to Environments</button>
+          <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Erase Ecosystem</button>
+        </div>
+        
+        <div class="project-head">
+          <h2 id="projectName"></h2>
+          <p id="projectDesc"></p>
+        </div>
 
-    <div class="tabpane active" id="pane-tasks">
-      <div class="addbar">
-        <input type="text" id="newTaskInput" placeholder="Add a task…">
-        <select id="newTaskAssignee"><option value="">Unassigned</option></select>
-        <input type="date" id="newTaskDue" title="Due date (optional)">
-        <button id="addTaskBtn">Add</button>
-      </div>
-      <div id="taskList"></div>
-      <div class="empty" id="tasksEmpty" style="display:none;">No tasks yet — add one above.</div>
-    </div>
+        <div class="tabs">
+          <button class="tabbtn active" data-tab="tasks">Tasks Matrix</button>
+          <button class="tabbtn" data-tab="timeline">Chronicle Timeline</button>
+          <button class="tabbtn" data-tab="notes">Operational Log Notes</button>
+          <button class="tabbtn" data-tab="members">Node Network Members</button>
+        </div>
 
-    <div class="tabpane" id="pane-timeline">
-      <div id="timelineList"></div>
-      <div class="empty" id="timelineEmpty" style="display:none;">No tasks with due dates yet — add due dates to tasks to see them here.</div>
-    </div>
-
-    <div class="tabpane" id="pane-notes">
-      <div class="addbar">
-        <textarea id="newNoteInput" placeholder="Meeting note… e.g. Client wants invoice export by Friday" rows="2"></textarea>
-        <button id="addNoteBtn">Add note</button>
-      </div>
-      <div id="noteList"></div>
-      <div class="empty" id="notesEmpty" style="display:none;">No notes yet.</div>
-    </div>
-
-    <div class="tabpane" id="pane-members">
-      <div class="invite-row">
-        <input type="text" id="inviteEmail" placeholder="Teammate's email or @username (must have an account already)">
-        <select id="inviteRole">
-          <option value="editor">Editor</option>
-          <option value="viewer">Viewer</option>
-        </select>
-        <button id="inviteBtn">Invite</button>
-      </div>
-      <div id="pendingInvitesList"></div>
-      <div id="memberList"></div>
-    </div>
-  </div>
-
-
-  <!-- ============ INVOICE VIEW ============ -->
-  <div id="invoiceView">
-    <div class="inv-toolbar">
-      <div>
-        <button class="backbtn" id="invBackBtn">← Back</button>
-        <h2 id="invViewTitle">Invoices</h2>
-      </div>
-      <button class="inv-btn primary" id="newInvoiceBtn">+ New Invoice</button>
-    </div>
-    <div id="invoiceList"></div>
-    <div class="empty" id="invoicesEmpty" style="display:none;">No invoices yet — create your first one.</div>
-
-    <!-- Create / Edit form -->
-    <div id="invoiceForm" style="display:none;">
-
-      <div class="inv-form">
-        <h3>Invoice Header</h3>
-        <div class="inv-grid">
-          <div class="inv-field full"><label>Invoice Title / Subject *</label>
-            <input type="text" id="inv_title" placeholder="e.g. INVOICE TO TRANSBORDER LOGISTICS FOR MONTH OF JUNE 2026">
+        <!-- Tab Matrix: Tasks Execution Layer -->
+        <div class="tabpane active" id="pane-tasks">
+          <div class="addbar">
+            <input type="text" id="newTaskInput" class="input-premium" placeholder="Queue new tactical target allocation item…">
+            <select id="newTaskAssignee"><option value="">Unassigned Operational Node</option></select>
+            <input type="date" id="newTaskDue" title="Target Deadline Phase">
+            <button id="addTaskBtn" class="btn-premium">Queue Target</button>
           </div>
-          <div class="inv-field"><label>Receipt / Invoice No. *</label>
-            <input type="text" id="inv_number" placeholder="e.g. TR/00F/C/06/26">
+          <div id="taskList"></div>
+          <div class="empty" id="tasksEmpty" style="display:none;">Environment clear. No current operation logs allocated.</div>
+        </div>
+
+        <!-- Tab Matrix: Timeline Chronicle Layout -->
+        <div class="tabpane" id="pane-timeline">
+          <div id="timelineList"></div>
+          <div class="empty" id="timelineEmpty" style="display:none;">Zero target timelines metrics tracked. Set operational deadliness to display telemetry stream.</div>
+        </div>
+
+        <!-- Tab Matrix: Notes Operational Storage -->
+        <div class="tabpane" id="pane-notes">
+          <div class="addbar">
+            <textarea id="newNoteInput" class="input-premium" placeholder="Record raw event stream or debrief parameters… e.g. Logistics pipeline update" rows="2"></textarea>
+            <button id="addNoteBtn" class="btn-premium">Commit Note Log</button>
           </div>
-          <div class="inv-field"><label>Date *</label>
-            <input type="date" id="inv_issue_date">
-          </div>
-          <div class="inv-field"><label>Status</label>
-            <select id="inv_status">
-              <option value="draft">Draft</option>
-              <option value="sent">Sent</option>
-              <option value="paid">Paid</option>
+          <div id="noteList"></div>
+          <div class="empty" id="notesEmpty" style="display:none;">Log files clear. Empty storage buffer.</div>
+        </div>
+
+        <!-- Tab Matrix: Node Network Members -->
+        <div class="tabpane" id="pane-members">
+          <div class="invite-row">
+            <input type="text" id="inviteEmail" class="input-premium" placeholder="Secure Network Token Address (@username or system registry email)">
+            <select id="inviteRole">
+              <option value="editor">Write Access Token (Editor)</option>
+              <option value="viewer">Read Only Engine (Viewer)</option>
             </select>
+            <button id="inviteBtn" class="btn-premium">Transmit Network Link</button>
           </div>
-          <div class="inv-field"><label>Currency</label>
-            <select id="inv_currency">
-              <option value="NGN">NGN — Nigerian Naira (₦)</option>
-              <option value="USD">USD — US Dollar ($)</option>
-              <option value="GBP">GBP — British Pound (£)</option>
-              <option value="EUR">EUR — Euro (€)</option>
-              <option value="KES">KES — Kenyan Shilling</option>
-              <option value="GHS">GHS — Ghana Cedi (₵)</option>
-            </select>
+          <div id="pendingInvitesList"></div>
+          <div id="memberList"></div>
+        </div>
+      </div>
+
+      <!-- ============ INVOICE FINANCIAL MODULE ARCHITECTURE ============ -->
+      <div id="invoiceView">
+        <div class="inv-toolbar">
+          <div>
+            <button class="backbtn" id="invBackBtn">← Back</button>
+            <h2 id="invViewTitle">Invoices Ledger</h2>
+          </div>
+          <button class="btn-premium" id="newInvoiceBtn">+ Generate Invoice Matrix</button>
+        </div>
+        <div id="invoiceList"></div>
+        <div class="empty" id="invoicesEmpty" style="display:none;">Ledger clear. No processed data frames found.</div>
+
+        <!-- Automated Ledger Compilation Engine Form -->
+        <div id="invoiceForm" style="display:none;">
+          <div class="inv-form">
+            <h3>Invoice Header Telemetry</h3>
+            <div class="inv-grid">
+              <div class="inv-field full">
+                <label>Subject Parameters / Contract Definition *</label>
+                <input type="text" id="inv_title" class="input-premium" placeholder="e.g. INVOICE TO TRANSBORDER LOGISTICS FOR MONTH OF JUNE 2026">
+              </div>
+              <div class="inv-field">
+                <label>Ledger Log / Transaction Identification Ref *</label>
+                <input type="text" id="inv_number" class="input-premium" placeholder="e.g. TR/00F/C/06/26">
+              </div>
+              <div class="inv-field">
+                <label>Timestamp Entry *</label>
+                <input type="date" id="inv_issue_date" class="input-premium">
+              </div>
+              <div class="inv-field">
+                <label>Status Vector</label>
+                <select id="inv_status" class="input-premium">
+                  <option value="draft">Draft Specification</option>
+                  <option value="sent">Dispatched Vector</option>
+                  <option value="paid">Settled Frame</option>
+                </select>
+              </div>
+              <div class="inv-field">
+                <label>Currency Framework Standard</label>
+                <select id="inv_currency" class="input-premium">
+                  <option value="NGN">NGN — Nigerian Naira (₦)</option>
+                  <option value="USD">USD — US Dollar ($)</option>
+                  <option value="GBP">GBP — British Pound (£)</option>
+                  <option value="EUR">EUR — Euro (€)</option>
+                  <option value="KES">KES — Kenyan Shilling</option>
+                  <option value="GHS">GHS — Ghana Cedi (₵)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="inv-form">
+            <h3>Debrief Entity Billing Vector</h3>
+            <div class="inv-grid">
+              <div class="inv-field">
+                <label>Target Organization Registry *</label>
+                <input type="text" id="inv_client_name" class="input-premium" placeholder="e.g. Transborder Logistics Limited">
+              </div>
+              <div class="inv-field">
+                <label>Target Communications Email</label>
+                <input type="email" id="inv_client_email" class="input-premium" placeholder="client@company.com">
+              </div>
+              <div class="inv-field">
+                <label>Target Communications Protocol Phone</label>
+                <input type="text" id="inv_client_phone" class="input-premium" placeholder="+234 000 000 0000">
+              </div>
+              <div class="inv-field full">
+                <label>Physical Node Geolocation Coordinates Address</label>
+                <textarea id="inv_client_address" class="input-premium" rows="2" placeholder="Street, City, State"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="inv-form">
+            <h3>Calculated Line Units Structure Matrix</h3>
+            <div class="inv-items-head">
+              <span>Item Index</span><span style="flex:3">Parameter Allocation Definition</span><span>Volume Qty</span><span>Base Unit Rate</span><span>Calculated Net</span><span></span>
+            </div>
+            <div id="invItemsContainer"></div>
+            <button class="inv-add-item" id="addInvItem">+ Dynamic Allocate Line Item Parameters</button>
+            <div class="inv-totals">
+              <div class="inv-total-row"><span>SUBTOTAL AGGREGATE</span><span id="invSubtotal">₦0.00</span></div>
+              <div class="inv-total-row grand"><span>TOTAL LEDGER FRAME BALANCE</span><span id="invTotal">₦0.00</span></div>
+            </div>
+          </div>
+
+          <div class="inv-form">
+            <h3>Settlement Node Channel Routing Vectors</h3>
+            <div class="inv-grid">
+              <div class="inv-field">
+                <label>System Depository Identification</label>
+                <input type="text" id="inv_account_name" class="input-premium" value="479Code Tech Solutions Ltd">
+              </div>
+              <div class="inv-field">
+                <label>Depository Matrix Routing Number</label>
+                <input type="text" id="inv_account_number" class="input-premium" value="0013942057">
+              </div>
+              <div class="inv-field">
+                <label>Clearing House Network Label</label>
+                <input type="text" id="inv_bank_name" class="input-premium" value="TAJ Bank">
+              </div>
+              <div class="inv-field full">
+                <label>Additional Execution Notes / Overriding Routing Parameter Matrix</label>
+                <textarea id="inv_notes" class="input-premium" rows="2" placeholder="Any secondary parameters, settlement timelines, or payment terms instructions…"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="inv-actions">
+            <button class="inv-btn primary" id="saveInvoiceBtn">Commit Matrix Data to Supabase</button>
+            <button class="inv-btn secondary" id="previewInvoiceBtn">🖨 Transmit Signal to Print / Export PDF Frame</button>
+            <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Purge Log Record</button>
+            <button class="inv-btn secondary" id="cancelInvoiceBtn">Drop Cache Updates</button>
           </div>
         </div>
       </div>
 
-      <div class="inv-form">
-        <h3>Bill To</h3>
-        <div class="inv-grid">
-          <div class="inv-field"><label>Client / Company Name *</label>
-            <input type="text" id="inv_client_name" placeholder="e.g. Transborder Logistics Limited">
-          </div>
-          <div class="inv-field"><label>Client Email</label>
-            <input type="email" id="inv_client_email" placeholder="client@company.com">
-          </div>
-          <div class="inv-field"><label>Client Phone</label>
-            <input type="text" id="inv_client_phone" placeholder="+234 000 000 0000">
-          </div>
-          <div class="inv-field full"><label>Client Address</label>
-            <textarea id="inv_client_address" rows="2" placeholder="Street, City, State"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="inv-form">
-        <h3>Line Items</h3>
-        <div class="inv-items-head">
-          <span>No.</span><span style="flex:3">Description</span><span>Qty</span><span>Unit Price</span><span>Total</span><span></span>
-        </div>
-        <div id="invItemsContainer"></div>
-        <button class="inv-add-item" id="addInvItem">+ Add line item</button>
-        <div class="inv-totals">
-          <div class="inv-total-row"><span>SUBTOTAL</span><span id="invSubtotal">₦0.00</span></div>
-          <div class="inv-total-row grand"><span>TOTAL</span><span id="invTotal">₦0.00</span></div>
-        </div>
-      </div>
-
-      <div class="inv-form">
-        <h3>Payment Details</h3>
-        <div class="inv-grid">
-          <div class="inv-field"><label>Account Name</label>
-            <input type="text" id="inv_account_name" value="479Code Tech Solutions Ltd">
-          </div>
-          <div class="inv-field"><label>Account Number</label>
-            <input type="text" id="inv_account_number" value="0013942057">
-          </div>
-          <div class="inv-field"><label>Bank Name</label>
-            <input type="text" id="inv_bank_name" value="TAJ Bank">
-          </div>
-          <div class="inv-field full"><label>Additional Notes</label>
-            <textarea id="inv_notes" rows="2" placeholder="Any other payment instructions or notes…"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="inv-actions">
-        <button class="inv-btn primary" id="saveInvoiceBtn">Save Invoice</button>
-        <button class="inv-btn secondary" id="previewInvoiceBtn">🖨 Preview & Download PDF</button>
-        <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Delete</button>
-        <button class="inv-btn secondary" id="cancelInvoiceBtn">Cancel</button>
-      </div>
+      <footer>backed by Supabase Architecture · 479Code Operations Terminal Systems</footer>
     </div>
   </div>
-
-  <footer>backed by Supabase · 479Code Operations</footer>
-  </div><!-- end .wrap -->
-  </div><!-- end .main-area -->
-</div><!-- end #appRoot -->
+</div>
 
 <script>
 const SUPABASE_URL = 'https://ztkdzudunwlhkrclejot.supabase.co';
@@ -742,7 +758,7 @@ let currentProject = null;
 let projectMembers = [];
 let profilesCache = {};
 
-/* ---------------- AUTH ---------------- */
+/* ---------------- AUTH MODULE EXECUTION CONTROLLER ---------------- */
 let authMode = 'signin';
 
 document.getElementById('forgotBtn').onclick = () => {
@@ -765,39 +781,36 @@ document.getElementById('forgotSubmit').onclick = async () => {
   err.textContent = ''; msg.textContent = '';
   if(!email){ err.textContent = 'Enter your email address.'; return; }
   const btn = document.getElementById('forgotSubmit');
-  btn.disabled = true; btn.textContent = 'Sending…';
+  btn.disabled = true; btn.textContent = 'Sending Matrix Sync Link…';
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://479code.github.io/479Code-TaskTracker/'
   });
-  btn.disabled = false; btn.textContent = 'Send reset link';
+  btn.disabled = false; btn.textContent = 'Send Reset Link';
   if(error){ err.style.display='block'; err.textContent = error.message; return; }
-  msg.textContent = '✓ Reset link sent! Check your inbox and click the link to set a new password.';
+  msg.textContent = '✓ Reset signal generated! Check your inbox frame to configure password matrix parameters.';
 };
 
-// Handle password update when user returns from reset email link
-// Supabase puts #access_token=...&type=recovery in the URL
 (async function handlePasswordRecovery(){
   const hash = window.location.hash;
   if(hash.includes('type=recovery')){
-    // Show a "set new password" panel immediately
     document.getElementById('authScreen').style.display = 'flex';
     document.getElementById('authScreen').querySelector('.authbox').style.display = 'none';
     document.getElementById('forgotPanel').style.display = 'none';
 
     const recoveryDiv = document.createElement('div');
-    recoveryDiv.style.cssText = 'background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:340px;';
+    recoveryDiv.className = 'authbox';
     recoveryDiv.innerHTML = `
-      <h3 style="margin:0 0 4px;font-size:16px;color:var(--text);">Set new password</h3>
-      <p style="margin:0 0 16px;font-size:12px;color:var(--muted);font-family:var(--mono);">Choose a strong password for your account.</p>
-      <div class="field" style="margin-bottom:10px;">
-        <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">New password</label>
-        <input type="password" id="recoveryPwd" placeholder="Min. 6 characters" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:10px;outline:none;font-size:15px;box-sizing:border-box;">
+      <h3 style="margin-bottom:6px; font-size:16px; color:var(--text); font-weight:700;">Override Account Access Pass</h3>
+      <p style="margin-bottom:20px; font-size:12px; color:var(--muted); font-family:var(--mono);">Configure secure authentication credentials override.</p>
+      <div class="field">
+        <label>Secure Key Entry</label>
+        <input type="password" id="recoveryPwd" class="input-premium" placeholder="Min. 6 alphanumeric hashes">
       </div>
-      <div class="field" style="margin-bottom:14px;">
-        <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">Confirm password</label>
-        <input type="password" id="recoveryPwdConfirm" placeholder="Repeat password" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:10px;outline:none;font-size:15px;box-sizing:border-box;">
+      <div class="field" style="margin-bottom:20px;">
+        <label>Confirm Verification Hash</label>
+        <input type="password" id="recoveryPwdConfirm" class="input-premium" placeholder="Repeat alphanumeric hashes">
       </div>
-      <button id="recoverySubmit" class="authsubmit">Save new password</button>
+      <button id="recoverySubmit" class="btn-premium" style="width:100%;">Reconfigure Credentials Vector</button>
       <div id="recoveryErr" class="autherr"></div>
       <div id="recoveryMsg" class="authmsg"></div>
     `;
@@ -809,15 +822,14 @@ document.getElementById('forgotSubmit').onclick = async () => {
       const err = document.getElementById('recoveryErr');
       const msg = document.getElementById('recoveryMsg');
       err.textContent = ''; msg.textContent = '';
-      if(pwd.length < 6){ err.textContent = 'Password must be at least 6 characters.'; return; }
-      if(pwd !== confirm){ err.textContent = "Passwords don't match."; return; }
+      if(pwd.length < 6){ err.textContent = 'Key length constraint exception: minimum 6 characters required.'; return; }
+      if(pwd !== confirm){ err.textContent = "Data equality validation mismatch. Hash verify mismatch."; return; }
       const btn = document.getElementById('recoverySubmit');
-      btn.disabled = true; btn.textContent = 'Saving…';
+      btn.disabled = true; btn.textContent = 'Injecting Override Code…';
       const { error } = await sb.auth.updateUser({ password: pwd });
-      btn.disabled = false; btn.textContent = 'Save new password';
+      btn.disabled = false; btn.textContent = 'Reconfigure Credentials Vector';
       if(error){ err.textContent = error.message; return; }
-      msg.textContent = '✓ Password updated! Signing you in…';
-      // clear the hash and let the session continue
+      msg.textContent = '✓ Security variables updated! Tuning connection channels…';
       setTimeout(() => { window.location.hash = ''; location.reload(); }, 1500);
     };
   }
@@ -832,7 +844,7 @@ function setAuthMode(mode){
   document.getElementById('tabSignUp').classList.toggle('active', mode==='signup');
   document.getElementById('fullNameField').style.display = mode==='signup' ? 'block' : 'none';
   document.getElementById('usernameField').style.display = mode==='signup' ? 'block' : 'none';
-  document.getElementById('authSubmit').textContent = mode==='signin' ? 'Sign in' : 'Create account';
+  document.getElementById('authSubmit').textContent = mode==='signin' ? 'Sign In' : 'Create System Account';
   document.getElementById('authErr').textContent = '';
   document.getElementById('authMsg').textContent = '';
 }
@@ -846,15 +858,14 @@ document.getElementById('authSubmit').onclick = async () => {
   const msg = document.getElementById('authMsg');
   err.textContent = ''; msg.textContent = '';
 
-  if(!email || !password){ err.textContent = 'Email and password required.'; return; }
-
+  if(!email || !password){ err.textContent = 'Required variable declaration exception: Email and password strings required.'; return; }
   const btn = document.getElementById('authSubmit');
   btn.disabled = true;
 
   if(authMode === 'signup'){
     if(username){
       const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-      if(existing){ err.textContent = 'That username is taken — try another.'; btn.disabled = false; return; }
+      if(existing){ err.textContent = 'System namespace collision: username vector already allocated.'; btn.disabled = false; return; }
     }
     const { data, error } = await sb.auth.signUp({
       email, password,
@@ -863,7 +874,6 @@ document.getElementById('authSubmit').onclick = async () => {
     if(error){ err.textContent = error.message; btn.disabled = false; return; }
     const newUserId = data.user?.id;
     if(newUserId && username){
-      // profile row may take a moment to be created by the trigger; retry briefly
       for(let i=0;i<5;i++){
         const { error: upErr } = await sb.from('profiles').update({ username }).eq('id', newUserId);
         if(!upErr) break;
@@ -873,7 +883,7 @@ document.getElementById('authSubmit').onclick = async () => {
     if(data.session){
       await onLoggedIn();
     } else {
-      msg.textContent = 'Account created — check your email to confirm, then sign in.';
+      msg.textContent = 'Node framework generated — verification signal transmitted to client inbox. Verify, then initialize login procedures.';
       setAuthMode('signin');
     }
   } else {
@@ -891,7 +901,6 @@ document.getElementById('signOutBtn').onclick = async () => {
 
 document.getElementById('brandHome').onclick = () => switchModule('projects');
 
-// Mobile sidebar toggle
 document.getElementById('menuToggle').onclick = () => {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('show');
@@ -902,22 +911,20 @@ document.getElementById('sidebarOverlay').onclick = () => {
 };
 
 function switchModule(module){
-  // close mobile sidebar
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('show');
-
-  // update nav active state
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  
   if(module === 'projects'){
     document.getElementById('navProjects').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Task Tracker';
+    document.getElementById('topbarTitle').textContent = 'Task Tracker Environment';
     document.getElementById('invoiceView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
     document.getElementById('projectsView').style.display = 'block';
     loadProjects();
   } else if(module === 'invoices'){
     document.getElementById('navInvoices').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Invoice Generator';
+    document.getElementById('topbarTitle').textContent = 'Dynamic Ledger Engine';
     document.getElementById('projectsView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
     showInvoiceView();
@@ -942,10 +949,8 @@ async function onLoggedIn(){
 
 async function refreshUsernameButton(){
   const profile = await getProfile(currentUser.id);
-  const btn = document.getElementById('usernameBtn');
-  const lbl = document.getElementById('usernameLabel');
-  const display = profile?.username ? '@'+profile.username : 'Set username';
-  if(lbl) lbl.textContent = display;
+  const display = profile?.username ? '@'+profile.username : 'Set Terminal Nickname';
+  document.getElementById('usernameLabel').textContent = display;
   document.getElementById('usernameEditInput').value = profile?.username || '';
 }
 
@@ -968,17 +973,17 @@ document.getElementById('usernameSaveBtn').onclick = async () => {
   const username = raw.replace(/[^a-z0-9_]/g,'');
   const msg = document.getElementById('usernameMsg');
   msg.style.color = 'var(--danger)';
-  if(!username || username.length < 3){ msg.textContent = 'At least 3 characters (letters, numbers, _).'; return; }
+  if(!username || username.length < 3){ msg.textContent = 'Constraints error: Character validation failed (Min 3 alphanumeric, _).'; return; }
 
   const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-  if(existing && existing.id !== currentUser.id){ msg.textContent = 'That username is taken.'; return; }
+  if(existing && existing.id !== currentUser.id){ msg.textContent = 'Namespace collision error: Token variant allocated.'; return; }
 
   const { error } = await sb.from('profiles').update({ username }).eq('id', currentUser.id);
   if(error){ msg.textContent = error.message; return; }
 
   delete profilesCache[currentUser.id];
   msg.style.color = 'var(--done)';
-  msg.textContent = 'Saved!';
+  msg.textContent = 'Core Variables Injected!';
   await refreshUsernameButton();
   setTimeout(()=>{ document.getElementById('usernameDropdown').classList.remove('open'); }, 800);
 };
@@ -997,19 +1002,19 @@ document.getElementById('savePwdBtn').onclick = async () => {
   const msg = document.getElementById('pwdMsg');
   msg.style.color = 'var(--danger)';
 
-  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Password must be at least 6 characters.'; return; }
-  if(newPwd !== confirmPwd){ msg.textContent = "Passwords don't match."; return; }
+  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Minimum key architecture length failure.'; return; }
+  if(newPwd !== confirmPwd){ msg.textContent = "Data mirror alignment inequality standard."; return; }
 
   const btn = document.getElementById('savePwdBtn');
-  btn.disabled = true; btn.textContent = 'Updating…';
+  btn.disabled = true; btn.textContent = 'Deploying Encryption patch…';
 
   const { error } = await sb.auth.updateUser({ password: newPwd });
-  btn.disabled = false; btn.textContent = 'Update password';
+  btn.disabled = false; btn.textContent = 'Execute Patch';
 
   if(error){ msg.textContent = error.message; return; }
 
   msg.style.color = 'var(--done)';
-  msg.textContent = '✓ Password updated successfully!';
+  msg.textContent = '✓ Configuration sequence patched successfully!';
   document.getElementById('newPwdInput').value = '';
   document.getElementById('confirmPwdInput').value = '';
   setTimeout(() => { document.getElementById('changePwdDropdown').classList.remove('open'); }, 1500);
@@ -1017,7 +1022,7 @@ document.getElementById('savePwdBtn').onclick = async () => {
 
 document.getElementById('refreshBtn').onclick = async () => {
   const btn = document.getElementById('refreshBtn');
-  btn.textContent = '⟳ Refreshing…';
+  btn.textContent = '⟳ Syncing Core Array Layers…';
   if(document.getElementById('projectView').style.display !== 'none' && currentProject){
     await loadMembers(); await loadTasks(); await loadNotes();
   } else {
@@ -1025,7 +1030,7 @@ document.getElementById('refreshBtn').onclick = async () => {
   }
   await checkDueReminders();
   await loadNotifications();
-  btn.textContent = '⟳ Refresh';
+  btn.textContent = '⟳ Sync Data';
 };
 
 document.getElementById('notifBtn').onclick = (e) => {
@@ -1034,28 +1039,24 @@ document.getElementById('notifBtn').onclick = (e) => {
   dd.classList.toggle('open');
   if(dd.classList.contains('open')) loadNotifications();
 };
-document.addEventListener('click', (e) => {
-  const dd = document.getElementById('notifDropdown');
-  if(!e.target.closest('.notif-wrap')) dd.classList.remove('open');
-});
 
 (async function init(){
   const { data: { session } } = await sb.auth.getSession();
   if(session){ await onLoggedIn(); }
 })();
 
-/* ---------------- HELPERS ---------------- */
+/* ---------------- TELEMETRY PLATFORM CORE LOGIC HELPERS ---------------- */
 function showError(msg){
   const b = document.getElementById('errBanner');
   b.className = 'banner';
-  b.textContent = msg;
+  b.textContent = '⚠️ System Error Alert: ' + msg;
   b.style.display = 'block';
   setTimeout(()=>{ b.style.display='none'; }, 4000);
 }
 function showOk(msg){
   const b = document.getElementById('errBanner');
   b.className = 'banner ok';
-  b.textContent = msg;
+  b.textContent = '✓ Telemetry confirmed: ' + msg;
   b.style.display = 'block';
   setTimeout(()=>{ b.style.display='none'; }, 3000);
 }
@@ -1066,7 +1067,7 @@ async function getProfile(userId){
   return data;
 }
 
-/* ---------------- PROJECTS ---------------- */
+/* ---------------- DEEP MODULE STRATAGEM: PROJECTS GRID ---------------- */
 document.getElementById('addProjectBtn').onclick = async () => {
   const input = document.getElementById('newProjectName');
   const name = input.value.trim();
@@ -1077,12 +1078,6 @@ document.getElementById('addProjectBtn').onclick = async () => {
   await loadProjects();
 };
 
-document.getElementById('brandHome').onclick = () => {
-  document.getElementById('projectView').style.display = 'none';
-  document.getElementById('invoiceView').style.display = 'none';
-  document.getElementById('projectsView').style.display = 'block';
-  loadProjects();
-};
 document.getElementById('backBtn').onclick = () => {
   document.getElementById('projectView').style.display = 'none';
   document.getElementById('projectsView').style.display = 'block';
@@ -1107,8 +1102,11 @@ async function loadProjects(){
     card.className = 'project-card';
     card.innerHTML = `
       <h3>${escapeHtml(m.projects.name)}</h3>
-      <p>${escapeHtml(m.projects.description || 'No description yet')}</p>
-      <div class="pc-meta"><span class="rolepill ${m.role==='owner'?'owner':''}">${m.role}</span></div>
+      <p>${escapeHtml(m.projects.description || 'No system parameters described in current log matrix frame.')}</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
+        <span class="rolepill ${m.role==='owner'?'owner':''}">${m.role}</span>
+        <span style="font-size:12px; color:var(--accent); font-weight:700;">Enter Console →</span>
+      </div>
     `;
     card.onclick = () => openProject(m.projects, m.role);
     grid.appendChild(card);
@@ -1131,16 +1129,16 @@ async function openProject(project, role){
 }
 
 document.getElementById('deleteProjectBtn').onclick = async () => {
-  if(!confirm(`Delete "${currentProject.name}"?\n\nThis will permanently remove all tasks, subtasks, notes and members. This cannot be undone.`)) return;
+  if(!confirm(`CRITICAL DESTRUCTION COMMAND ACTION DETECTED:\n\nPurge environment metrics "${currentProject.name}"?\n\nThis permanently destroys all underlying task blocks, child processes, operational logging telemetry parameters, and network access records. Action sequence is terminal and non-reversible.`)) return;
   const { error } = await sb.from('projects').delete().eq('id', currentProject.id);
   if(error){ showError(error.message); return; }
-  showOk('Project deleted');
+  showOk('Ecosystem variables successfully purged from data layer mapping.');
   document.getElementById('projectView').style.display = 'none';
   document.getElementById('projectsView').style.display = 'block';
   await loadProjects();
 };
 
-/* ---------------- TABS ---------------- */
+/* ---------------- DATA LAYERS TAB MATRIX ROUTING SYSTEM ---------------- */
 document.querySelectorAll('.tabbtn').forEach(btn => {
   btn.onclick = () => switchTab(btn.dataset.tab);
 });
@@ -1149,7 +1147,7 @@ function switchTab(tab){
   document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'pane-'+tab));
 }
 
-/* ---------------- MEMBERS ---------------- */
+/* ---------------- TELEMETRY NODE FRAME SYSTEM: NODE COLLABORATORS ---------------- */
 async function loadMembers(){
   const { data, error } = await sb
     .from('project_members')
@@ -1166,14 +1164,14 @@ async function loadMembers(){
     const isMe = m.user_id === currentUser.id;
     row.innerHTML = `
       <div class="member-info">
-        <span class="member-email">${escapeHtml(m.profiles?.full_name || m.profiles?.email || 'Unknown')} ${isMe?'(you)':''}</span>
-        <span class="member-role">${escapeHtml(m.profiles?.email||'')} · ${m.role}</span>
+        <span class="member-email">${escapeHtml(m.profiles?.full_name || m.profiles?.email || 'System Variable Node')} ${isMe?'[Identity Host Anchor]':''}</span>
+        <span class="member-role">${escapeHtml(m.profiles?.email||'')} · System Privilege Token Level: [${m.role.toUpperCase()}]</span>
       </div>
     `;
     if(currentProject.myRole === 'owner' && !isMe){
       const del = document.createElement('button');
       del.className = 'del';
-      del.textContent = '✕';
+      del.innerHTML = '✕';
       del.onclick = async () => {
         await sb.from('project_members').delete().eq('project_id', currentProject.id).eq('user_id', m.user_id);
         await loadMembers();
@@ -1183,9 +1181,8 @@ async function loadMembers(){
     list.appendChild(row);
   });
 
-  // populate assignee dropdowns
   const assignSel = document.getElementById('newTaskAssignee');
-  assignSel.innerHTML = '<option value="">Unassigned</option>';
+  assignSel.innerHTML = '<option value="">Unassigned Operational Node Target</option>';
   projectMembers.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.user_id;
@@ -1205,20 +1202,20 @@ document.getElementById('inviteBtn').onclick = async () => {
     ? sb.from('profiles').select('*').eq('email', handle).maybeSingle()
     : sb.from('profiles').select('*').eq('username', handle.toLowerCase().replace(/^@/,'')).maybeSingle();
   const { data: profile, error: pErr } = await lookup;
-  if(pErr || !profile){ showError('No account found with that email/username — they need to sign up first.'); return; }
-  if(profile.id === currentUser.id){ showError("That's you."); return; }
+  if(pErr || !profile){ showError('Target identification failure: Node registry reference invalid. System credentials record unfound.'); return; }
+  if(profile.id === currentUser.id){ showError("Operational reference loop exception: Can't invite core anchor identity node."); return; }
   const already = projectMembers.find(m => m.user_id === profile.id);
-  if(already){ showError('Already a member of this project.'); return; }
+  if(already){ showError('Active connection loop error: Registry mapping shows active system mapping already verified.'); return; }
   const { error } = await sb.from('project_invites').insert({
     project_id: currentProject.id, invited_user_id: profile.id, invited_by: currentUser.id, role
   });
   if(error){
-    if(error.message.includes('duplicate')) showError('They already have a pending invite.');
+    if(error.message.includes('duplicate')) showError('Active vector invitation pending confirmation validation loops.');
     else showError(error.message);
     return;
   }
   document.getElementById('inviteEmail').value = '';
-  showOk('Invite sent to ' + (profile.full_name || profile.email) + ' — pending their acceptance');
+  showOk('Network invitation token beamed to ' + (profile.full_name || profile.email) + ' — awaiting processing check loops.');
   await loadPendingInvites();
 };
 
@@ -1236,20 +1233,20 @@ async function loadPendingInvites(){
     row.innerHTML = `
       <div class="member-info">
         <span class="member-email">${escapeHtml(inv.profiles?.full_name || inv.profiles?.email)}</span>
-        <span class="member-role">pending · invited as ${inv.role}</span>
+        <span class="member-role">Pending verification vector · access permission scope: [${inv.role}]</span>
       </div>
     `;
     const cancel = document.createElement('button');
     cancel.className = 'del';
-    cancel.textContent = '✕';
-    cancel.title = 'Cancel invite';
+    cancel.innerHTML = '✕';
+    cancel.title = 'Revoke permission stream';
     cancel.onclick = async () => { await sb.from('project_invites').delete().eq('id', inv.id); await loadPendingInvites(); };
     row.appendChild(cancel);
     wrap.appendChild(row);
   });
 }
 
-/* ---------------- NOTIFICATIONS ---------------- */
+/* ---------------- NOTIFICATIONS KERNEL ALERTS DECK ---------------- */
 async function loadNotifications(){
   const { data, error } = await sb.from('notifications')
     .select('*, projects(name)')
@@ -1266,7 +1263,7 @@ async function loadNotifications(){
   const dd = document.getElementById('notifDropdown');
   dd.innerHTML = '';
   if(!data || data.length===0){
-    dd.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    dd.innerHTML = '<div class="notif-empty">Alert channels clear. Signal stream static.</div>';
     return;
   }
 
@@ -1282,7 +1279,7 @@ async function loadNotifications(){
       if(invite && invite.status === 'pending'){
         const actions = document.createElement('div');
         actions.className = 'notif-actions';
-        actions.innerHTML = `<button class="accept">Accept</button><button class="reject">Reject</button>`;
+        actions.innerHTML = `<button class="accept">Accept Token</button><button class="reject">Reject Matrix</button>`;
         actions.querySelector('.accept').onclick = async () => { await respondInvite(n.invite_id, 'accepted'); };
         actions.querySelector('.reject').onclick = async () => { await respondInvite(n.invite_id, 'rejected'); };
         item.appendChild(actions);
@@ -1299,7 +1296,7 @@ async function loadNotifications(){
 async function respondInvite(inviteId, status){
   const { error } = await sb.from('project_invites').update({ status, responded_at: new Date().toISOString() }).eq('id', inviteId);
   if(error){ showError(error.message); return; }
-  showOk(status === 'accepted' ? 'Joined the project!' : 'Invite declined');
+  showOk(status === 'accepted' ? 'Environment handshake complete. Matrix linked.' : 'Invite transmission link dropped.');
   await loadNotifications();
   await loadProjects();
 }
@@ -1330,12 +1327,12 @@ async function checkDueReminders(){
     const overdue = t.due_date < todayStr;
     await sb.from('notifications').insert({
       user_id: currentUser.id, type: 'due_reminder', project_id: t.project_id, task_id: t.id,
-      content: (overdue ? '⚠️ Overdue: ' : '⏰ Due soon: ') + '"' + t.title + '"' + (overdue ? '' : ' (due ' + t.due_date + ')')
+      content: (overdue ? '⚠️ Overdue Chrono Matrix Breach: ' : '⏰ Terminal Window Closing Alert: ') + '"' + t.title + '"' + (overdue ? '' : ' (Estimated closure timeline target ' + t.due_date + ')')
     });
   }
 }
 
-/* ---------------- TASKS & SUBTASKS ---------------- */
+/* ---------------- TACTICAL OPERATIONS ALLOCATION SYSTEM: TASKS ---------------- */
 function assigneeName(id){
   if(!id) return null;
   const m = projectMembers.find(x => x.user_id === id);
@@ -1426,7 +1423,7 @@ async function loadTasks(){
     const soonStr = soon.toISOString().slice(0,10);
     const dueClass = t.due_date ? (t.due_date < today && t.status!=='done' ? 'overdue' : t.due_date <= soonStr && t.status!=='done' ? 'soon' : '') : '';
     const dueHtml = t.due_date
-      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue:':dueClass==='soon'?'⏰ Due soon:':'Due:'} ${t.due_date}</div>`
+      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue Chrono Breach:':dueClass==='soon'?'⏰ Matrix Deadline Closing:':'System Target Line:'} ${t.due_date}</div>`
       : '';
 
     row.innerHTML = `
@@ -1437,20 +1434,20 @@ async function loadTasks(){
           ${dueHtml}
           <div class="task-meta">
             <span class="tag ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
-            <button class="status-cycle" data-cycle="${t.id}">Change status →</button>
-            <button class="edit-task-btn" data-edit="${t.id}">✏️ Edit</button>
-            ${aName ? `<span class="tag todo">👤 ${escapeHtml(aName)}</span>` : ''}
-            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' subtask' + (subs.length>1?'s':'') : '+ Subtask'} ▾</button>
+            <button class="status-cycle" data-cycle="${t.id}">Cycle State →</button>
+            <button class="edit-task-btn" data-edit="${t.id}">✏️ Mod Parameters</button>
+            ${aName ? `<span class="tag todo">👤 Array Node: ${escapeHtml(aName)}</span>` : ''}
+            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' Linked Processes' : '+ Sub Process Allocator'} ▾</button>
           </div>
           ${subs.length ? `
             <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(doneCount/subs.length*100)}%"></div></div>
-            <div class="progress-label">${doneCount}/${subs.length} subtasks complete</div>
+            <div class="progress-label">${doneCount}/${subs.length} sub-vectors executed into database block</div>
           ` : ''}
           <div class="subtasks" id="subs-${t.id}">
             ${subs.map(s => subtaskHtml(s)).join('')}
             <div class="subaddbar">
-              <input type="text" placeholder="Add subtask…" id="subinput-${t.id}">
-              <button data-addsub="${t.id}">Add</button>
+              <input type="text" class="input-premium" style="padding:4px 8px; font-size:12px;" placeholder="Map low-level dynamic criteria description…" id="subinput-${t.id}">
+              <button data-addsub="${t.id}" class="btn-premium" style="padding:4px 12px; font-size:11px;">Allocate</button>
             </div>
           </div>
         </div>
@@ -1460,7 +1457,6 @@ async function loadTasks(){
     list.appendChild(row);
   });
 
-  // wire events
   list.querySelectorAll('[data-id]').forEach(el => el.onclick = () => toggleTaskDone(el.dataset.id, data));
   list.querySelectorAll('[data-cycle]').forEach(el => el.onclick = () => cycleTaskStatus(el.dataset.cycle, data));
   list.querySelectorAll('[data-del]').forEach(el => el.onclick = () => deleteTask(el.dataset.del));
@@ -1480,15 +1476,13 @@ function openTaskEdit(taskId, allTasks){
   if(!titleEl) return;
   const body = titleEl.parentElement;
 
-  // Replace title with input
   titleEl.outerHTML = `<input class="task-title-edit" id="tedit-${taskId}" value="${escapeHtml(t.title)}" type="text">`;
 
-  // Add due date editor below
   const dueWrap = document.createElement('div');
   dueWrap.className = 'task-due';
-  dueWrap.innerHTML = `📅 Due date: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
-    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done);border-color:var(--done);">Save</button>
-    <button class="edit-task-btn" data-canceledit="${taskId}">Cancel</button>`;
+  dueWrap.innerHTML = `📅 Update Target Chrono Frame: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
+    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done); border-color:var(--done);">Commit Patch</button>
+    <button class="edit-task-btn" data-canceledit="${taskId}">Drop</button>`;
   const metaEl = body.querySelector('.task-meta');
   body.insertBefore(dueWrap, metaEl);
 
@@ -1508,16 +1502,16 @@ function openTaskEdit(taskId, allTasks){
 function subtaskHtml(s){
   return `
     <div class="subtask">
-      <div class="chk ${s.status==='done'?'checked':''}" style="width:16px;height:16px;" data-subchk="${s.id}"></div>
+      <div class="chk ${s.status==='done'?'checked':''}" style="width:16px; height:16px;" data-subchk="${s.id}"></div>
       <div class="task-body">
-        <div class="task-title" style="${s.status==='done'?'text-decoration:line-through;color:var(--muted);':''}">${escapeHtml(s.title)}</div>
+        <div class="task-title" style="${s.status==='done'?'text-decoration:line-through; color:var(--muted);':''}">${escapeHtml(s.title)}</div>
       </div>
       <button class="del" data-subdel="${s.id}">✕</button>
     </div>
   `;
 }
 
-function statusLabel(s){ return s==='todo'?'To do': s==='progress'?'In progress':'Done'; }
+function statusLabel(s){ return s==='todo'?'Task Stacked': s==='progress'?'Active Compilation':'Committed Block'; }
 
 async function toggleTaskDone(id, allTasks){
   const t = allTasks.find(x=>x.id===id);
@@ -1546,7 +1540,7 @@ async function addSubtask(parentId){
   setTimeout(()=>{ const s = document.getElementById('subs-'+parentId); if(s) s.classList.add('open'); }, 50);
 }
 
-/* ---------------- NOTES ---------------- */
+/* ---------------- OPERATIONS LOG ARCHIVE STORAGE: NOTES ---------------- */
 document.getElementById('addNoteBtn').onclick = async () => {
   const input = document.getElementById('newNoteInput');
   const content = input.value.trim();
@@ -1573,10 +1567,10 @@ async function loadNotes(){
     div.innerHTML = `
       <div class="note-text">${escapeHtml(n.content)}</div>
       <div class="note-meta">
-        <span class="note-author">${escapeHtml(author?.full_name || author?.email || 'Unknown')} · ${new Date(n.created_at).toLocaleString()}</span>
+        <span class="note-author">Authorized Signee Node: ${escapeHtml(author?.full_name || author?.email || 'Unknown Node Anchor ID')} · Logged at: [${new Date(n.created_at).toLocaleString()}]</span>
         <div class="note-actions">
-          ${n.converted_task_id ? `<span class="note-converted">✓ Converted to task</span>` : `<button data-convert="${n.id}">Convert to task</button>`}
-          <button data-notedel="${n.id}">Delete</button>
+          ${n.converted_task_id ? `<span class="note-converted">✓ Upgraded to Action Target Task Matrix</span>` : `<button data-convert="${n.id}">Compile Note to Task Block</button>`}
+          <button data-notedel="${n.id}">Purge Log Element</button>
         </div>
       </div>
     `;
@@ -1599,12 +1593,12 @@ async function convertNoteToTask(noteId){
   }).select().single();
   if(error){ showError(error.message); return; }
   await sb.from('notes').update({ converted_task_id: task.id }).eq('id', noteId);
-  showOk('Converted to a task');
+  showOk('Log parameters successfully compiled into tactical operations system array maps.');
   await loadNotes();
   await loadTasks();
 }
 
-/* ---------------- UTIL ---------------- */
+/* ---------------- SECURITY ENCODING DATA PROTOCOLS HELPERS ---------------- */
 function escapeHtml(str){
   if(str==null) return '';
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -1616,7 +1610,7 @@ if('serviceWorker' in navigator){
   });
 }
 
-/* ============ INVOICES ============ */
+/* ============ FINANCIAL BALANCES PROTOCOL ENGINE: INVOICES ============ */
 const INVOICE_OWNER_EMAIL = '479code@gmail.com';
 let editingInvoiceId = null;
 let invItems = [];
@@ -1627,17 +1621,16 @@ function showInvoiceView(){
   document.getElementById('invoiceView').style.display = 'block';
   document.getElementById('invoiceForm').style.display = 'none';
   document.getElementById('invoiceList').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = 'Invoices';
+  document.getElementById('invViewTitle').textContent = 'Financial Invoices Ledger Architecture';
   loadInvoices();
 }
-
 
 document.getElementById('invBackBtn').onclick = () => {
   if(document.getElementById('invoiceForm').style.display !== 'none'){
     document.getElementById('invoiceForm').style.display = 'none';
     document.getElementById('invoiceList').style.display = 'block';
     document.getElementById('newInvoiceBtn').style.display = 'block';
-    document.getElementById('invViewTitle').textContent = 'Invoices';
+    document.getElementById('invViewTitle').textContent = 'Financial Invoices Ledger Architecture';
   } else {
     document.getElementById('invoiceView').style.display = 'none';
     document.getElementById('projectsView').style.display = 'block';
@@ -1658,21 +1651,21 @@ document.getElementById('saveInvoiceBtn').onclick = async () => {
     const { error } = await sb.from('invoices').insert({...inv, created_by: currentUser.id});
     if(error){ showError(error.message); return; }
   }
-  showOk('Invoice saved');
+  showOk('Invoice dataset safely written to target global databases.');
   document.getElementById('invBackBtn').click();
 };
 
 document.getElementById('previewInvoiceBtn').onclick = () => {
   const inv = gatherInvoiceForm(true);
-  if(!inv){ showError('Fill in at least the Invoice No., Client Name, and Date first.'); return; }
+  if(!inv){ showError('Validation Failure: Missing registry indicators. Provide serial ID code parameters, Client Node targets, and dynamic calendar dates.'); return; }
   printInvoice(inv);
 };
 
 document.getElementById('deleteInvoiceBtn').onclick = async () => {
   if(!editingInvoiceId) return;
-  if(!confirm('Delete this invoice? This cannot be undone.')) return;
+  if(!confirm('CRITICAL ACTION DETECTED:\n\nExecute absolute purge sequence on ledger entry token parameters? This will drop transactional log fields permanently.')) return;
   await sb.from('invoices').delete().eq('id', editingInvoiceId);
-  showOk('Invoice deleted');
+  showOk('Invoice record frame removed from cluster.');
   document.getElementById('invBackBtn').click();
 };
 
@@ -1726,7 +1719,7 @@ function openInvoiceForm(invoice){
   document.getElementById('invoiceList').style.display = 'none';
   document.getElementById('newInvoiceBtn').style.display = 'none';
   document.getElementById('invoiceForm').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Edit Invoice' : 'New Invoice';
+  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Modify Compiled Invoice Parameters' : 'Generate New Data Ledger Invoice Allocation';
 }
 
 function autoInvNumber(){
@@ -1743,13 +1736,12 @@ function renderInvItems(){
     const amt  = (qty * rate).toFixed(2);
     const row = document.createElement('div');
     row.className = 'inv-item-row';
-    row.style.cssText = 'display:grid;grid-template-columns:32px 3fr 1fr 1fr 1fr 32px;gap:6px;margin-bottom:6px;align-items:center;';
     row.innerHTML = `
-      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;">${i+1}</span>
-      <input type="text"   placeholder="Description"   value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
-      <input type="number" placeholder="Qty"            value="${item.qty||''}"  min="0"        data-i="${i}" data-f="qty">
-      <input type="number" placeholder="Unit Price"     value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
-      <span class="inv-item-total" style="font-size:13px;font-family:var(--mono);text-align:right;">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
+      <span style="font-family:var(--mono); font-size:12px; color:var(--muted); text-align:center;">${i+1}</span>
+      <input type="text" placeholder="Description of service framework allocation parameters…" value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
+      <input type="number" placeholder="Units" value="${item.qty||''}" min="0" data-i="${i}" data-f="qty">
+      <input type="number" placeholder="Price Vector" value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
+      <span class="inv-item-total">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
       <button class="del" data-rmi="${i}">✕</button>
     `;
     container.appendChild(row);
@@ -1799,7 +1791,7 @@ async function loadInvoices(){
       <div class="inv-list-info">
         <div class="inv-list-num">${escapeHtml(inv.invoice_number)}</div>
         <div class="inv-list-client">${escapeHtml(inv.client_name)}</div>
-        <div class="inv-list-date">${escapeHtml(inv.invoice_title||'')} &nbsp;·&nbsp; ${inv.issue_date}</div>
+        <div class="inv-list-date">${escapeHtml(inv.invoice_title||'')} &nbsp;·&nbsp; Computed timestamp: [${inv.issue_date}]</div>
       </div>
       <div class="inv-list-right">
         <span class="inv-amount">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</span>
@@ -1811,12 +1803,11 @@ async function loadInvoices(){
   });
 }
 
-/* ---- Print / PDF: exact 479Code template ---- */
+/* ---- SYSTEM COMPILER PRINT ARCHITECTURE PROTOCOLS TEMPLATE ---- */
 function printInvoice(inv){
   const sym     = currSymbol(inv.currency||'NGN');
   const cur     = inv.currency || 'NGN';
   const subtotal = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
-  const fmtNum  = n => n ? sym + parseFloat(n).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
   const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
 
   const itemRows = (inv.items||[]).map((it,i) => {
@@ -1825,11 +1816,11 @@ function printInvoice(inv){
     const total = qty && rate ? sym + (qty*rate).toLocaleString('en',{minimumFractionDigits:2}) : '—';
     const unitP = rate ? sym + rate.toLocaleString('en',{minimumFractionDigits:2}) : '—';
     return `<tr>
-      <td style="text-align:center;border:1px solid #ccc;padding:8px 6px;">${i+1}</td>
-      <td style="border:1px solid #ccc;padding:8px 10px;">${escapeHtml(it.desc||'')}</td>
-      <td style="text-align:center;border:1px solid #ccc;padding:8px 6px;">${qty||'—'}</td>
-      <td style="text-align:right;border:1px solid #ccc;padding:8px 10px;">${unitP}</td>
-      <td style="text-align:right;border:1px solid #ccc;padding:8px 10px;font-weight:600;">${total}</td>
+      <td style="text-align:center; border:1px solid #ccc; padding:8px 6px;">${i+1}</td>
+      <td style="border:1px solid #ccc; padding:8px 10px;">${escapeHtml(it.desc||'')}</td>
+      <td style="text-align:center; border:1px solid #ccc; padding:8px 6px;">${qty||'—'}</td>
+      <td style="text-align:right; border:1px solid #ccc; padding:8px 10px;">${unitP}</td>
+      <td style="text-align:right; border:1px solid #ccc; padding:8px 10px; font-weight:600;">${total}</td>
     </tr>`;
   }).join('');
 
@@ -1849,45 +1840,43 @@ function printInvoice(inv){
   const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Invoice ${escapeHtml(inv.invoice_number)}</title>
+<title>Invoice Entry Payload Output ${escapeHtml(inv.invoice_number)}</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;background:#fff;padding:30px 40px;max-width:850px;margin:0 auto;font-size:13px;}
-  .top-line{border-top:2.5px solid #1a1a1a;margin-bottom:0;}
-  .bottom-line{border-bottom:2.5px solid #1a1a1a;margin-top:0;}
-  .header-band{display:flex;align-items:center;padding:14px 0 10px;border-bottom:1.5px solid #1a1a1a;margin-bottom:0;}
-  .header-logo{margin-right:20px;flex:none;}
-  .header-company{flex:1;text-align:center;}
-  .header-company h1{font-size:15px;font-weight:700;letter-spacing:.03em;margin-bottom:3px;}
-  .header-company p{font-size:12px;line-height:1.6;color:#333;}
-  .inv-title-bar{text-align:center;padding:14px 0 12px;border-bottom:1px solid #ccc;}
-  .inv-title-bar h2{font-size:13.5px;font-weight:700;text-decoration:underline;text-transform:uppercase;letter-spacing:.04em;}
-  .meta-row{display:flex;justify-content:flex-end;gap:40px;padding:10px 0 8px;font-size:12.5px;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Times New Roman',Times,serif; color:#1a1a1a; background:#fff; padding:30px 40px; max-width:850px; margin:0 auto; font-size:13px;}
+  .top-line{border-top:2.5px solid #1a1a1a; margin-bottom:0;}
+  .header-band{display:flex; align-items:center; padding:14px 0 10px; border-bottom:1.5px solid #1a1a1a; margin-bottom:0;}
+  .header-logo{margin-right:20px; flex:none;}
+  .header-company{flex:1; text-align:center;}
+  .header-company h1{font-size:15px; font-weight:700; letter-spacing:.03em; margin-bottom:3px;}
+  .header-company p{font-size:12px; line-height:1.6; color:#333;}
+  .inv-title-bar{text-align:center; padding:14px 0 12px; border-bottom:1px solid #ccc;}
+  .inv-title-bar h2{font-size:13.5px; font-weight:700; text-decoration:underline; text-transform:uppercase; letter-spacing:.04em;}
+  .meta-row{display:flex; justify-content:flex-end; gap:40px; padding:10px 0 8px; font-size:12.5px;}
   .meta-row div{text-align:right;}
   .meta-row strong{text-decoration:underline;}
   .bill-to{margin:10px 0 16px;}
-  .bill-to .label{font-size:12px;font-weight:700;text-decoration:underline;margin-bottom:4px;}
-  .bill-to .client{font-size:13px;font-weight:700;}
-  table.items{width:100%;border-collapse:collapse;margin-bottom:0;}
-  table.items thead tr{background:#333;color:#fff;}
-  table.items thead th{padding:9px 10px;font-size:12px;font-weight:700;text-align:center;border:1px solid #ccc;text-transform:uppercase;letter-spacing:.04em;}
+  .bill-to .label{font-size:12px; font-weight:700; text-decoration:underline; margin-bottom:4px;}
+  .bill-to .client{font-size:13px; font-weight:700;}
+  table.items{width:100%; border-collapse:collapse; margin-bottom:0;}
+  table.items thead tr{background:#333; color:#fff;}
+  table.items thead th{padding:9px 10px; font-size:12px; font-weight:700; text-align:center; border:1px solid #ccc; text-transform:uppercase; letter-spacing:.04em;}
   table.items thead th:nth-child(2){text-align:left;}
   table.items tbody tr:nth-child(even){background:#f9f9f9;}
   table.items tfoot tr{background:#f0f0f0;}
-  table.items tfoot td{padding:9px 10px;font-weight:700;font-size:12.5px;border:1px solid #ccc;text-transform:uppercase;}
-  .totals-box{display:flex;justify-content:flex-end;margin:20px 0 24px;}
-  .totals-inner{border:1.5px solid #1a1a1a;min-width:260px;}
-  .totals-inner tr td{padding:9px 16px;font-size:13px;border-bottom:1px solid #ccc;}
-  .totals-inner tr:last-child td{border-bottom:none;font-weight:700;font-size:14px;background:#f5f5f5;}
-  .totals-inner td:last-child{text-align:right;font-family:'Courier New',monospace;font-weight:600;}
+  table.items tfoot td{padding:9px 10px; font-weight:700; font-size:12.5px; border:1px solid #ccc; text-transform:uppercase;}
+  .totals-box{display:flex; justify-content:flex-end; margin:20px 0 24px;}
+  .totals-inner{border:1.5px solid #1a1a1a; min-width:260px;}
+  .totals-inner tr td{padding:9px 16px; font-size:13px; border-bottom:1px solid #ccc;}
+  .totals-inner tr:last-child td{border-bottom:none; font-weight:700; font-size:14px; background:#f5f5f5;}
+  .totals-inner td:last-child{text-align:right; font-family:'Courier New',monospace; font-weight:600;}
   .payment-section{margin:10px 0 24px;}
-  .payment-section h3{font-size:13px;font-weight:700;text-decoration:underline;text-transform:uppercase;margin-bottom:8px;}
-  .payment-section p{font-size:13px;line-height:1.8;}
-  .payment-section strong{font-weight:700;}
+  .payment-section h3{font-size:13px; font-weight:700; text-decoration:underline; text-transform:uppercase; margin-bottom:8px;}
+  .payment-section p{font-size:13px; line-height:1.8;}
   .sig-section{margin:16px 0 24px;}
-  .sig-section p{font-size:13px;font-weight:700;margin-top:4px;}
-  .footer-band{border-top:2.5px solid #1a1a1a;padding:10px 0 4px;text-align:center;}
-  .footer-band p{font-size:11.5px;color:#333;}
+  .sig-section p{font-size:13px; font-weight:700; margin-top:4px;}
+  .footer-band{border-top:2.5px solid #1a1a1a; padding:10px 0 4px; text-align:center;}
+  .footer-band p{font-size:11.5px; color:#333;}
   .footer-band a{color:#1a1a1a;}
   @media print{
     body{padding:15px 20px;}
@@ -1896,7 +1885,6 @@ function printInvoice(inv){
 </style>
 </head>
 <body>
-
 <div class="top-line"></div>
 <div class="header-band">
   <div class="header-logo">${logoSVG}</div>
@@ -1906,19 +1894,15 @@ function printInvoice(inv){
     <p>Phone: 07069655288, 07074733491</p>
   </div>
 </div>
-
 ${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title)}</h2></div>` : ''}
-
 <div class="meta-row">
-  <div><strong>Receipt:</strong> ${escapeHtml(inv.invoice_number)}</div>
-  <div><strong>Date:</strong> ${fmtDate(inv.issue_date)}</div>
+  <div><strong>Receipt Vector Reference:</strong> ${escapeHtml(inv.invoice_number)}</div>
+  <div><strong>Dispatched Timestamp:</strong> ${fmtDate(inv.issue_date)}</div>
 </div>
-
 <div class="bill-to">
-  <div class="label">BILL TO:</div>
-  <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400;font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
+  <div class="label">BILL TO SYSTEM TARGET node:</div>
+  <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400; font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
 </div>
-
 <table class="items">
   <thead>
     <tr>
@@ -1934,46 +1918,39 @@ ${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_t
     <tr>
       <td colspan="3"></td>
       <td style="text-align:right;">SUBTOTAL</td>
-      <td style="text-align:right;font-family:'Courier New',monospace;">${cur} — ${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right; font-family:'Courier New',monospace;">${cur} — ${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td>
     </tr>
   </tfoot>
 </table>
-
 <div class="totals-box">
   <table class="totals-inner">
-    <tr><td>SUBTOTAL</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
-    <tr><td>TOTAL</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>SUBTOTAL SUM VALUE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>NET BALANCE DUE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
   </table>
 </div>
-
 ${(inv.account_name||inv.account_number||inv.bank_name) ? `
 <div class="payment-section">
-  <h3>Payment Details:</h3>
-  ${inv.account_name   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
-  ${inv.account_number ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
-  ${inv.bank_name      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
+  <h3>Secure Settlement Account Channels:</h3>
+  ${inv.account_name   ? `<p>ACCOUNT NAME PATH: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
+  ${inv.account_number ? `<p>ACCOUNT ROUTING SERIAL: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
+  ${inv.bank_name      ? `<p>CLEARING HOUSE CORE: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
   ${inv.notes          ? `<p style="margin-top:6px;">${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</p>` : ''}
 </div>` : ''}
-
 <div class="sig-section">
   <div style="height:44px;"></div>
-  <p>479CODE TECH. SOLUTIONS LTD.</p>
+  <p>AUTHORIZATION TOKEN STAMP: 479CODE TECH. SOLUTIONS LTD.</p>
 </div>
-
 <div class="footer-band">
   <p>E-mail: <a href="mailto:479code@gmail.com">479code@gmail.com</a> &nbsp;&nbsp; Tel: +2347069655288</p>
 </div>
-
 <script>window.onload=()=>{ window.print(); }<\/script>
 </body></html>`;
 
   const w = window.open('','_blank','width=960,height=760');
-  if(!w){ showError('Pop-up blocked — please allow pop-ups for this site to print invoices.'); return; }
+  if(!w){ showError('Popup signal blocked by host browser protocols. Whitelist operations domain to process print stream frames.'); return; }
   w.document.write(html);
   w.document.close();
 }
-
-
 </script>
 </body>
 </html>
