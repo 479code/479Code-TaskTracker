@@ -3,471 +3,342 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>479Code Task Tracker</title>
+<title>479Code Operations Terminal</title>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#06080a">
+<meta name="theme-color" content="#040608">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="479Code Tasks">
+<meta name="apple-mobile-web-app-title" content="479Code Operations">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --bg: #06080a;
-    --panel: #0d1117;
-    --panel-2: #161b22;
-    --line: #21262d;
-    --line-glow: #30363d;
-    --text: #f0f6fc;
-    --muted: #8b949e;
+    --bg: #030507;
+    --canvas: #070a0e;
+    --panel: #0d121a;
+    --panel-raised: #141b26;
+    --line: #1e2633;
+    --line-glow: #3a475c;
+    --text: #f0f4f8;
+    --muted: #7a8b9e;
     --accent: #ff8a3d;
-    --accent-glow: rgba(255, 138, 61, 0.15);
-    --accent-dim: rgba(255, 138, 61, 0.08);
-    --done: #3ddc97;
-    --done-dim: rgba(61, 220, 151, 0.1);
-    --prog: #ffd166;
-    --prog-dim: rgba(255, 209, 102, 0.1);
-    --danger: #ff5c5c;
-    --danger-dim: rgba(255, 92, 92, 0.1);
-    --owner: #a78bfa;
-    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    --radius-sm: 8px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+    --accent-glow: rgba(255, 138, 61, 0.2);
+    --accent-dim: rgba(255, 138, 61, 0.05);
+    --done: #2ecc71;
+    --done-dim: rgba(46, 204, 113, 0.1);
+    --prog: #f1c40f;
+    --prog-dim: rgba(241, 196, 15, 0.1);
+    --danger: #e74c3c;
+    --danger-dim: rgba(231, 76, 60, 0.1);
+    --owner: #9b59b6;
+    
+    --mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 24px;
+    
+    --spring: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+    --fluid: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  
   body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--sans);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    min-height: 100vh;
   }
 
-  input, select, textarea, button {
-    font-family: var(--sans);
-    color: var(--text);
-    background: none;
-    border: none;
-    outline: none;
-  }
-
-  a { color: var(--accent); text-decoration: none; transition: color 0.2s ease; }
-  a:hover { color: #ff9e59; }
-
-  /* Smooth Scroll System */
-  html { scroll-behavior: smooth; }
-
-  /* Custom Scrollbar */
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  input, select, textarea, button { font-family: var(--sans); color: var(--text); background: none; border: none; outline: none; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--panel-2); border-radius: 4px; border: 2px solid var(--bg); }
-  ::-webkit-scrollbar-thumb:hover { background: var(--line); }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--line-glow); }
 
-  /* ---------- Motion Keyframes ---------- */
+  /* Keyframe Animations System */
+  @keyframes stageReveal { from { opacity: 0; transform: translateY(20px) scale(0.98); filter: blur(4px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+  @keyframes navSlideIn { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   @keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-  @keyframes barIdle { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.85); } }
-  @keyframes stripSlide { from { opacity: 0; transform: translateY(15px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
-  @keyframes screenFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes floatEffect { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-  @keyframes glowPulse { 0%, 100% { border-color: var(--line); box-shadow: 0 0 0 rgba(255,138,61,0); } 50% { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); } }
+  @keyframes barIdle { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.82); } }
+  @keyframes signalPulse { 0% { box-shadow: 0 0 0 0 rgba(255, 138, 61, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 138, 61, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 138, 61, 0); } }
 
-  /* ---------- Animated Logo Engine ---------- */
+  /* Animated Logo System */
   .logo-svg { display: block; overflow: visible; }
-  .logo-svg .bar { transform-box: fill-box; transform-origin: bottom; animation: barGrow 0.7s var(--ease-out) both; }
-  .logo-svg .strip { animation: stripSlide 0.6s var(--ease-out) 0.5s both; }
-  .logo-svg.idle { animation: floatEffect 5s ease-in-out infinite; }
-  .logo-svg.idle .bar { animation: barGrow 0.7s var(--ease-out) both, barIdle 3s ease-in-out infinite; }
-  .logo-svg .bar:nth-child(1) { animation-delay: 0.04s; }
-  .logo-svg .bar:nth-child(2) { animation-delay: 0.08s; }
-  .logo-svg .bar:nth-child(3) { animation-delay: 0.12s; }
-  .logo-svg .bar:nth-child(4) { animation-delay: 0.16s; }
-  .logo-svg .bar:nth-child(5) { animation-delay: 0.20s; }
-  .logo-svg .bar:nth-child(6) { animation-delay: 0.24s; }
-  .logo-svg .bar:nth-child(7) { animation-delay: 0.28s; }
-  .logo-svg .bar:nth-child(8) { animation-delay: 0.32s; }
-  .logo-svg .bar:nth-child(9) { animation-delay: 0.36s; }
+  .logo-svg .bar { transform-box: fill-box; transform-origin: bottom; animation: barGrow 0.6s var(--fluid) both; }
+  .logo-svg.idle .bar { animation: barGrow 0.6s var(--fluid) both, barIdle 2.5s ease-in-out infinite; }
+  .logo-svg .bar:nth-child(1) { animation-delay: 0.02s; }
+  .logo-svg .bar:nth-child(2) { animation-delay: 0.04s; }
+  .logo-svg .bar:nth-child(3) { animation-delay: 0.06s; }
+  .logo-svg .bar:nth-child(4) { animation-delay: 0.08s; }
+  .logo-svg .bar:nth-child(5) { animation-delay: 0.1s; }
+  .logo-svg .bar:nth-child(6) { animation-delay: 0.12s; }
+  .logo-svg .bar:nth-child(7) { animation-delay: 0.14s; }
+  .logo-svg .bar:nth-child(8) { animation-delay: 0.16s; }
+  .logo-svg .bar:nth-child(9) { animation-delay: 0.18s; }
 
-  /* ---------- Master Components UI ---------- */
-  .btn-premium {
-    background: var(--accent);
-    color: #06080a;
-    font-weight: 700;
-    font-size: 14px;
-    padding: 10px 20px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: transform 0.2s var(--ease-out), background 0.2s ease, box-shadow 0.2s ease;
-  }
-  .btn-premium:hover { background: #ff9e59; box-shadow: 0 4px 15px var(--accent-glow); transform: translateY(-1px); }
-  .btn-premium:active { transform: translateY(1px) scale(0.98); }
-  .btn-premium:disabled { opacity: 0.5; cursor: not-allowed; }
-
+  /* Premium Form & Input Control Archetype */
   .input-premium {
-    width: 100%;
-    background: var(--panel-2);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    padding: 11px 14px;
-    font-size: 14px;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    width: 100%; background: rgba(7, 10, 14, 0.6); border: 1px solid var(--line); border-radius: var(--radius-md);
+    padding: 14px 18px; font-size: 14.5px; transition: all 0.3s var(--fluid);
   }
-  .input-premium:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: var(--panel); }
+  .input-premium:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); background: var(--canvas); }
 
-  /* ---------- Auth Architecture ---------- */
-  #authScreen { min-height: 100vh; display: flex; align-items: center; justify-content:center; flex-direction:column; gap:20px; padding:24px; position:relative; }
-  #authScreen::before { content:''; position:absolute; width:450px; height:450px; background:radial-gradient(circle, var(--accent-glow) 0%, rgba(0,0,0,0) 70%); top:50%; left:50%; transform:translate(-50%, -50%); z-index:-1; pointer-events:none; }
-  .auth-logo { width: 190px; height: auto; }
-  .eyebrow { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); }
-  .authbox { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 32px; width: 100%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); animation: screenFadeIn 0.5s var(--ease-out) both; }
-  .authtabs { display: flex; gap: 6px; background: var(--panel-2); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 24px; }
-  .authtabs button { flex: 1; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s ease; }
-  .authtabs button.active { background: var(--accent); color: #06080a; font-weight: 700; }
-  .field { margin-bottom: 18px; }
-  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-family: var(--mono); }
-  .autherr { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 16px; font-family: var(--mono); text-align: center; }
-  .authmsg { color: var(--done); font-size: 13px; margin-top: 12px; text-align: center; }
-
-  /* ---------- App Layout Strategy ---------- */
-  #appRoot { display: none; min-height: 100vh; width: 100%; position: relative; }
-  
-  .sidebar {
-    width: 260px; background: var(--panel); border-right: 1px solid var(--line);
-    display: flex; flex-direction: column; padding: 24px 16px;
-    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
-    transition: transform 0.4s var(--ease-out);
+  .btn-premium {
+    background: linear-gradient(135deg, #ff9e59 0%, var(--accent) 100%); color: #030507;
+    font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: var(--radius-md);
+    cursor: pointer; transition: all 0.3s var(--fluid); display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 15px rgba(255, 138, 61, 0.2);
   }
-  .sidebar-logo { display: flex; align-items: center; gap: 14px; padding: 0 8px 24px; border-bottom: 1px solid var(--line); margin-bottom: 20px; cursor: pointer; }
-  .sidebar-appname { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
-  .sidebar-section-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); padding: 12px 10px 6px; }
-  .sidebar-spacer { flex: 1; min-height: 24px; }
-  
-  .nav-item {
-    display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: var(--radius-sm); color: var(--muted); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s var(--ease-out); margin-bottom: 4px;
+  .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 138, 61, 0.4); }
+  .btn-premium:active { transform: translateY(1px); }
+  .btn-premium:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ============ AUTH SCREEN SPATIAL LAYOUT ============ */
+  #authScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, #0f172a 0%, var(--bg) 100%); padding: 24px;
   }
-  .nav-item:hover { background: var(--panel-2); color: var(--text); transform: translateX(2px); }
-  .nav-item.active { background: var(--accent-dim); color: var(--accent); font-weight: 600; border-left: 3px solid var(--accent); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding-left: 11px; }
-  .nav-icon { font-size: 16px; }
-  
-  .main-area { display: flex; flex-direction: column; min-height: 100vh; margin-left: 260px; transition: margin-left 0.4s var(--ease-out); }
-  
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 70px; background: rgba(6, 8, 10, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 90;
+  .auth-deck {
+    width: 100%; max-width: 420px; background: rgba(13, 18, 26, 0.7); backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 40px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6); animation: stageReveal 0.6s var(--fluid) both;
   }
-  .topbar-menu { display: none; font-size: 24px; cursor: pointer; color: var(--text); }
-  .topbar-title { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
-  .topbar-right { display: flex; align-items: center; gap: 12px; }
-  .topbar-btn { background: var(--panel); border: 1px solid var(--line); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
-  .topbar-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .topbar-email { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: 8px; }
+  .auth-logo { width: 160px; margin: 0 auto 24px; }
+  .authtabs { display: flex; background: var(--canvas); border-radius: var(--radius-md); padding: 4px; margin-bottom: 28px; border: 1px solid var(--line); }
+  .authtabs button { flex: 1; padding: 12px; font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+  .authtabs button.active { background: var(--panel-raised); color: var(--accent); font-weight: 700; }
+  .field { margin-bottom: 20px; }
+  .field label { display: block; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; }
+  .autherr { color: var(--danger); font-size: 13px; font-family: var(--mono); margin-top: 12px; text-align: center; }
+  .authmsg { color: var(--done); font-size: 13px; font-family: var(--mono); margin-top: 12px; text-align: center; }
 
-  .wrap { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 32px; animation: screenFadeIn 0.4s var(--ease-out) both; }
-  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 99; }
-
-  /* ---------- Modern Control Panels & Cards ---------- */
-  .banner { background: var(--danger-dim); border: 1px solid var(--danger); color: var(--danger); padding: 14px 18px; border-radius: var(--radius-sm); font-size: 14px; font-family: var(--mono); margin-bottom: 24px; display: none; animation: screenFadeIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-  .banner.ok { background: var(--done-dim); border-color: var(--done); color: var(--done); }
-
-  .addbar { display: flex; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 10px; margin-bottom: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); align-items: center; }
-  .addbar input[type=text], .addbar textarea { flex: 1; padding: 10px; font-size: 14px; }
-  .addbar select, .addbar input[type=date] { background: var(--panel-2); border: 1px solid var(--line); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13px; }
-
-  .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-  .project-card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; cursor: pointer; transition: all 0.3s var(--ease-out); position: relative; overflow: hidden;
-  }
-  .project-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
-  .project-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
-  .project-card p { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
-  .rolepill { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
-  .rolepill.owner { color: var(--owner); border-color: var(--owner); background: rgba(167, 139, 250, 0.05); }
-
-  /* ---------- Advanced Modules Tab System ---------- */
-  .section-head-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-  .backbtn { font-family: var(--mono); font-size: 12px; text-transform: uppercase; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: color 0.2s; }
-  .backbtn:hover { color: var(--accent); }
+  /* ============ ASYMMETRIC DASHBOARD MASTER DESIGN ============ */
+  #appRoot { display: none; min-height: 100vh; grid-template-columns: 300px 1fr; }
   
-  .project-head h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
-  .project-head p { color: var(--muted); font-size: 14.5px; }
+  /* Left Control Desk Navigation */
+  .control-desk {
+    background: var(--canvas); border-right: 1px solid var(--line); padding: 32px 24px;
+    display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0;
+    z-index: 100; animation: navSlideIn 0.5s var(--fluid) both;
+  }
+  .brand-anchor { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; text-decoration: none; }
+  .brand-text { display: flex; flex-direction: column; }
+  .brand-text h1 { font-size: 18px; font-weight: 950; color: var(--text); letter-spacing: -0.03em; line-height: 1.1; }
+  .brand-text span { font-family: var(--mono); font-size: 10px; text-transform: uppercase; color: var(--accent); letter-spacing: 0.15em; margin-top: 2px; }
+  
+  .nav-group-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin: 24px 0 12px 8px; }
+  
+  .nav-pill {
+    display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 18px; border-radius: var(--radius-md);
+    color: var(--muted); font-size: 14.5px; font-weight: 600; cursor: pointer; transition: all 0.25s var(--fluid); margin-bottom: 6px;
+  }
+  .nav-pill:hover { background: rgba(255, 255, 255, 0.02); color: var(--text); transform: translateX(4px); }
+  .nav-pill.active { background: var(--panel); color: var(--text); border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); position: relative; }
+  .nav-pill.active::before { content: ''; position: absolute; left: -24px; top: 25%; height: 50%; width: 4px; background: var(--accent); border-radius: 0 4px 4px 0; box-shadow: 0 0 10px var(--accent); }
+  
+  /* Right Workspace Environment */
+  .workspace-env { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); position: relative; }
+  
+  /* Floating Decoupled Command Deck Header */
+  .command-deck {
+    height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 48px;
+    background: rgba(3, 5, 7, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 90;
+  }
+  .deck-title { font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.03em; }
+  .deck-actions { display: flex; align-items: center; gap: 16px; }
+  .deck-btn {
+    background: var(--panel); border: 1px solid var(--line); padding: 10px 20px; border-radius: var(--radius-md);
+    font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all 0.25s var(--fluid);
+  }
+  .deck-btn:hover { border-color: var(--line-glow); color: var(--text); }
+  .deck-identity { font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--canvas); padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line); }
 
-  .tabs { display: flex; gap: 8px; margin: 24px 0; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
-  .tabs button { background: none; color: var(--muted); font-size: 14px; font-weight: 600; padding: 10px 16px; cursor: pointer; position: relative; transition: color 0.2s ease; }
-  .tabs button:hover { color: var(--text); }
-  .tabs button.active { color: var(--accent); }
-  .tabs button.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .layout-canvas { flex: 1; max-width: 1200px; width: 100%; margin: 0 auto; padding: 48px; animation: stageReveal 0.5s var(--fluid) both; }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 99; }
+  .mobile-trigger { display: none; font-size: 24px; cursor: pointer; color: var(--text); background: none; border: none; }
+
+  /* ============ CONTENT STRUCTURAL ARRAYS ============ */
+  .banner { background: var(--danger-dim); border: 1px solid rgba(231, 76, 60, 0.2); color: var(--danger); padding: 16px 20px; border-radius: var(--radius-md); font-size: 14.5px; font-family: var(--mono); margin-bottom: 32px; display: none; }
+  .banner.ok { background: var(--done-dim); border-color: rgba(46, 204, 113, 0.2); color: var(--done); }
+
+  /* Spatial Grid Control Matrix Blocks */
+  .workspace-bar { display: grid; grid-template-columns: 1fr auto; gap: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); align-items: center; }
+  
+  .ecosystem-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .ecosystem-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 32px;
+    cursor: pointer; transition: all 0.35s var(--fluid); display: flex; flex-direction: column; position: relative;
+  }
+  .ecosystem-card:hover { border-color: var(--accent); transform: translateY(-4px) scale(1.01); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+  .ecosystem-card h3 { font-size: 19px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.02em; }
+  .ecosystem-card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; flex-grow: 1; }
+  .ecosystem-meta { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); padding-top: 16px; }
+
+  /* Context Tabs Infrastructure */
+  .context-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; }
+  .context-tabs { display: flex; gap: 4px; background: var(--canvas); padding: 4px; border-radius: var(--radius-md); border: 1px solid var(--line); margin-bottom: 32px; width: fit-content; }
+  .context-tabs button { padding: 10px 20px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+  .context-tabs button:hover { color: var(--text); }
+  .context-tabs button.active { background: var(--panel); color: var(--accent); border: 1px solid var(--line); }
 
   .tabpane { display: none; }
-  .tabpane.active { display: block; animation: screenFadeIn 0.35s var(--ease-out) both; }
+  .tabpane.active { display: block; animation: stageReveal 0.4s var(--fluid) both; }
 
-  /* ---------- Modernized Task Rows ---------- */
-  .task { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px; margin-bottom: 12px; transition: all 0.25s ease; }
-  .task:hover { border-color: var(--line-glow); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-  .task.done { opacity: 0.5; }
-  .task-row { display: flex; align-items: flex-start; gap: 16px; }
+  /* Kinetic Task Workspace UI Elements */
+  .task-node { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px; transition: all 0.3s var(--fluid); }
+  .task-node:hover { border-color: var(--line-glow); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+  .task-node.done { opacity: 0.45; }
   
-  .chk { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--panel-2); transition: all 0.2s var(--ease-out); flex-shrink: 0; margin-top: 2px; }
-  .chk:hover { border-color: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
-  .chk:active { transform: scale(0.9); }
-  .chk.checked { background: var(--done); border-color: var(--done); box-shadow: 0 0 8px var(--done-dim); }
-  .chk.checked::after { content: '✓'; color: #06080a; font-size: 14px; font-weight: 900; }
+  .chk { width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--line); cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--canvas); transition: all 0.2s; flex-shrink: 0; }
+  .chk:hover { border-color: var(--accent); }
+  .chk.checked { background: var(--done); border-color: var(--done); }
+  .chk.checked::after { content: '✓'; color: var(--bg); font-size: 14px; font-weight: 900; }
   
-  .task-body { flex: 1; min-width: 0; }
-  .task-title { font-size: 15.5px; font-weight: 600; line-height: 1.5; color: var(--text); transition: color 0.2s; }
-  .task.done .task-title { text-decoration: line-through; color: var(--muted); }
-  .task-meta { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .task-title { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--text); }
+  .task-node.done .task-title { text-decoration: line-through; color: var(--muted); }
   
-  .tag { font-family: var(--mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; padding: 3px 9px; border-radius: 20px; }
-  .tag.todo { background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
-  .tag.progress { background: var(--prog-dim); color: var(--prog); border: 1px solid rgba(255,209,102,0.2); }
-  .tag.done { background: var(--done-dim); color: var(--done); border: 1px solid rgba(61,220,151,0.2); }
-  
-  .status-cycle, .assign-select, .exp-btn, .edit-task-btn { font-family: var(--mono); font-size: 10.5px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); padding: 4px 10px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
-  .status-cycle:hover, .exp-btn:hover, .edit-task-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .assign-select { color: var(--text); padding-right: 6px; }
-  
-  .del { background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 2px 8px; transition: color 0.2s; }
-  .del:hover { color: var(--danger); }
-  .del-project-btn { background: var(--danger-dim); border: 1px solid var(--danger); color: var(--danger); font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; }
-  .del-project-btn:hover { background: var(--danger); color: #fff; }
+  .badge { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 20px; border: 1px solid transparent; }
+  .badge.todo { background: var(--canvas); color: var(--muted); border-color: var(--line); }
+  .badge.progress { background: var(--prog-dim); color: var(--prog); border-color: rgba(241,196,15,0.2); }
+  .badge.done { background: var(--done-dim); color: var(--done); border-color: rgba(46,204,113,0.2); }
 
-  /* Subtasks Infrastructure */
-  .subtasks { margin-top: 16px; padding-left: 20px; border-left: 2px solid var(--line); display: none; }
-  .subtasks.open { display: block; animation: screenFadeIn 0.25s var(--ease-out); }
-  .subtask { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
-  .subtask:last-child { border-bottom: none; }
-  .subtask .task-title { font-size: 14px; }
-  .subaddbar { display: flex; gap: 8px; margin-top: 12px; }
-  
-  .progress-bar { height: 6px; background: var(--panel-2); border-radius: 20px; overflow: hidden; margin-top: 12px; }
-  .progress-fill { height: 100%; background: var(--done); transition: width 0.4s var(--ease-out); }
-  .progress-label { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .subtasks-wrapper { margin-top: 20px; padding-left: 24px; border-left: 2px solid var(--line); display: none; }
+  .subtasks-wrapper.open { display: block; animation: stageReveal 0.25s var(--fluid); }
+  .subtask-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
 
-  /* Task Inline Mutation */
-  .task-title-edit { background: var(--panel-2); border: 1px solid var(--accent); color: var(--text); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 15px; width: 100%; }
-  .task-due { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 8px; }
-  .task-due.overdue { color: var(--danger); font-weight: 700; }
-  .task-due.soon { color: var(--prog); font-weight: 700; }
-  .task-due-edit { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 4px 8px; border-radius: 6px; font-family: var(--mono); }
-
-  /* ---------- Notification Matrix ---------- */
-  .notif-wrap { position: relative; }
-  .notif-badge { background: var(--danger); color: #fff; border-radius: 20px; font-size: 10px; padding: 2px 6px; font-weight: 700; margin-left: 4px; border: 2px solid var(--panel); }
+  /* Notifications Overlay Stack */
+  .notif-badge { background: var(--accent); color: var(--bg); border-radius: 20px; font-size: 10px; padding: 2px 6px; font-weight: 800; border: 2px solid var(--panel); animation: signalPulse 2s infinite; }
   .notif-dropdown {
-    display: none; position: absolute; right: 0; top: calc(100% + 12px); width: 340px; max-height: 460px; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 12px; z-index: 110; box-shadow: 0 15px 40px rgba(0,0,0,0.5); animation: screenFadeIn 0.25s var(--ease-out);
+    display: none; position: absolute; right: 48px; top: 75px; width: 360px; max-height: 480px; overflow-y: auto;
+    background: rgba(13, 18, 26, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 16px; z-index: 120; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   }
-  .notif-dropdown.open { display: block; }
-  .notif-item { padding: 12px; border-radius: var(--radius-sm); margin-bottom: 6px; background: var(--panel-2); border: 1px solid transparent; transition: all 0.2s; }
-  .notif-item.unread { border-left: 3px solid var(--accent); background: rgba(255,138,61,0.02); }
-  .notif-text { font-size: 13px; line-height: 1.45; color: var(--text); }
-  .notif-time { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-top: 6px; }
-  .notif-actions { display: flex; gap: 8px; margin-top: 10px; }
-  .notif-actions button { font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
-  .notif-actions button.accept { background: var(--done-dim); color: var(--done); border-color: rgba(61,220,151,0.3); }
-  .notif-actions button.reject { background: var(--danger-dim); color: var(--danger); border-color: rgba(255,92,92,0.3); }
-  .notif-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 32px 0; font-family: var(--mono); }
+  .notif-dropdown.open { display: block; animation: stageReveal 0.25s var(--fluid); }
+  .notif-card { padding: 14px; border-radius: var(--radius-md); margin-bottom: 8px; background: var(--canvas); border: 1px solid var(--line); }
+  .notif-card.unread { border-left: 4px solid var(--accent); background: rgba(255,138,61,0.01); }
 
-  /* ---------- Timeline Engine ---------- */
-  .tl-item { display: flex; gap: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 18px; margin-bottom: 10px; align-items: center; }
-  .tl-date { font-family: var(--mono); font-size: 12.5px; color: var(--muted); min-width: 100px; flex-shrink: 0; }
-  .tl-date.overdue { color: var(--danger); font-weight: 700; }
-  .tl-date.soon { color: var(--prog); font-weight: 700; }
-  .tl-bar { flex: 1; height: 8px; border-radius: 10px; background: var(--panel-2); position: relative; overflow: hidden; }
-  .tl-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 10px; background: var(--accent); transition: width 0.5s var(--ease-out); }
-  .tl-title { flex: 2; font-size: 14.5px; font-weight: 600; }
-  .tl-title.done { text-decoration: line-through; color: var(--muted); }
-
-  /* ---------- Notes Architecture ---------- */
-  .note { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; margin-bottom: 12px; }
-  .note-text { font-size: 14.5px; line-height: 1.6; color: var(--text); white-space: pre-wrap; }
-  .note-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 12px; flex-wrap: wrap; gap: 10px; }
-  .note-author { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .note-actions { display: flex; gap: 8px; }
-  .note-actions button { font-family: var(--mono); font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
-  .note-actions button:hover { border-color: var(--accent); color: var(--accent); }
-  .note-converted { font-family: var(--mono); font-size: 11px; color: var(--done); font-weight: 600; }
-
-  /* ---------- Team & Collaboration Matrix ---------- */
-  .member-row { display: flex; align-items: center; justify-content: space-between; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 8px; }
-  .member-info { display: flex; flex-direction: column; gap: 4px; }
-  .member-email { font-size: 14.5px; font-weight: 600; color: var(--text); }
-  .member-role { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  .invite-row { display: flex; gap: 10px; margin-bottom: 24px; background: var(--panel); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--line); }
-  .invite-row input { flex: 1; }
-
-  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 60px 0; font-family: var(--mono); border: 1px dashed var(--line); border-radius: var(--radius-md); background: rgba(255,255,255,0.01); }
-  footer { text-align: center; color: var(--muted); font-size: 12px; font-family: var(--mono); padding: 40px 0 20px; border-top: 1px solid var(--line); margin-top: 60px; }
-
-  /* ============ INVOICES ADVANCED LAYER ============ */
+  /* ============ INVOICES ADVANCED CANVAS ============ */
   #invoiceView { display: none; }
-  .inv-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px; }
-  .inv-toolbar h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
-  
-  .inv-list-item {
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; transition: all 0.25s var(--ease-out); flex-wrap: wrap;
+  .inv-ledger-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px 32px;
+    margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 20px; cursor: pointer; transition: all 0.25s var(--fluid);
   }
-  .inv-list-item:hover { border-color: var(--accent); transform: translateX(3px); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-  .inv-list-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
-  .inv-list-client { font-size: 16px; font-weight: 700; }
-  .inv-list-date { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .inv-list-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-  .inv-amount { font-size: 18px; font-weight: 800; color: var(--text); }
-  .inv-status { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.05em; }
-  .inv-status.draft { background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
-  .inv-status.sent { background: var(--prog-dim); color: var(--prog); border: 1px solid rgba(255,209,102,0.2); }
-  .inv-status.paid { background: var(--done-dim); color: var(--done); border: 1px solid rgba(61,220,151,0.2); }
+  .inv-ledger-card:hover { border-color: var(--accent); transform: translateX(4px); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+  .inv-amount-label { font-size: 20px; font-weight: 900; letter-spacing: -0.02em; }
 
-  .inv-form { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-md); padding: 28px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-  .inv-form h3 { margin-bottom: 20px; font-size: 13.5px; color: var(--accent); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-  .inv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  .inv-field { display: flex; flex-direction: column; gap: 6px; }
-  .inv-field label { font-size: 11.5px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.05em; }
-  .inv-field.full { grid-column: 1 / -1; }
+  .inv-workspace-block { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 36px; margin-bottom: 24px; }
+  .inv-workspace-block h4 { margin-bottom: 24px; font-size: 14px; color: var(--accent); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.12em; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
   
-  .inv-items-head { display: grid; grid-template-columns: 40px 3fr 1fr 1fr 1fr 40px; gap: 10px; margin-bottom: 10px; padding: 0 10px; }
-  .inv-items-head span { font-size: 11px; color: var(--muted); font-family: var(--mono); text-transform: uppercase; }
-  .inv-item-row { display: grid; grid-template-columns: 40px 3fr 1fr 1fr 1fr 40px; gap: 10px; margin-bottom: 8px; align-items: center; background: var(--panel-2); padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--line); }
-  .inv-item-row input { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 13.5px; width: 100%; }
-  .inv-item-row input:focus { border-color: var(--accent); }
-  .inv-item-total { font-size: 14px; color: var(--text); font-family: var(--mono); text-align: right; font-weight: 600; }
-  .inv-add-item { background: none; border: 1px dashed var(--line); color: var(--muted); width: 100%; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13.5px; font-weight: 600; margin-top: 8px; transition: all 0.2s; }
-  .inv-add-item:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .inv-split-row { display: grid; grid-template-columns: 40px 3fr 1fr 1fr 1fr 40px; gap: 12px; margin-bottom: 12px; align-items: center; background: var(--canvas); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--line); }
+  .inv-split-row input { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; width: 100%; }
   
-  .inv-totals { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
-  .inv-total-row { display: flex; gap: 32px; font-family: var(--mono); font-size: 14px; min-width: 240px; justify-content: space-between; }
-  .inv-total-row span:first-child { color: var(--muted); }
-  .inv-total-row.grand { font-size: 18px; color: var(--text); font-weight: 800; border-top: 1px solid var(--line-glow); padding-top: 8px; margin-top: 4px; }
-  
-  .inv-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
-  .inv-btn { border: none; border-radius: var(--radius-sm); padding: 12px 24px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
-  .inv-btn.primary { background: var(--accent); color: #06080a; }
-  .inv-btn.primary:hover { background: #ff9e59; }
-  .inv-btn.secondary { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); }
-  .inv-btn.secondary:hover { border-color: var(--line-glow); background: var(--panel); }
-  .inv-btn.danger { background: var(--danger-dim); border: 1px solid var(--danger); color: var(--danger); }
-  .inv-btn.danger:hover { background: var(--danger); color: #fff; }
-
-  /* ============ MOBILE MEDIA LAYER ============ */
-  @media screen and (max-width: 992px) {
-    .sidebar { transform: translateX(-100%); width: 280px; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
-    .sidebar.open { transform: translateX(0); }
-    .main-area { margin-left: 0; }
-    .topbar-menu { display: block; }
-    .topbar { padding: 0 20px; }
-    .wrap { padding: 20px; }
-    .inv-items-head { display: none; }
-    .inv-item-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
-    .inv-item-row *:nth-child(1) { grid-column: 1 / -1; text-align: left; font-size: 11px; }
-    .inv-item-row *:nth-child(2) { grid-column: 1 / -1; }
-    .inv-item-row .inv-item-total { text-align: left; padding-top: 6px; }
+  /* ============ ADAPTIVE MOBILE CANVAS INTERFACES ============ */
+  @media screen and (max-width: 1024px) {
+    #appRoot { grid-template-columns: 1fr; }
+    .control-desk { transform: translateX(-100%); width: 300px; position: fixed; top: 0; bottom: 0; left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.7); }
+    .control-desk.open { transform: translateX(0); }
+    .mobile-trigger { display: block; }
+    .command-deck { padding: 0 24px; }
+    .layout-canvas { padding: 24px; }
   }
 
-  @media screen and (max-width: 576px) {
-    .addbar { flex-direction: column; align-items: stretch; padding: 16px; }
-    .addbar button { width: 100%; padding: 12px; }
-    .inv-grid { grid-template-columns: 1fr; }
-    .inv-actions button { width: 100%; justify-content: center; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    * { animation: none !important; transition: none !important; }
+  @media screen and (max-width: 768px) {
+    .workspace-bar { grid-template-columns: 1fr; }
+    .inv-split-row { grid-template-columns: 1fr; gap: 10px; padding: 16px; }
+    .inv-split-row *:nth-child(1) { text-align: left; font-weight: 700; }
   }
 </style>
 </head>
 <body>
 
-<!-- ============ AUTH ARCHITECTURE SCREEN ============ -->
+<!-- ============ SPATIAL ACCOUNT SECURITY MODULE ============ -->
 <div id="authScreen">
-  <svg class="logo-svg auth-logo idle" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
-    <g fill="#f0f6fc">
-      <rect class="bar" x="195" y="60" width="40" height="320"/>
-      <rect class="bar" x="250" y="115" width="18" height="265"/>
-      <rect class="bar" x="283" y="92" width="28" height="288"/>
-      <rect class="bar" x="326" y="118" width="22" height="262"/>
-      <rect class="bar" x="363" y="168" width="34" height="212"/>
-      <rect class="bar" x="412" y="120" width="22" height="260"/>
-      <rect class="bar" x="450" y="58" width="38" height="322"/>
-      <rect class="bar" x="503" y="205" width="16" height="175"/>
-      <rect class="bar" x="534" y="78" width="34" height="302"/>
-    </g>
-    <g class="strip">
-      <rect x="40" y="380" width="528" height="86" fill="#8b949e" rx="6"/>
-      <text x="62" y="442" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117">479</text>
-      <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117" letter-spacing="2">CODE</text>
-    </g>
-  </svg>
-  <p class="eyebrow">479Code · Operations System</p>
-  
-  <div class="authbox">
+  <div class="auth-deck">
+    <svg class="logo-svg auth-logo idle" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#f0f6fc">
+        <rect class="bar" x="195" y="60" width="40" height="320"/>
+        <rect class="bar" x="250" y="115" width="18" height="265"/>
+        <rect class="bar" x="283" y="92" width="28" height="288"/>
+        <rect class="bar" x="326" y="118" width="22" height="262"/>
+        <rect class="bar" x="363" y="168" width="34" height="212"/>
+        <rect class="bar" x="412" y="120" width="22" height="260"/>
+        <rect class="bar" x="450" y="58" width="38" height="322"/>
+        <rect class="bar" x="503" y="205" width="16" height="175"/>
+        <rect class="bar" x="534" y="78" width="34" height="302"/>
+      </g>
+      <g class="strip">
+        <rect x="40" y="380" width="528" height="86" fill="#7a8b9e" rx="6"/>
+        <text x="62" y="442" font-family="monospace" font-weight="900" font-size="58" fill="#0d121a">479</text>
+        <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="900" font-size="58" fill="#0d121a" letter-spacing="2">CODE</text>
+      </g>
+    </svg>
+    
     <div class="authtabs">
-      <button id="tabSignIn" class="active">Sign In</button>
-      <button id="tabSignUp">Sign Up</button>
+      <button id="tabSignIn" class="active">Secure Access</button>
+      <button id="tabSignUp">Enroll Node</button>
     </div>
     
     <div id="fullNameField" class="field" style="display:none;">
-      <label>Full Name</label>
-      <input type="text" id="fullNameInput" class="input-premium" placeholder="Your full name" autocomplete="name">
+      <label>Node Host Full Name</label>
+      <input type="text" id="fullNameInput" class="input-premium" placeholder="System identity name" autocomplete="name">
     </div>
     <div id="usernameField" class="field" style="display:none;">
-      <label>Username</label>
+      <label>Target System Namespace Handle</label>
       <input type="text" id="usernameInput" class="input-premium" placeholder="e.g. Uthy479" autocomplete="off">
     </div>
     <div class="field">
-      <label>Email Address</label>
+      <label>Network Registry Email Address</label>
       <input type="email" id="emailInput" class="input-premium" placeholder="you@479code.com" autocomplete="email">
     </div>
     <div class="field">
-      <label>Password</label>
+      <label>Authentication Pass Phrase</label>
       <input type="password" id="passwordInput" class="input-premium" placeholder="••••••••" autocomplete="current-password">
     </div>
     
-    <button class="btn-premium" id="authSubmit" style="width: 100%;">Sign In</button>
+    <button class="btn-premium" id="authSubmit" style="width: 100%;">Connect Session Terminal</button>
     <div class="autherr" id="authErr"></div>
     <div class="authmsg" id="authMsg"></div>
     
-    <div style="text-align:center; margin-top:16px;">
-      <button id="forgotBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">Forgot password?</button>
+    <div style="text-align:center; margin-top:20px;">
+      <button id="forgotBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">Request security hash reset?</button>
     </div>
   </div>
 
-  <!-- Forgot Password Panel Layer -->
-  <div id="forgotPanel" style="display:none;" class="authbox">
-    <h3 style="margin-bottom:12px; font-size:16px; font-weight:700;">Reset Password</h3>
-    <p style="font-size:13px; color:var(--muted); margin-bottom:18px; line-height:1.4;">Enter your email to receive a recovery window link.</p>
+  <!-- Recovery Overlay Form Panel -->
+  <div id="forgotPanel" style="display:none;" class="auth-deck">
+    <h3 style="margin-bottom:8px; font-size:18px; font-weight:800;">Patch Lost Credentials</h3>
+    <p style="font-size:13.5px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Input registered email endpoint to push data verification channel.</p>
     <div class="field">
-      <label>Email Address</label>
+      <label>Target Email Address</label>
       <input type="email" id="forgotEmail" class="input-premium" placeholder="479code@gmail.com" autocomplete="email">
     </div>
-    <button class="btn-premium" id="forgotSubmit" style="width:100%;">Send Reset Link</button>
+    <button class="btn-premium" id="forgotSubmit" style="width:100%;">Transmit Key Recovery Signal</button>
     <div class="autherr" id="forgotErr"></div>
     <div class="authmsg" id="forgotMsg"></div>
-    <div style="text-align:center; margin-top:16px;">
-      <button id="backToLoginBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">← Back to sign in</button>
+    <div style="text-align:center; margin-top:20px;">
+      <button id="backToLoginBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">← Return to login block</button>
     </div>
   </div>
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<!-- ============ OPERATIONS APPLICATION CORE APP ROOT ============ -->
+<!-- ============ CENTRAL INTEGRATED OPERATION SPACE CONTROLLER ============ -->
 <div id="appRoot">
 
-  <!-- NAVIGATION SIDEBAR ENGINE -->
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo" id="brandHome">
-      <svg class="logo-svg" style="width:42px; height:auto;" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+  <!-- LEFT CONTROL DESK MODULE -->
+  <nav class="control-desk" id="sidebar">
+    <div class="brand-anchor" id="brandHome">
+      <svg class="logo-svg" style="width:40px; height:auto; flex-shrink:0;" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
         <g fill="var(--accent)">
           <rect class="bar" x="195" y="60" width="40" height="320"/><rect class="bar" x="250" y="115" width="18" height="265"/>
           <rect class="bar" x="283" y="92" width="28" height="288"/><rect class="bar" x="326" y="118" width="22" height="262"/>
@@ -476,274 +347,253 @@
           <rect class="bar" x="534" y="78" width="34" height="302"/>
         </g>
         <g class="strip">
-          <rect x="40" y="380" width="528" height="86" fill="#8b949e" rx="6"/>
-          <text x="62" y="442" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117">479</text>
-          <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="900" font-size="58" fill="#0d1117" letter-spacing="2">CODE</text>
+          <rect x="40" y="380" width="528" height="86" fill="#7a8b9e" rx="6"/>
+          <text x="62" y="442" font-family="monospace" font-weight="900" font-size="58" fill="#0d121a">479</text>
+          <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="900" font-size="58" fill="#0d121a" letter-spacing="2">CODE</text>
         </g>
       </svg>
-      <div style="display:flex; flex-direction:column;">
-        <span class="eyebrow" style="margin:0; font-size:10px;">479Code</span>
-        <span class="sidebar-appname">Operations</span>
+      <div class="brand-text">
+        <h1>479Code</h1>
+        <span>Operations Console</span>
       </div>
     </div>
 
-    <div class="sidebar-section-label">Enterprise Modules</div>
-    <button class="nav-item active" id="navProjects" onclick="switchModule('projects')">
-      <span class="nav-icon">📋</span><span>Task Tracker</span>
+    <div class="nav-group-label">System Domains</div>
+    <button class="nav-pill active" id="navProjects" onclick="switchModule('projects')">
+      <span style="font-size:16px;">📋</span><span>Task Control Matrix</span>
     </button>
-    <button class="nav-item" id="navInvoices" onclick="switchModule('invoices')" style="display:none;">
-      <span class="nav-icon">🧾</span><span>Invoice Generator</span>
+    <button class="nav-pill" id="navInvoices" onclick="switchModule('invoices')" style="display:none;">
+      <span style="font-size:16px;">🧾</span><span>Ledger Billings export</span>
     </button>
 
     <div class="sidebar-spacer"></div>
 
-    <div class="sidebar-section-label">Identity Config</div>
+    <div class="nav-group-label">Session Adjustments</div>
     
     <div class="notif-wrap" style="width:100%;">
-      <button class="nav-item" id="usernameBtn">
-        <span class="nav-icon">👤</span><span id="usernameLabel">Set username</span>
+      <button class="nav-pill" id="usernameBtn">
+        <span style="font-size:16px;">👤</span><span id="usernameLabel">Nickname configuration</span>
       </button>
-      <div class="notif-dropdown" id="usernameDropdown" style="left:0; right:auto; width:100%;">
+      <div class="notif-dropdown" id="usernameDropdown" style="left:0; right:auto; width:100%; bottom:70px; top:auto;">
         <div class="field" style="margin:4px;">
-          <label>Modify Username</label>
+          <label>Modify System Identifier Tag</label>
           <input type="text" id="usernameEditInput" class="input-premium" placeholder="e.g. Uthy479">
         </div>
-        <button id="usernameSaveBtn" class="btn-premium" style="width:100%; padding:8px; margin-top:6px;">Save Target</button>
+        <button id="usernameSaveBtn" class="btn-premium" style="width:100%; padding:10px; margin-top:8px;">Overwrite Tag</button>
         <div id="usernameMsg" style="font-size:11px; margin-top:6px; font-family:var(--mono); text-align:center;"></div>
       </div>
     </div>
 
     <div class="notif-wrap" style="width:100%;">
-      <button class="nav-item" id="changePwdBtn">
-        <span class="nav-icon">🔑</span><span>Update Security</span>
+      <button class="nav-pill" id="changePwdBtn">
+        <span style="font-size:16px;">🔑</span><span>Encryption Override</span>
       </button>
-      <div class="notif-dropdown" id="changePwdDropdown" style="left:0; right:auto; width:230px; padding:16px;">
-        <div style="font-size:11px; color:var(--accent); font-family:var(--mono); margin-bottom:12px; text-transform:uppercase;">Change Password</div>
+      <div class="notif-dropdown" id="changePwdDropdown" style="left:0; right:auto; width:250px; bottom:70px; top:auto; padding:20px;">
+        <div style="font-size:11px; color:var(--accent); font-family:var(--mono); margin-bottom:12px; text-transform:uppercase;">Patch Secure Cipher</div>
         <div style="margin-bottom:8px;">
-          <input type="password" id="newPwdInput" class="input-premium" placeholder="New Password" style="padding:6px 10px; font-size:13px;">
+          <input type="password" id="newPwdInput" class="input-premium" placeholder="New Encryption Key" style="padding:8px 12px; font-size:13px;">
         </div>
         <div style="margin-bottom:12px;">
-          <input type="password" id="confirmPwdInput" class="input-premium" placeholder="Repeat Password" style="padding:6px 10px; font-size:13px;">
+          <input type="password" id="confirmPwdInput" class="input-premium" placeholder="Verify Hash Structure" style="padding:8px 12px; font-size:13px;">
         </div>
-        <button id="savePwdBtn" class="btn-premium" style="width:100%; padding:8px; font-size:12px;">Execute Patch</button>
+        <button id="savePwdBtn" class="btn-premium" style="width:100%; padding:10px; font-size:12px;">Push Cipher Update</button>
         <div id="pwdMsg" style="font-size:11px; margin-top:8px; font-family:var(--mono); text-align:center;"></div>
       </div>
     </div>
 
-    <button class="nav-item" id="signOutBtn" style="color:var(--danger);"><span class="nav-icon">↩</span><span>Sign Out Terminal</span></button>
+    <button class="nav-pill" id="signOutBtn" style="color:var(--danger); margin-top:8px;"><span style="font-size:16px;">↩</span><span>Disconnect System Node</span></button>
   </nav>
 
-  <!-- WORKSPACE MAIN HUB -->
-  <div class="main-area">
+  <!-- RIGHT WORKING SPACE CONTAINER -->
+  <div class="workspace-env">
 
-    <!-- MASTER GLASS TOPBAR -->
-    <div class="topbar">
-      <button class="topbar-menu" id="menuToggle">☰</button>
-      <div class="topbar-title" id="topbarTitle">Task Tracker</div>
-      <div class="topbar-right">
-        <button id="refreshBtn" class="topbar-btn">⟳ Sync Data</button>
+    <!-- FLOATING BLURRED TOP ACCESS DECK -->
+    <header class="command-deck">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <button class="mobile-trigger" id="menuToggle">☰</button>
+        <div class="deck-title" id="topbarTitle">Task Tracker Platform</div>
+      </div>
+      <div class="deck-actions">
+        <button id="refreshBtn" class="deck-btn">⟳ Cluster Resync</button>
         <div class="notif-wrap">
-          <button id="notifBtn" class="topbar-btn">🔔 Alerts <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
+          <button id="notifBtn" class="deck-btn">🔔 Live Feeds <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
           <div class="notif-dropdown" id="notifDropdown"></div>
         </div>
-        <span id="userEmail" class="topbar-email"></span>
+        <span id="userEmail" class="deck-identity"></span>
       </div>
-    </div>
+    </header>
 
-    <div class="wrap">
+    <div class="layout-canvas">
       <div class="banner" id="errBanner"></div>
 
-      <!-- MASTER WORKSPACE MODULE: PROJECTS LIST -->
+      <!-- MASTER LAYER MODULE: PROJECT FRAME GRID -->
       <div id="projectsView">
-        <div class="addbar">
-          <input type="text" id="newProjectName" class="input-premium" placeholder="Initialize execution blueprint / project name…">
-          <button id="addProjectBtn" class="btn-premium">+ Create Project</button>
+        <div class="workspace-bar">
+          <input type="text" id="newProjectName" class="input-premium" placeholder="Define environment operational workspace perimeter configuration…">
+          <button id="addProjectBtn" class="btn-premium">Initialize Blueprint Matrix</button>
         </div>
-        <div class="sidebar-section-label" style="padding-left:0; margin-bottom:12px;">Active Operational Ecosystems</div>
-        <div class="projects-grid" id="projectsGrid"></div>
-        <div class="empty" id="projectsEmpty" style="display:none;">No systems mapped yet. Launch a new project environment matrix using the compiler above.</div>
+        <div class="nav-group-label" style="padding-left:0; margin-bottom:16px;">Active Network Context Scopes</div>
+        <div class="ecosystem-grid" id="projectsGrid"></div>
+        <div class="empty" id="projectsEmpty" style="display:none;">Operational space clear. No active cluster workspaces mapped to profile registry tokens. Create one above.</div>
       </div>
 
-      <!-- MASTER BLUEPRINT DETAIL MODULE -->
+      <!-- MASTER VIEW MODULE: BLUEPRINT SUBSYSTEM CONSOLE -->
       <div id="projectView" style="display:none;">
-        <div class="section-head-nav">
-          <button class="backbtn" id="backBtn">← Return to Environments</button>
-          <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Erase Ecosystem</button>
-        </div>
-        
-        <div class="project-head">
-          <h2 id="projectName"></h2>
-          <p id="projectDesc"></p>
-        </div>
-
-        <div class="tabs">
-          <button class="tabbtn active" data-tab="tasks">Tasks Matrix</button>
-          <button class="tabbtn" data-tab="timeline">Chronicle Timeline</button>
-          <button class="tabbtn" data-tab="notes">Operational Log Notes</button>
-          <button class="tabbtn" data-tab="members">Node Network Members</button>
+        <div class="context-header">
+          <div>
+            <button class="backbtn" id="backBtn">← Return to Global Context Directory</button>
+            <h2 id="projectName" style="margin-top:12px;"></h2>
+            <p id="projectDesc"></p>
+          </div>
+          <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Purge Local Environment Cluster</button>
         </div>
 
-        <!-- Tab Matrix: Tasks Execution Layer -->
+        <div class="context-tabs">
+          <button class="tabbtn active" data-tab="tasks">Tactical Array</button>
+          <button class="tabbtn" data-tab="timeline">Chronometer Streams</button>
+          <button class="tabbtn" data-tab="notes">Field Logs Memory</button>
+          <button class="tabbtn" data-tab="members">Node Authorization Access</button>
+        </div>
+
+        <!-- System Task Matrices Grid Workspace Panel -->
         <div class="tabpane active" id="pane-tasks">
-          <div class="addbar">
-            <input type="text" id="newTaskInput" class="input-premium" placeholder="Queue new tactical target allocation item…">
-            <select id="newTaskAssignee"><option value="">Unassigned Operational Node</option></select>
-            <input type="date" id="newTaskDue" title="Target Deadline Phase">
-            <button id="addTaskBtn" class="btn-premium">Queue Target</button>
+          <div class="workspace-bar" style="grid-template-columns: 2fr 1fr 1fr auto; gap:12px;">
+            <input type="text" id="newTaskInput" class="input-premium" placeholder="Allocate new operations process parameter target…">
+            <select id="newTaskAssignee" class="input-premium" style="padding:10px;"><option value="">Unassigned Node</option></select>
+            <input type="date" id="newTaskDue" class="input-premium" style="padding:10px;">
+            <button id="addTaskBtn" class="btn-premium">Map Target Process</button>
           </div>
           <div id="taskList"></div>
-          <div class="empty" id="tasksEmpty" style="display:none;">Environment clear. No current operation logs allocated.</div>
+          <div class="empty" id="tasksEmpty" style="display:none;">Queue index clean. System threads reporting normal idle operation vectors.</div>
         </div>
 
-        <!-- Tab Matrix: Timeline Chronicle Layout -->
+        <!-- Telemetry Streams Chronometer Matrix Map Layer -->
         <div class="tabpane" id="pane-timeline">
           <div id="timelineList"></div>
-          <div class="empty" id="timelineEmpty" style="display:none;">Zero target timelines metrics tracked. Set operational deadliness to display telemetry stream.</div>
+          <div class="empty" id="timelineEmpty" style="display:none;">Chronometer data empty. Tag chronological target metrics inside operations tab to trace trajectory charts.</div>
         </div>
 
-        <!-- Tab Matrix: Notes Operational Storage -->
+        <!-- Notes Frame Space Matrix Elements Logs Layer -->
         <div class="tabpane" id="pane-notes">
-          <div class="addbar">
-            <textarea id="newNoteInput" class="input-premium" placeholder="Record raw event stream or debrief parameters… e.g. Logistics pipeline update" rows="2"></textarea>
-            <button id="addNoteBtn" class="btn-premium">Commit Note Log</button>
+          <div class="workspace-bar">
+            <textarea id="newNoteInput" class="input-premium" placeholder="Append streaming field telemetry block data payload logs… e.g. Logistics pipeline status frame update" rows="2"></textarea>
+            <button id="addNoteBtn" class="btn-premium">Push Static Data Capture</button>
           </div>
           <div id="noteList"></div>
-          <div class="empty" id="notesEmpty" style="display:none;">Log files clear. Empty storage buffer.</div>
+          <div class="empty" id="notesEmpty" style="display:none;">Buffered logs cleared. Storage disk clusters reading zero bytes content data.</div>
         </div>
 
-        <!-- Tab Matrix: Node Network Members -->
+        <!-- Node Interfacing Core Communications Registry Group Panel -->
         <div class="tabpane" id="pane-members">
           <div class="invite-row">
-            <input type="text" id="inviteEmail" class="input-premium" placeholder="Secure Network Token Address (@username or system registry email)">
-            <select id="inviteRole">
-              <option value="editor">Write Access Token (Editor)</option>
-              <option value="viewer">Read Only Engine (Viewer)</option>
-            </select>
-            <button id="inviteBtn" class="btn-premium">Transmit Network Link</button>
+            <input type="text" id="inviteEmail" class="input-premium" placeholder="Target identity validation signature (@username string or data registry email block)">
+            <select id="inviteRole" class="input-premium" style="max-width: 240px;"><option value="editor">Write Permission Privileges [Editor]</option><option value="viewer">Read Only Metrics Level [Viewer]</option></select>
+            <button id="inviteBtn" class="btn-premium">Broadcast Access invitation</button>
           </div>
           <div id="pendingInvitesList"></div>
           <div id="memberList"></div>
         </div>
       </div>
 
-      <!-- ============ INVOICE FINANCIAL MODULE ARCHITECTURE ============ -->
+      <!-- ============ INVOICES INTEGRATED FISCAL MANAGEMENT LEDGER ============ -->
       <div id="invoiceView">
         <div class="inv-toolbar">
           <div>
-            <button class="backbtn" id="invBackBtn">← Back</button>
-            <h2 id="invViewTitle">Invoices Ledger</h2>
+            <button class="backbtn" id="invBackBtn">← Return to Domain Management</button>
+            <h2 id="invViewTitle" style="margin-top:12px;">Invoices Balances Ledger Array</h2>
           </div>
-          <button class="btn-premium" id="newInvoiceBtn">+ Generate Invoice Matrix</button>
+          <button class="btn-premium" id="newInvoiceBtn">+ Create New Ledger Entry Payload</button>
         </div>
         <div id="invoiceList"></div>
-        <div class="empty" id="invoicesEmpty" style="display:none;">Ledger clear. No processed data frames found.</div>
+        <div class="empty" id="invoicesEmpty" style="display:none;">Transaction buffer reading empty. No invoice files generated within the database pipeline framework.</div>
 
-        <!-- Automated Ledger Compilation Engine Form -->
+        <!-- Transaction Vector Form Input Stack Interface Template -->
         <div id="invoiceForm" style="display:none;">
-          <div class="inv-form">
-            <h3>Invoice Header Telemetry</h3>
+          <div class="inv-workspace-block">
+            <h4>Invoice Signature Definitions Block</h4>
             <div class="inv-grid">
               <div class="inv-field full">
-                <label>Subject Parameters / Contract Definition *</label>
+                <label>Operational Scope / Contract Title Variable *</label>
                 <input type="text" id="inv_title" class="input-premium" placeholder="e.g. INVOICE TO TRANSBORDER LOGISTICS FOR MONTH OF JUNE 2026">
               </div>
-              <div class="inv-field">
-                <label>Ledger Log / Transaction Identification Ref *</label>
-                <input type="text" id="inv_number" class="input-premium" placeholder="e.g. TR/00F/C/06/26">
-              </div>
-              <div class="inv-field">
-                <label>Timestamp Entry *</label>
-                <input type="date" id="inv_issue_date" class="input-premium">
-              </div>
-              <div class="inv-field">
-                <label>Status Vector</label>
-                <select id="inv_status" class="input-premium">
-                  <option value="draft">Draft Specification</option>
-                  <option value="sent">Dispatched Vector</option>
-                  <option value="paid">Settled Frame</option>
-                </select>
-              </div>
-              <div class="inv-field">
-                <label>Currency Framework Standard</label>
-                <select id="inv_currency" class="input-premium">
-                  <option value="NGN">NGN — Nigerian Naira (₦)</option>
-                  <option value="USD">USD — US Dollar ($)</option>
-                  <option value="GBP">GBP — British Pound (£)</option>
-                  <option value="EUR">EUR — Euro (€)</option>
-                  <option value="KES">KES — Kenyan Shilling</option>
-                  <option value="GHS">GHS — Ghana Cedi (₵)</option>
-                </select>
+              <div class="inv-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap:16px; margin-top:16px; width:100%;">
+                <div class="inv-field"><label>Serial Transaction Tracking Code *</label>
+                  <input type="text" id="inv_number" class="input-premium" placeholder="e.g. TR/00F/C/06/26">
+                </div>
+                <div class="inv-field"><label>Timestamp Initialization Entry *</label>
+                  <input type="date" id="inv_issue_date" class="input-premium">
+                </div>
+                <div class="inv-field"><label>Transaction State Mode</label>
+                  <select id="inv_status" class="input-premium"><option value="draft">Draft Framework</option><option value="sent">Dispatched Vector</option><option value="paid">Settled Record Frame</option></select>
+                </div>
+                <div class="inv-field"><label>Currency Unit Framework Code</label>
+                  <select id="inv_currency" class="input-premium"><option value="NGN">NGN — Nigerian Naira (₦)</option><option value="USD">USD — US Dollar ($)</option><option value="GBP">GBP — British Pound (£)</option><option value="EUR">EUR — Euro (€)</option><option value="KES">KES — Kenyan Shilling</option><option value="GHS">GHS — Ghana Cedi (₵)</option></select>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="inv-form">
-            <h3>Debrief Entity Billing Vector</h3>
+          <div class="inv-workspace-block">
+            <h4>Billing Target Parameters Map Vector</h4>
             <div class="inv-grid">
-              <div class="inv-field">
-                <label>Target Organization Registry *</label>
-                <input type="text" id="inv_client_name" class="input-premium" placeholder="e.g. Transborder Logistics Limited">
+              <div class="inv-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:16px; width:100%;">
+                <div class="inv-field"><label>Recipient Corporation Entity Name *</label>
+                  <input type="text" id="inv_client_name" class="input-premium" placeholder="e.g. Transborder Logistics Limited">
+                </div>
+                <div class="inv-field"><label>Communications Endpoint Mail Destination</label>
+                  <input type="email" id="inv_client_email" class="input-premium" placeholder="client@company.com">
+                </div>
+                <div class="inv-field"><label>Communications Protocol Phone Line</label>
+                  <input type="text" id="inv_client_phone" class="input-premium" placeholder="+234 000 000 0000">
+                </div>
               </div>
-              <div class="inv-field">
-                <label>Target Communications Email</label>
-                <input type="email" id="inv_client_email" class="input-premium" placeholder="client@company.com">
-              </div>
-              <div class="inv-field">
-                <label>Target Communications Protocol Phone</label>
-                <input type="text" id="inv_client_phone" class="input-premium" placeholder="+234 000 000 0000">
-              </div>
-              <div class="inv-field full">
-                <label>Physical Node Geolocation Coordinates Address</label>
+              <div class="inv-field full" style="margin-top:16px;"><label>Physical Geolocation Grid Node Location</label>
                 <textarea id="inv_client_address" class="input-premium" rows="2" placeholder="Street, City, State"></textarea>
               </div>
             </div>
           </div>
 
-          <div class="inv-form">
-            <h3>Calculated Line Units Structure Matrix</h3>
-            <div class="inv-items-head">
-              <span>Item Index</span><span style="flex:3">Parameter Allocation Definition</span><span>Volume Qty</span><span>Base Unit Rate</span><span>Calculated Net</span><span></span>
+          <div class="inv-workspace-block">
+            <h4>Line Calculation Parameters Stack</h4>
+            <div class="inv-items-head" style="display:grid; grid-template-columns:40px 3fr 1fr 1fr 1fr 40px; gap:12px; padding:0 12px; margin-bottom:12px;">
+              <span>Idx</span><span style="flex:3">Service Framework Parameters Scope</span><span>Qty</span><span>Unit Value</span><span>Net Comp</span><span></span>
             </div>
             <div id="invItemsContainer"></div>
             <button class="inv-add-item" id="addInvItem">+ Dynamic Allocate Line Item Parameters</button>
             <div class="inv-totals">
-              <div class="inv-total-row"><span>SUBTOTAL AGGREGATE</span><span id="invSubtotal">₦0.00</span></div>
-              <div class="inv-total-row grand"><span>TOTAL LEDGER FRAME BALANCE</span><span id="invTotal">₦0.00</span></div>
+              <div class="inv-total-row"><span>AGGREGATE NET VAL</span><span id="invSubtotal">₦0.00</span></div>
+              <div class="inv-total-row grand"><span>TOTAL TRANSACTION PAYLOAD SUM</span><span id="invTotal">₦0.00</span></div>
             </div>
           </div>
 
-          <div class="inv-form">
-            <h3>Settlement Node Channel Routing Vectors</h3>
-            <div class="inv-grid">
-              <div class="inv-field">
-                <label>System Depository Identification</label>
+          <div class="inv-workspace-block">
+            <h4>Depository System Settlement Targets</h4>
+            <div class="inv-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:16px;">
+              <div class="inv-field"><label>System Depository Label Signature</label>
                 <input type="text" id="inv_account_name" class="input-premium" value="479Code Tech Solutions Ltd">
               </div>
-              <div class="inv-field">
-                <label>Depository Matrix Routing Number</label>
+              <div class="inv-field"><label>Depository Matrix Allocation Serial</label>
                 <input type="text" id="inv_account_number" class="input-premium" value="0013942057">
               </div>
-              <div class="inv-field">
-                <label>Clearing House Network Label</label>
+              <div class="inv-field"><label>Clearing House Routing Code</label>
                 <input type="text" id="inv_bank_name" class="input-premium" value="TAJ Bank">
               </div>
-              <div class="inv-field full">
-                <label>Additional Execution Notes / Overriding Routing Parameter Matrix</label>
-                <textarea id="inv_notes" class="input-premium" rows="2" placeholder="Any secondary parameters, settlement timelines, or payment terms instructions…"></textarea>
-              </div>
+            </div>
+            <div class="inv-field full" style="margin-top:16px;"><label>Secondary Framework Notes / Terms Overrides Override Parameter Matrix</label>
+              <textarea id="inv_notes" class="input-premium" rows="2" placeholder="Settlement variables details context configurations instructions…"></textarea>
             </div>
           </div>
 
           <div class="inv-actions">
-            <button class="inv-btn primary" id="saveInvoiceBtn">Commit Matrix Data to Supabase</button>
+            <button class="inv-btn primary" id="saveInvoiceBtn">Commit Data Payload Frame</button>
             <button class="inv-btn secondary" id="previewInvoiceBtn">🖨 Transmit Signal to Print / Export PDF Frame</button>
             <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Purge Log Record</button>
-            <button class="inv-btn secondary" id="cancelInvoiceBtn">Drop Cache Updates</button>
+            <button class="inv-btn secondary" id="cancelInvoiceBtn">Drop Frame Memory Cache</button>
           </div>
         </div>
       </div>
 
-      <footer>backed by Supabase Architecture · 479Code Operations Terminal Systems</footer>
+      <footer>backed by Supabase Architecture Framework Networks · 479Code Core Control Terminals</footer>
     </div>
   </div>
 </div>
@@ -758,11 +608,11 @@ let currentProject = null;
 let projectMembers = [];
 let profilesCache = {};
 
-/* ---------------- AUTH MODULE EXECUTION CONTROLLER ---------------- */
+/* ---------------- INITIAL ACCESS VERIFICATION INFRASTRUCTURE ---------------- */
 let authMode = 'signin';
 
 document.getElementById('forgotBtn').onclick = () => {
-  document.getElementById('authScreen').querySelector('.authbox').style.display = 'none';
+  document.getElementById('authScreen').querySelector('.auth-deck').style.display = 'none';
   document.getElementById('forgotPanel').style.display = 'block';
   document.getElementById('forgotEmail').value = document.getElementById('emailInput').value || '';
   document.getElementById('forgotErr').textContent = '';
@@ -771,7 +621,7 @@ document.getElementById('forgotBtn').onclick = () => {
 
 document.getElementById('backToLoginBtn').onclick = () => {
   document.getElementById('forgotPanel').style.display = 'none';
-  document.getElementById('authScreen').querySelector('.authbox').style.display = 'block';
+  document.getElementById('authScreen').querySelector('.auth-deck').style.display = 'block';
 };
 
 document.getElementById('forgotSubmit').onclick = async () => {
@@ -781,36 +631,36 @@ document.getElementById('forgotSubmit').onclick = async () => {
   err.textContent = ''; msg.textContent = '';
   if(!email){ err.textContent = 'Enter your email address.'; return; }
   const btn = document.getElementById('forgotSubmit');
-  btn.disabled = true; btn.textContent = 'Sending Matrix Sync Link…';
+  btn.disabled = true; btn.textContent = 'Transmitting Verification Token…';
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://479code.github.io/479Code-TaskTracker/'
   });
-  btn.disabled = false; btn.textContent = 'Send Reset Link';
+  btn.disabled = false; btn.textContent = 'Transmit Key Recovery Signal';
   if(error){ err.style.display='block'; err.textContent = error.message; return; }
-  msg.textContent = '✓ Reset signal generated! Check your inbox frame to configure password matrix parameters.';
+  msg.textContent = '✓ Dynamic key reconfiguration token generated. Check system data routes endpoint frame.';
 };
 
 (async function handlePasswordRecovery(){
   const hash = window.location.hash;
   if(hash.includes('type=recovery')){
     document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('authScreen').querySelector('.authbox').style.display = 'none';
+    document.getElementById('authScreen').querySelector('.auth-deck').style.display = 'none';
     document.getElementById('forgotPanel').style.display = 'none';
 
     const recoveryDiv = document.createElement('div');
-    recoveryDiv.className = 'authbox';
+    recoveryDiv.className = 'auth-deck';
     recoveryDiv.innerHTML = `
-      <h3 style="margin-bottom:6px; font-size:16px; color:var(--text); font-weight:700;">Override Account Access Pass</h3>
-      <p style="margin-bottom:20px; font-size:12px; color:var(--muted); font-family:var(--mono);">Configure secure authentication credentials override.</p>
+      <h3 style="margin-bottom:8px; font-size:18px; color:var(--text); font-weight:800;">Patch Encryption Variable Vector</h3>
+      <p style="margin-bottom:24px; font-size:13.5px; color:var(--muted); font-family:var(--mono);">Override primary key credentials profile record configuration parameters.</p>
       <div class="field">
-        <label>Secure Key Entry</label>
-        <input type="password" id="recoveryPwd" class="input-premium" placeholder="Min. 6 alphanumeric hashes">
+        <label>New Cipher Passcode Hash</label>
+        <input type="password" id="recoveryPwd" class="input-premium" placeholder="Min 6 characters alphanumeric payload">
       </div>
-      <div class="field" style="margin-bottom:20px;">
-        <label>Confirm Verification Hash</label>
-        <input type="password" id="recoveryPwdConfirm" class="input-premium" placeholder="Repeat alphanumeric hashes">
+      <div class="field" style="margin-bottom:24px;">
+        <label>Re-verify Cipher Payload Alignment</label>
+        <input type="password" id="recoveryPwdConfirm" class="input-premium" placeholder="Min 6 characters alphanumeric payload">
       </div>
-      <button id="recoverySubmit" class="btn-premium" style="width:100%;">Reconfigure Credentials Vector</button>
+      <button id="recoverySubmit" class="btn-premium" style="width:100%;">Execute Encryption Key Patch Override</button>
       <div id="recoveryErr" class="autherr"></div>
       <div id="recoveryMsg" class="authmsg"></div>
     `;
@@ -822,14 +672,14 @@ document.getElementById('forgotSubmit').onclick = async () => {
       const err = document.getElementById('recoveryErr');
       const msg = document.getElementById('recoveryMsg');
       err.textContent = ''; msg.textContent = '';
-      if(pwd.length < 6){ err.textContent = 'Key length constraint exception: minimum 6 characters required.'; return; }
-      if(pwd !== confirm){ err.textContent = "Data equality validation mismatch. Hash verify mismatch."; return; }
+      if(pwd.length < 6){ err.textContent = 'Data validation size failure. Min 6 array element tokens mandatory.'; return; }
+      if(pwd !== confirm){ err.textContent = "Data payload collision string equality test mismatch."; return; }
       const btn = document.getElementById('recoverySubmit');
-      btn.disabled = true; btn.textContent = 'Injecting Override Code…';
+      btn.disabled = true; btn.textContent = 'Injecting Encryption Key Byte Blocks…';
       const { error } = await sb.auth.updateUser({ password: pwd });
-      btn.disabled = false; btn.textContent = 'Reconfigure Credentials Vector';
+      btn.disabled = false; btn.textContent = 'Execute Encryption Key Patch Override';
       if(error){ err.textContent = error.message; return; }
-      msg.textContent = '✓ Security variables updated! Tuning connection channels…';
+      msg.textContent = '✓ Configuration data layer patched successfully. Synchronizing identity modules…';
       setTimeout(() => { window.location.hash = ''; location.reload(); }, 1500);
     };
   }
@@ -844,7 +694,7 @@ function setAuthMode(mode){
   document.getElementById('tabSignUp').classList.toggle('active', mode==='signup');
   document.getElementById('fullNameField').style.display = mode==='signup' ? 'block' : 'none';
   document.getElementById('usernameField').style.display = mode==='signup' ? 'block' : 'none';
-  document.getElementById('authSubmit').textContent = mode==='signin' ? 'Sign In' : 'Create System Account';
+  document.getElementById('authSubmit').textContent = mode==='signin' ? 'Connect Session Terminal' : 'Enroll Node Framework Profile';
   document.getElementById('authErr').textContent = '';
   document.getElementById('authMsg').textContent = '';
 }
@@ -858,14 +708,14 @@ document.getElementById('authSubmit').onclick = async () => {
   const msg = document.getElementById('authMsg');
   err.textContent = ''; msg.textContent = '';
 
-  if(!email || !password){ err.textContent = 'Required variable declaration exception: Email and password strings required.'; return; }
+  if(!email || !password){ err.textContent = 'Mandatory declaration failure error: Input valid parameters for email/password frames.'; return; }
   const btn = document.getElementById('authSubmit');
   btn.disabled = true;
 
   if(authMode === 'signup'){
     if(username){
       const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-      if(existing){ err.textContent = 'System namespace collision: username vector already allocated.'; btn.disabled = false; return; }
+      if(existing){ err.textContent = 'Ecosystem collision check exception: Namespace variant string allocated to profile index.'; btn.disabled = false; return; }
     }
     const { data, error } = await sb.auth.signUp({
       email, password,
@@ -883,7 +733,7 @@ document.getElementById('authSubmit').onclick = async () => {
     if(data.session){
       await onLoggedIn();
     } else {
-      msg.textContent = 'Node framework generated — verification signal transmitted to client inbox. Verify, then initialize login procedures.';
+      msg.textContent = 'Ecosystem endpoint initialized. Verification routing signal dispatched to email vector frame. Verify data to proceed.';
       setAuthMode('signin');
     }
   } else {
@@ -913,18 +763,18 @@ document.getElementById('sidebarOverlay').onclick = () => {
 function switchModule(module){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('show');
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-pill').forEach(b => b.classList.remove('active'));
   
   if(module === 'projects'){
     document.getElementById('navProjects').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Task Tracker Environment';
+    document.getElementById('topbarTitle').textContent = 'Task Tracker Platform';
     document.getElementById('invoiceView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
     document.getElementById('projectsView').style.display = 'block';
     loadProjects();
   } else if(module === 'invoices'){
     document.getElementById('navInvoices').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Dynamic Ledger Engine';
+    document.getElementById('topbarTitle').textContent = 'Financial Balances Ledger Array';
     document.getElementById('projectsView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
     showInvoiceView();
@@ -935,7 +785,7 @@ async function onLoggedIn(){
   const { data: { user } } = await sb.auth.getUser();
   currentUser = user;
   document.getElementById('authScreen').style.display = 'none';
-  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('appRoot').style.display = 'grid';
   document.getElementById('userEmail').textContent = user.email;
   if(user.email === INVOICE_OWNER_EMAIL){
     document.getElementById('navInvoices').style.display = 'flex';
@@ -949,7 +799,7 @@ async function onLoggedIn(){
 
 async function refreshUsernameButton(){
   const profile = await getProfile(currentUser.id);
-  const display = profile?.username ? '@'+profile.username : 'Set Terminal Nickname';
+  const display = profile?.username ? '@'+profile.username : 'Configure System Node Name';
   document.getElementById('usernameLabel').textContent = display;
   document.getElementById('usernameEditInput').value = profile?.username || '';
 }
@@ -973,17 +823,17 @@ document.getElementById('usernameSaveBtn').onclick = async () => {
   const username = raw.replace(/[^a-z0-9_]/g,'');
   const msg = document.getElementById('usernameMsg');
   msg.style.color = 'var(--danger)';
-  if(!username || username.length < 3){ msg.textContent = 'Constraints error: Character validation failed (Min 3 alphanumeric, _).'; return; }
+  if(!username || username.length < 3){ msg.textContent = 'Constraints violation error: Required formatting size match failure (Min 3 characters, _).'; return; }
 
   const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-  if(existing && existing.id !== currentUser.id){ msg.textContent = 'Namespace collision error: Token variant allocated.'; return; }
+  if(existing && existing.id !== currentUser.id){ msg.textContent = 'Identity token lock exception: Identifier already claimed.'; return; }
 
   const { error } = await sb.from('profiles').update({ username }).eq('id', currentUser.id);
   if(error){ msg.textContent = error.message; return; }
 
   delete profilesCache[currentUser.id];
   msg.style.color = 'var(--done)';
-  msg.textContent = 'Core Variables Injected!';
+  msg.textContent = 'Core Variable Registered!';
   await refreshUsernameButton();
   setTimeout(()=>{ document.getElementById('usernameDropdown').classList.remove('open'); }, 800);
 };
@@ -1002,19 +852,19 @@ document.getElementById('savePwdBtn').onclick = async () => {
   const msg = document.getElementById('pwdMsg');
   msg.style.color = 'var(--danger)';
 
-  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Minimum key architecture length failure.'; return; }
-  if(newPwd !== confirmPwd){ msg.textContent = "Data mirror alignment inequality standard."; return; }
+  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Cryptographic boundary condition failure. Minimum size length constraint mismatch.'; return; }
+  if(newPwd !== confirmPwd){ msg.textContent = "Data payload collision string equality test mismatch."; return; }
 
   const btn = document.getElementById('savePwdBtn');
-  btn.disabled = true; btn.textContent = 'Deploying Encryption patch…';
+  btn.disabled = true; btn.textContent = 'Injecting new encryption parameters…';
 
   const { error } = await sb.auth.updateUser({ password: newPwd });
-  btn.disabled = false; btn.textContent = 'Execute Patch';
+  btn.disabled = false; btn.textContent = 'Push Cipher Update';
 
   if(error){ msg.textContent = error.message; return; }
 
   msg.style.color = 'var(--done)';
-  msg.textContent = '✓ Configuration sequence patched successfully!';
+  msg.textContent = '✓ Cipher framework successfully modified inside operational systems.';
   document.getElementById('newPwdInput').value = '';
   document.getElementById('confirmPwdInput').value = '';
   setTimeout(() => { document.getElementById('changePwdDropdown').classList.remove('open'); }, 1500);
@@ -1030,7 +880,7 @@ document.getElementById('refreshBtn').onclick = async () => {
   }
   await checkDueReminders();
   await loadNotifications();
-  btn.textContent = '⟳ Sync Data';
+  btn.textContent = '⟳ Cluster Resync';
 };
 
 document.getElementById('notifBtn').onclick = (e) => {
@@ -1045,18 +895,18 @@ document.getElementById('notifBtn').onclick = (e) => {
   if(session){ await onLoggedIn(); }
 })();
 
-/* ---------------- TELEMETRY PLATFORM CORE LOGIC HELPERS ---------------- */
+/* ---------------- TELEMETRY PLATFORM GLOBAL CONTEXT ALERTS ---------------- */
 function showError(msg){
   const b = document.getElementById('errBanner');
   b.className = 'banner';
-  b.textContent = '⚠️ System Error Alert: ' + msg;
+  b.textContent = '⚠️ Telemetry Layer Failure Exception: ' + msg;
   b.style.display = 'block';
   setTimeout(()=>{ b.style.display='none'; }, 4000);
 }
 function showOk(msg){
   const b = document.getElementById('errBanner');
   b.className = 'banner ok';
-  b.textContent = '✓ Telemetry confirmed: ' + msg;
+  b.textContent = '✓ Network Handshake Telemetry Confirmed: ' + msg;
   b.style.display = 'block';
   setTimeout(()=>{ b.style.display='none'; }, 3000);
 }
@@ -1067,7 +917,7 @@ async function getProfile(userId){
   return data;
 }
 
-/* ---------------- DEEP MODULE STRATAGEM: PROJECTS GRID ---------------- */
+/* ---------------- TACTICAL OPERATIONS SCOPE ARCHITECTURES ---------------- */
 document.getElementById('addProjectBtn').onclick = async () => {
   const input = document.getElementById('newProjectName');
   const name = input.value.trim();
@@ -1099,13 +949,13 @@ async function loadProjects(){
   (memberships||[]).forEach(m => {
     if(!m.projects) return;
     const card = document.createElement('div');
-    card.className = 'project-card';
+    card.className = 'ecosystem-card';
     card.innerHTML = `
       <h3>${escapeHtml(m.projects.name)}</h3>
-      <p>${escapeHtml(m.projects.description || 'No system parameters described in current log matrix frame.')}</p>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:auto;">
-        <span class="rolepill ${m.role==='owner'?'owner':''}">${m.role}</span>
-        <span style="font-size:12px; color:var(--accent); font-weight:700;">Enter Console →</span>
+      <p>${escapeHtml(m.projects.description || 'Ecosystem environment configuration maps running un-profiled parameters status streams.')}</p>
+      <div class="ecosystem-meta">
+        <span class="badge todo">${m.role}</span>
+        <span style="font-size:12.5px; color:var(--accent); font-weight:700; font-family:var(--mono)">Initialize System Core →</span>
       </div>
     `;
     card.onclick = () => openProject(m.projects, m.role);
@@ -1129,16 +979,16 @@ async function openProject(project, role){
 }
 
 document.getElementById('deleteProjectBtn').onclick = async () => {
-  if(!confirm(`CRITICAL DESTRUCTION COMMAND ACTION DETECTED:\n\nPurge environment metrics "${currentProject.name}"?\n\nThis permanently destroys all underlying task blocks, child processes, operational logging telemetry parameters, and network access records. Action sequence is terminal and non-reversible.`)) return;
+  if(!confirm(`CRITICAL OPERATIONAL REMOVAL THREAD TRIGGERED:\n\nPurge workspace instance "${currentProject.name}"?\n\nThis completely erases all child database processes, tactical logs maps, timeline variables and nodes authentication bindings. This operation cannot be rolled back.`)) return;
   const { error } = await sb.from('projects').delete().eq('id', currentProject.id);
   if(error){ showError(error.message); return; }
-  showOk('Ecosystem variables successfully purged from data layer mapping.');
+  showOk('System target frame successfully unmapped from database registry blocks.');
   document.getElementById('projectView').style.display = 'none';
   document.getElementById('projectsView').style.display = 'block';
   await loadProjects();
 };
 
-/* ---------------- DATA LAYERS TAB MATRIX ROUTING SYSTEM ---------------- */
+/* ---------------- TAB ROUTING CONTROL ARCHITECTURES ---------------- */
 document.querySelectorAll('.tabbtn').forEach(btn => {
   btn.onclick = () => switchTab(btn.dataset.tab);
 });
@@ -1147,7 +997,7 @@ function switchTab(tab){
   document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'pane-'+tab));
 }
 
-/* ---------------- TELEMETRY NODE FRAME SYSTEM: NODE COLLABORATORS ---------------- */
+/* ---------------- MODULE: NODE INTERFACING COLLABORATORS NETWORK ---------------- */
 async function loadMembers(){
   const { data, error } = await sb
     .from('project_members')
@@ -1164,8 +1014,8 @@ async function loadMembers(){
     const isMe = m.user_id === currentUser.id;
     row.innerHTML = `
       <div class="member-info">
-        <span class="member-email">${escapeHtml(m.profiles?.full_name || m.profiles?.email || 'System Variable Node')} ${isMe?'[Identity Host Anchor]':''}</span>
-        <span class="member-role">${escapeHtml(m.profiles?.email||'')} · System Privilege Token Level: [${m.role.toUpperCase()}]</span>
+        <span class="member-email">${escapeHtml(m.profiles?.full_name || m.profiles?.email || 'Unknown Identity Cluster Node')} ${isMe?'[Identity Host Anchor]':''}</span>
+        <span class="member-role">${escapeHtml(m.profiles?.email||'')} · Permission Parameter Token Scope: [${m.role.toUpperCase()}]</span>
       </div>
     `;
     if(currentProject.myRole === 'owner' && !isMe){
@@ -1182,7 +1032,7 @@ async function loadMembers(){
   });
 
   const assignSel = document.getElementById('newTaskAssignee');
-  assignSel.innerHTML = '<option value="">Unassigned Operational Node Target</option>';
+  assignSel.innerHTML = '<option value="">Unassigned Operations Node Target</option>';
   projectMembers.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.user_id;
@@ -1202,20 +1052,20 @@ document.getElementById('inviteBtn').onclick = async () => {
     ? sb.from('profiles').select('*').eq('email', handle).maybeSingle()
     : sb.from('profiles').select('*').eq('username', handle.toLowerCase().replace(/^@/,'')).maybeSingle();
   const { data: profile, error: pErr } = await lookup;
-  if(pErr || !profile){ showError('Target identification failure: Node registry reference invalid. System credentials record unfound.'); return; }
-  if(profile.id === currentUser.id){ showError("Operational reference loop exception: Can't invite core anchor identity node."); return; }
+  if(pErr || !profile){ showError('Ecosystem index mismatch: Identity node record not mapped to core configuration directory fields.'); return; }
+  if(profile.id === currentUser.id){ showError("Operational loop block logic conflict: Identity target references core local host anchor."); return; }
   const already = projectMembers.find(m => m.user_id === profile.id);
-  if(already){ showError('Active connection loop error: Registry mapping shows active system mapping already verified.'); return; }
+  if(already){ showError('Active permission matrix duplication: Targeted system node verified within operational boundaries.'); return; }
   const { error } = await sb.from('project_invites').insert({
     project_id: currentProject.id, invited_user_id: profile.id, invited_by: currentUser.id, role
   });
   if(error){
-    if(error.message.includes('duplicate')) showError('Active vector invitation pending confirmation validation loops.');
+    if(error.message.includes('duplicate')) showError('Data channel transmission buffer warning: Invitation record pending feedback validation cycles.');
     else showError(error.message);
     return;
   }
   document.getElementById('inviteEmail').value = '';
-  showOk('Network invitation token beamed to ' + (profile.full_name || profile.email) + ' — awaiting processing check loops.');
+  showOk('Handshake sequence initialization invitation token transmitted safely to ' + (profile.full_name || profile.email));
   await loadPendingInvites();
 };
 
@@ -1233,20 +1083,20 @@ async function loadPendingInvites(){
     row.innerHTML = `
       <div class="member-info">
         <span class="member-email">${escapeHtml(inv.profiles?.full_name || inv.profiles?.email)}</span>
-        <span class="member-role">Pending verification vector · access permission scope: [${inv.role}]</span>
+        <span class="member-role">Awaiting signature validation · Assigned token framework authority level: [${inv.role}]</span>
       </div>
     `;
     const cancel = document.createElement('button');
     cancel.className = 'del';
     cancel.innerHTML = '✕';
-    cancel.title = 'Revoke permission stream';
+    cancel.title = 'Revoke broadcast target signal link';
     cancel.onclick = async () => { await sb.from('project_invites').delete().eq('id', inv.id); await loadPendingInvites(); };
     row.appendChild(cancel);
     wrap.appendChild(row);
   });
 }
 
-/* ---------------- NOTIFICATIONS KERNEL ALERTS DECK ---------------- */
+/* ---------------- MODULE: CORE SECURITY LIVE ALERTS ENGINE ---------------- */
 async function loadNotifications(){
   const { data, error } = await sb.from('notifications')
     .select('*, projects(name)')
@@ -1263,13 +1113,13 @@ async function loadNotifications(){
   const dd = document.getElementById('notifDropdown');
   dd.innerHTML = '';
   if(!data || data.length===0){
-    dd.innerHTML = '<div class="notif-empty">Alert channels clear. Signal stream static.</div>';
+    dd.innerHTML = '<div class="notif-empty">Telemetry queues clean. Dynamic event matrix reading zero indicators.</div>';
     return;
   }
 
   for(const n of data){
     const item = document.createElement('div');
-    item.className = 'notif-item' + (n.read ? '' : ' unread');
+    item.className = 'notif-card' + (n.read ? '' : ' unread');
     item.innerHTML = `
       <div class="notif-text">${escapeHtml(n.content)}</div>
       <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
@@ -1279,7 +1129,7 @@ async function loadNotifications(){
       if(invite && invite.status === 'pending'){
         const actions = document.createElement('div');
         actions.className = 'notif-actions';
-        actions.innerHTML = `<button class="accept">Accept Token</button><button class="reject">Reject Matrix</button>`;
+        actions.innerHTML = `<button class="accept">Bind Network Token</button><button class="reject">Drop Frame Link</button>`;
         actions.querySelector('.accept').onclick = async () => { await respondInvite(n.invite_id, 'accepted'); };
         actions.querySelector('.reject').onclick = async () => { await respondInvite(n.invite_id, 'rejected'); };
         item.appendChild(actions);
@@ -1296,7 +1146,7 @@ async function loadNotifications(){
 async function respondInvite(inviteId, status){
   const { error } = await sb.from('project_invites').update({ status, responded_at: new Date().toISOString() }).eq('id', inviteId);
   if(error){ showError(error.message); return; }
-  showOk(status === 'accepted' ? 'Environment handshake complete. Matrix linked.' : 'Invite transmission link dropped.');
+  showOk(status === 'accepted' ? 'Handshake established. Local context scope modified.' : 'System transmission parameters rejected.');
   await loadNotifications();
   await loadProjects();
 }
@@ -1327,12 +1177,12 @@ async function checkDueReminders(){
     const overdue = t.due_date < todayStr;
     await sb.from('notifications').insert({
       user_id: currentUser.id, type: 'due_reminder', project_id: t.project_id, task_id: t.id,
-      content: (overdue ? '⚠️ Overdue Chrono Matrix Breach: ' : '⏰ Terminal Window Closing Alert: ') + '"' + t.title + '"' + (overdue ? '' : ' (Estimated closure timeline target ' + t.due_date + ')')
+      content: (overdue ? '⚠️ Target Breach Alert: Overdue task window collapse ' : '⏰ Target Chronicle Telemetry Warning: Deadline window contraction ') + '"' + t.title + '"' + (overdue ? '' : ' (Target parameter target frame ' + t.due_date + ')')
     });
   }
 }
 
-/* ---------------- TACTICAL OPERATIONS ALLOCATION SYSTEM: TASKS ---------------- */
+/* ---------------- MODULE: OPERATIONS TASK ARRAYS AND ALLOCATIONS ---------------- */
 function assigneeName(id){
   if(!id) return null;
   const m = projectMembers.find(x => x.user_id === id);
@@ -1384,6 +1234,7 @@ async function loadTimeline(){
     const pct = Math.min(100, Math.max(2, ((new Date(t.due_date) - new Date(minDate)) / 86400000 / span) * 100));
     const row = document.createElement('div');
     row.className = 'tl-item';
+    row.style.cssText = 'display:flex; gap:20px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:18px; margin-bottom:10px; align-items:center;';
     row.innerHTML = `
       <span class="tl-date ${overdue?'overdue':soonFlag?'soon':''}">${t.due_date}</span>
       <span class="tl-title ${t.status==='done'?'done':''}">${escapeHtml(t.title)}</span>
@@ -1415,7 +1266,7 @@ async function loadTasks(){
     const subs = subtasksByParent[t.id] || [];
     const doneCount = subs.filter(s=>s.status==='done').length;
     const row = document.createElement('div');
-    row.className = 'task' + (t.status==='done' ? ' done':'');
+    row.className = 'task-node' + (t.status==='done' ? ' done':'');
 
     const aName = assigneeName(t.assignee_id);
     const today = new Date().toISOString().slice(0,10);
@@ -1423,31 +1274,31 @@ async function loadTasks(){
     const soonStr = soon.toISOString().slice(0,10);
     const dueClass = t.due_date ? (t.due_date < today && t.status!=='done' ? 'overdue' : t.due_date <= soonStr && t.status!=='done' ? 'soon' : '') : '';
     const dueHtml = t.due_date
-      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue Chrono Breach:':dueClass==='soon'?'⏰ Matrix Deadline Closing:':'System Target Line:'} ${t.due_date}</div>`
+      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue Chrono Breach:':dueClass==='soon'?'⏰ Approaching Target Deadline:':'System Target Line:'} ${t.due_date}</div>`
       : '';
 
     row.innerHTML = `
-      <div class="task-row">
+      <div style="display:flex; align-items:flex-start; gap:16px;">
         <div class="chk ${t.status==='done'?'checked':''}" data-id="${t.id}"></div>
-        <div class="task-body">
+        <div style="flex:1; min-width:0;">
           <div class="task-title" id="ttitle-${t.id}">${escapeHtml(t.title)}</div>
           ${dueHtml}
           <div class="task-meta">
-            <span class="tag ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
+            <span class="badge ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
             <button class="status-cycle" data-cycle="${t.id}">Cycle State →</button>
-            <button class="edit-task-btn" data-edit="${t.id}">✏️ Mod Parameters</button>
-            ${aName ? `<span class="tag todo">👤 Array Node: ${escapeHtml(aName)}</span>` : ''}
-            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' Linked Processes' : '+ Sub Process Allocator'} ▾</button>
+            <button class="edit-task-btn" data-edit="${t.id}">✏️ Mod Field Parameters</button>
+            ${aName ? `<span class="badge todo">👤 Assigned Host Node: ${escapeHtml(aName)}</span>` : ''}
+            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' Sub Processes Active' : '+ Dynamic Sub Allocator'} ▾</button>
           </div>
           ${subs.length ? `
             <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(doneCount/subs.length*100)}%"></div></div>
-            <div class="progress-label">${doneCount}/${subs.length} sub-vectors executed into database block</div>
+            <div class="progress-label">${doneCount}/${subs.length} inner sub-processes committed to runtime block</div>
           ` : ''}
-          <div class="subtasks" id="subs-${t.id}">
+          <div class="subtasks-wrapper" id="subs-${t.id}">
             ${subs.map(s => subtaskHtml(s)).join('')}
-            <div class="subaddbar">
-              <input type="text" class="input-premium" style="padding:4px 8px; font-size:12px;" placeholder="Map low-level dynamic criteria description…" id="subinput-${t.id}">
-              <button data-addsub="${t.id}" class="btn-premium" style="padding:4px 12px; font-size:11px;">Allocate</button>
+            <div style="display:flex; gap:8px; margin-top:12px;">
+              <input type="text" class="input-premium" style="padding:6px 12px; font-size:12.5px;" placeholder="Input discrete secondary component parameter criteria…" id="subinput-${t.id}">
+              <button data-addsub="${t.id}" class="btn-premium" style="padding:6px 16px; font-size:12px;">Deploy Sub-Vector</button>
             </div>
           </div>
         </div>
@@ -1480,9 +1331,9 @@ function openTaskEdit(taskId, allTasks){
 
   const dueWrap = document.createElement('div');
   dueWrap.className = 'task-due';
-  dueWrap.innerHTML = `📅 Update Target Chrono Frame: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
-    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done); border-color:var(--done);">Commit Patch</button>
-    <button class="edit-task-btn" data-canceledit="${taskId}">Drop</button>`;
+  dueWrap.innerHTML = `📅 Override Chronicle Deadline Target: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
+    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done); border-color:var(--done);">Apply Dynamic Patch</button>
+    <button class="edit-task-btn" data-canceledit="${taskId}">Drop updates</button>`;
   const metaEl = body.querySelector('.task-meta');
   body.insertBefore(dueWrap, metaEl);
 
@@ -1501,17 +1352,17 @@ function openTaskEdit(taskId, allTasks){
 
 function subtaskHtml(s){
   return `
-    <div class="subtask">
-      <div class="chk ${s.status==='done'?'checked':''}" style="width:16px; height:16px;" data-subchk="${s.id}"></div>
-      <div class="task-body">
-        <div class="task-title" style="${s.status==='done'?'text-decoration:line-through; color:var(--muted);':''}">${escapeHtml(s.title)}</div>
+    <div class="subtask-row">
+      <div class="chk ${s.status==='done'?'checked':''}" style="width:18px; height:18px;" data-subchk="${s.id}"></div>
+      <div style="flex:1; min-width:0;">
+        <div class="task-title" style="font-size:14px; ${s.status==='done'?'text-decoration:line-through; color:var(--muted);':''}">${escapeHtml(s.title)}</div>
       </div>
       <button class="del" data-subdel="${s.id}">✕</button>
     </div>
   `;
 }
 
-function statusLabel(s){ return s==='todo'?'Task Stacked': s==='progress'?'Active Compilation':'Committed Block'; }
+function statusLabel(s){ return s==='todo'?'Stacked Queue': s==='progress'?'Compiling Thread':'Committed Block'; }
 
 async function toggleTaskDone(id, allTasks){
   const t = allTasks.find(x=>x.id===id);
@@ -1540,7 +1391,7 @@ async function addSubtask(parentId){
   setTimeout(()=>{ const s = document.getElementById('subs-'+parentId); if(s) s.classList.add('open'); }, 50);
 }
 
-/* ---------------- OPERATIONS LOG ARCHIVE STORAGE: NOTES ---------------- */
+/* ---------------- MODULE: OPERATIONAL MEMORY FIELD LOGS ---------------- */
 document.getElementById('addNoteBtn').onclick = async () => {
   const input = document.getElementById('newNoteInput');
   const content = input.value.trim();
@@ -1567,10 +1418,10 @@ async function loadNotes(){
     div.innerHTML = `
       <div class="note-text">${escapeHtml(n.content)}</div>
       <div class="note-meta">
-        <span class="note-author">Authorized Signee Node: ${escapeHtml(author?.full_name || author?.email || 'Unknown Node Anchor ID')} · Logged at: [${new Date(n.created_at).toLocaleString()}]</span>
+        <span class="note-author">Signee Identifier: ${escapeHtml(author?.full_name || author?.email || 'Unknown System Node Anchor ID')} · Timestamp Entry: [${new Date(n.created_at).toLocaleString()}]</span>
         <div class="note-actions">
-          ${n.converted_task_id ? `<span class="note-converted">✓ Upgraded to Action Target Task Matrix</span>` : `<button data-convert="${n.id}">Compile Note to Task Block</button>`}
-          <button data-notedel="${n.id}">Purge Log Element</button>
+          ${n.converted_task_id ? `<span class="note-converted">✓ Transpiled into Active Process Matrix Block</span>` : `<button data-convert="${n.id}">Transpile Note to Task Element</button>`}
+          <button data-notedel="${n.id}">Wipe Log Payload</button>
         </div>
       </div>
     `;
@@ -1593,24 +1444,12 @@ async function convertNoteToTask(noteId){
   }).select().single();
   if(error){ showError(error.message); return; }
   await sb.from('notes').update({ converted_task_id: task.id }).eq('id', noteId);
-  showOk('Log parameters successfully compiled into tactical operations system array maps.');
+  showOk('Log parameter block structural updates transpiled onto main tactical project tree arrays.');
   await loadNotes();
   await loadTasks();
 }
 
-/* ---------------- SECURITY ENCODING DATA PROTOCOLS HELPERS ---------------- */
-function escapeHtml(str){
-  if(str==null) return '';
-  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  });
-}
-
-/* ============ FINANCIAL BALANCES PROTOCOL ENGINE: INVOICES ============ */
+/* ============ MODULE: ADVANCED FISCAL LEDGER SYSTEM (INVOICES) ============ */
 const INVOICE_OWNER_EMAIL = '479code@gmail.com';
 let editingInvoiceId = null;
 let invItems = [];
@@ -1651,21 +1490,21 @@ document.getElementById('saveInvoiceBtn').onclick = async () => {
     const { error } = await sb.from('invoices').insert({...inv, created_by: currentUser.id});
     if(error){ showError(error.message); return; }
   }
-  showOk('Invoice dataset safely written to target global databases.');
+  showOk('Invoice records compiled successfully inside centralized transaction tables.');
   document.getElementById('invBackBtn').click();
 };
 
 document.getElementById('previewInvoiceBtn').onclick = () => {
   const inv = gatherInvoiceForm(true);
-  if(!inv){ showError('Validation Failure: Missing registry indicators. Provide serial ID code parameters, Client Node targets, and dynamic calendar dates.'); return; }
+  if(!inv){ showError('System tracking validation missing parameter bounds. Check Serial IDs, Calendar definitions, and target organization parameters fields.'); return; }
   printInvoice(inv);
 };
 
 document.getElementById('deleteInvoiceBtn').onclick = async () => {
   if(!editingInvoiceId) return;
-  if(!confirm('CRITICAL ACTION DETECTED:\n\nExecute absolute purge sequence on ledger entry token parameters? This will drop transactional log fields permanently.')) return;
+  if(!confirm('CRITICAL DATA WIPE WARNING:\n\nPurge this ledger transaction node framework instance absolutely from memory buffer array tables? Data configuration drops permanently.')) return;
   await sb.from('invoices').delete().eq('id', editingInvoiceId);
-  showOk('Invoice record frame removed from cluster.');
+  showOk('Ledger invoice record structure removed completely from table slots.');
   document.getElementById('invBackBtn').click();
 };
 
@@ -1719,7 +1558,7 @@ function openInvoiceForm(invoice){
   document.getElementById('invoiceList').style.display = 'none';
   document.getElementById('newInvoiceBtn').style.display = 'none';
   document.getElementById('invoiceForm').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Modify Compiled Invoice Parameters' : 'Generate New Data Ledger Invoice Allocation';
+  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Modify Ledger Invoice Frame Variable Blocks' : 'Generate New Data Ledger Invoice Parameters Allocation';
 }
 
 function autoInvNumber(){
@@ -1735,13 +1574,13 @@ function renderInvItems(){
     const rate = parseFloat(item.rate) || 0;
     const amt  = (qty * rate).toFixed(2);
     const row = document.createElement('div');
-    row.className = 'inv-item-row';
+    row.className = 'inv-split-row';
     row.innerHTML = `
-      <span style="font-family:var(--mono); font-size:12px; color:var(--muted); text-align:center;">${i+1}</span>
-      <input type="text" placeholder="Description of service framework allocation parameters…" value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
-      <input type="number" placeholder="Units" value="${item.qty||''}" min="0" data-i="${i}" data-f="qty">
-      <input type="number" placeholder="Price Vector" value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
-      <span class="inv-item-total">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
+      <span style="font-family:var(--mono); font-size:12px; color:var(--muted); text-align:center;">[${i+1}]</span>
+      <input type="text" placeholder="Service runtime metric target descriptions scope details…" value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
+      <input type="number" placeholder="Volume units" value="${item.qty||''}" min="0" data-i="${i}" data-f="qty">
+      <input type="number" placeholder="Base unit value" value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
+      <span class="inv-item-total" style="font-family:var(--mono); font-size:14px; text-align:right; font-weight:700;">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
       <button class="del" data-rmi="${i}">✕</button>
     `;
     container.appendChild(row);
@@ -1753,7 +1592,7 @@ function renderInvItems(){
       const q = parseFloat(invItems[i].qty)||0;
       const r = parseFloat(invItems[i].rate)||0;
       const sym = currSymbol(document.getElementById('inv_currency').value);
-      inp.closest('.inv-item-row').querySelector('.inv-item-total').textContent = q&&r ? sym+(q*r).toLocaleString('en',{minimumFractionDigits:2}) : '—';
+      inp.closest('.inv-split-row').querySelector('.inv-item-total').textContent = q&&r ? sym+(q*r).toLocaleString('en',{minimumFractionDigits:2}) : '—';
       updateInvTotals();
     };
   });
@@ -1786,16 +1625,16 @@ async function loadInvoices(){
     const total = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
     const sym   = currSymbol(inv.currency||'NGN');
     const row   = document.createElement('div');
-    row.className = 'inv-list-item';
+    row.className = 'inv-ledger-card';
     row.innerHTML = `
-      <div class="inv-list-info">
+      <div>
         <div class="inv-list-num">${escapeHtml(inv.invoice_number)}</div>
-        <div class="inv-list-client">${escapeHtml(inv.client_name)}</div>
-        <div class="inv-list-date">${escapeHtml(inv.invoice_title||'')} &nbsp;·&nbsp; Computed timestamp: [${inv.issue_date}]</div>
+        <div class="inv-list-client" style="font-size:16.5px; font-weight:800; color:var(--text);">${escapeHtml(inv.client_name)}</div>
+        <div style="font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:4px;">${escapeHtml(inv.invoice_title||'')} &nbsp;·&nbsp; ${inv.issue_date}</div>
       </div>
-      <div class="inv-list-right">
-        <span class="inv-amount">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</span>
-        <span class="inv-status ${inv.status}">${inv.status}</span>
+      <div style="text-align:right;">
+        <div class="inv-amount-label" style="color:var(--accent);">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</div>
+        <span class="inv-status ${inv.status}" style="margin-top:6px; display:inline-block;">${inv.status.toUpperCase()}</span>
       </div>
     `;
     row.onclick = () => openInvoiceForm(inv);
@@ -1803,7 +1642,7 @@ async function loadInvoices(){
   });
 }
 
-/* ---- SYSTEM COMPILER PRINT ARCHITECTURE PROTOCOLS TEMPLATE ---- */
+/* ---- SIGNAL BROADCAST SYSTEM PRINT PDF COMPILER FUNCTIONS ---- */
 function printInvoice(inv){
   const sym     = currSymbol(inv.currency||'NGN');
   const cur     = inv.currency || 'NGN';
@@ -1840,7 +1679,7 @@ function printInvoice(inv){
   const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Invoice Entry Payload Output ${escapeHtml(inv.invoice_number)}</title>
+<title>Invoice Payload Summary Vector ${escapeHtml(inv.invoice_number)}</title>
 <style>
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Times New Roman',Times,serif; color:#1a1a1a; background:#fff; padding:30px 40px; max-width:850px; margin:0 auto; font-size:13px;}
@@ -1896,49 +1735,49 @@ function printInvoice(inv){
 </div>
 ${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title)}</h2></div>` : ''}
 <div class="meta-row">
-  <div><strong>Receipt Vector Reference:</strong> ${escapeHtml(inv.invoice_number)}</div>
-  <div><strong>Dispatched Timestamp:</strong> ${fmtDate(inv.issue_date)}</div>
+  <div><strong>Invoice Serial Target Ref:</strong> ${escapeHtml(inv.invoice_number)}</div>
+  <div><strong>Dispatched Entry Timestamp:</strong> ${fmtDate(inv.issue_date)}</div>
 </div>
 <div class="bill-to">
-  <div class="label">BILL TO SYSTEM TARGET node:</div>
+  <div class="label">BILL TO ACCOUNT TARGET CLUSTER NODE:</div>
   <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400; font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
 </div>
 <table class="items">
   <thead>
     <tr>
       <th style="width:60px;">Item No.</th>
-      <th style="text-align:left;">Description</th>
+      <th style="text-align:left;">Description Framework Parameters</th>
       <th style="width:60px;">QTY</th>
       <th style="width:130px;">Unit Price</th>
-      <th style="width:130px;">Total</th>
+      <th style="width:130px;">Total Gross</th>
     </tr>
   </thead>
   <tbody>${itemRows}</tbody>
   <tfoot>
     <tr>
       <td colspan="3"></td>
-      <td style="text-align:right;">SUBTOTAL</td>
+      <td style="text-align:right;">SUBTOTAL CALCULATED</td>
       <td style="text-align:right; font-family:'Courier New',monospace;">${cur} — ${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td>
     </tr>
   </tfoot>
 </table>
 <div class="totals-box">
   <table class="totals-inner">
-    <tr><td>SUBTOTAL SUM VALUE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
-    <tr><td>NET BALANCE DUE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>SUBTOTAL SUM</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>NET FRAME DUE BALANCE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
   </table>
 </div>
 ${(inv.account_name||inv.account_number||inv.bank_name) ? `
 <div class="payment-section">
-  <h3>Secure Settlement Account Channels:</h3>
-  ${inv.account_name   ? `<p>ACCOUNT NAME PATH: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
-  ${inv.account_number ? `<p>ACCOUNT ROUTING SERIAL: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
-  ${inv.bank_name      ? `<p>CLEARING HOUSE CORE: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
+  <h3>Secure Settlement Account Channels Routing Vectors:</h3>
+  ${inv.account_name   ? `<p>DEPOSITORY LABEL PATH: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
+  ${inv.account_number ? `<p>DEPOSITORY MATRIX ROUTING: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
+  ${inv.bank_name      ? `<p>CLEARING HOUSE GATEWAY: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
   ${inv.notes          ? `<p style="margin-top:6px;">${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</p>` : ''}
 </div>` : ''}
 <div class="sig-section">
   <div style="height:44px;"></div>
-  <p>AUTHORIZATION TOKEN STAMP: 479CODE TECH. SOLUTIONS LTD.</p>
+  <p>COMPILATION SIGNATURE ASSURANCE: 479CODE TECH. SOLUTIONS LTD.</p>
 </div>
 <div class="footer-band">
   <p>E-mail: <a href="mailto:479code@gmail.com">479code@gmail.com</a> &nbsp;&nbsp; Tel: +2347069655288</p>
@@ -1947,7 +1786,7 @@ ${(inv.account_name||inv.account_number||inv.bank_name) ? `
 </body></html>`;
 
   const w = window.open('','_blank','width=960,height=760');
-  if(!w){ showError('Popup signal blocked by host browser protocols. Whitelist operations domain to process print stream frames.'); return; }
+  if(!w){ showError('Signal popup interface blocked by user host rules. Allow popups to pass raw invoice layout streams.'); return; }
   w.document.write(html);
   w.document.close();
 }
