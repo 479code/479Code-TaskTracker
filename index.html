@@ -97,7 +97,7 @@
     cursor: pointer; transition: all 0.3s var(--fluid); display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     box-shadow: 0 4px 15px rgba(255, 138, 61, 0.2);
   }
-  .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 138, 61, 0.4); }
+  .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 138, 61, 0.4); transform: translateY(-2px); }
   .btn-premium:active { transform: translateY(1px); }
   .btn-premium:disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -166,7 +166,7 @@
   .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); z-index: 99; }
   .mobile-trigger { display: none; font-size: 24px; cursor: pointer; color: var(--text); background: none; border: none; }
 
-  /* ============ TELEMETRY GLOBAL METRICS DASHBOARD SECTION ============ */
+  /* ============ DASHBOARD METRICS SUMMARY DECK ============ */
   .dashboard-metrics-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 36px; animation: stageReveal 0.45s var(--fluid) both; }
   .metric-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 24px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
   .metric-card::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--line); }
@@ -302,44 +302,44 @@
     </div>
     
     <div id="fullNameField" class="field" style="display:none;">
-      <label>Node Host Full Name</label>
-      <input type="text" id="fullNameInput" class="input-premium" placeholder="System identity name" autocomplete="name">
+      <label>Full Name</label>
+      <input type="text" id="fullNameInput" class="input-premium" placeholder="Your name" autocomplete="name">
     </div>
     <div id="usernameField" class="field" style="display:none;">
-      <label>Target System Namespace Handle</label>
+      <label>Username</label>
       <input type="text" id="usernameInput" class="input-premium" placeholder="e.g. Uthy479" autocomplete="off">
     </div>
     <div class="field">
-      <label>Network Registry Email Address</label>
+      <label>Email Address</label>
       <input type="email" id="emailInput" class="input-premium" placeholder="you@479code.com" autocomplete="email">
     </div>
     <div class="field">
-      <label>Authentication Pass Phrase</label>
+      <label>Password</label>
       <input type="password" id="passwordInput" class="input-premium" placeholder="••••••••" autocomplete="current-password">
     </div>
     
-    <button class="btn-premium" id="authSubmit" style="width: 100%;">Connect Session Terminal</button>
+    <button class="btn-premium" id="authSubmit" style="width: 100%;">Sign In</button>
     <div class="autherr" id="authErr"></div>
     <div class="authmsg" id="authMsg"></div>
     
     <div style="text-align:center; margin-top:20px;">
-      <button id="forgotBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">Request security hash reset?</button>
+      <button id="forgotBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">Forgot password?</button>
     </div>
   </div>
 
   <!-- Recovery Overlay Form Panel -->
   <div id="forgotPanel" style="display:none;" class="auth-deck">
-    <h3 style="margin-bottom:8px; font-size:18px; font-weight:800;">Patch Lost Credentials</h3>
-    <p style="font-size:13.5px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Input registered email endpoint to push data verification channel.</p>
+    <h3 style="margin-bottom:8px; font-size:18px; font-weight:800;">Reset Password</h3>
+    <p style="font-size:13.5px; color:var(--muted); margin-bottom:24px; line-height:1.5;">Input your email address to receive a recovery link.</p>
     <div class="field">
-      <label>Target Email Address</label>
+      <label>Email Address</label>
       <input type="email" id="forgotEmail" class="input-premium" placeholder="479code@gmail.com" autocomplete="email">
     </div>
-    <button class="btn-premium" id="forgotSubmit" style="width:100%;">Transmit Key Recovery Signal</button>
+    <button class="btn-premium" id="forgotSubmit" style="width:100%;">Send Reset Link</button>
     <div class="autherr" id="forgotErr"></div>
     <div class="authmsg" id="forgotMsg"></div>
     <div style="text-align:center; margin-top:20px;">
-      <button id="backToLoginBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">← Return to login block</button>
+      <button id="backToLoginBtn" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; text-decoration:underline; font-family:var(--mono);">← Return to login</button>
     </div>
   </div>
 </div>
@@ -372,50 +372,50 @@
       </div>
     </div>
 
-    <div class="nav-group-label">System Domains</div>
+    <div class="nav-group-label">Modules</div>
     <button class="nav-pill active" id="navProjects" onclick="switchModule('projects')">
-      <span style="font-size:16px;">📋</span><span>Task Control Matrix</span>
+      <span style="font-size:16px;">📋</span><span>Task Tracker</span>
     </button>
     <button class="nav-pill" id="navInvoices" onclick="switchModule('invoices')" style="display:none;">
-      <span style="font-size:16px;">🧾</span><span>Ledger Billings export</span>
+      <span style="font-size:16px;">🧾</span><span>Invoice Generator</span>
     </button>
 
     <div class="sidebar-spacer"></div>
 
-    <div class="nav-group-label">Session Adjustments</div>
+    <div class="nav-group-label">Account Settings</div>
     
     <div class="notif-wrap" style="width:100%;">
       <button class="nav-pill" id="usernameBtn">
-        <span style="font-size:16px;">👤</span><span id="usernameLabel">Nickname configuration</span>
+        <span style="font-size:16px;">👤</span><span id="usernameLabel">Set username</span>
       </button>
       <div class="notif-dropdown" id="usernameDropdown" style="left:0; right:auto; width:100%; bottom:70px; top:auto;">
         <div class="field" style="margin:4px;">
-          <label>Modify System Identifier Tag</label>
+          <label>Change Username</label>
           <input type="text" id="usernameEditInput" class="input-premium" placeholder="e.g. Uthy479">
         </div>
-        <button id="usernameSaveBtn" class="btn-premium" style="width:100%; padding:10px; margin-top:8px;">Overwrite Tag</button>
+        <button id="usernameSaveBtn" class="btn-premium" style="width:100%; padding:10px; margin-top:8px;">Save Username</button>
         <div id="usernameMsg" style="font-size:11px; margin-top:6px; font-family:var(--mono); text-align:center;"></div>
       </div>
     </div>
 
     <div class="notif-wrap" style="width:100%;">
       <button class="nav-pill" id="changePwdBtn">
-        <span style="font-size:16px;">🔑</span><span>Encryption Override</span>
+        <span style="font-size:16px;">🔑</span><span>Change Password</span>
       </button>
       <div class="notif-dropdown" id="changePwdDropdown" style="left:0; right:auto; width:250px; bottom:70px; top:auto; padding:20px;">
-        <div style="font-size:11px; color:var(--accent); font-family:var(--mono); margin-bottom:12px; text-transform:uppercase;">Patch Secure Cipher</div>
+        <div style="font-size:11px; color:var(--accent); font-family:var(--mono); margin-bottom:12px; text-transform:uppercase;">Update Password</div>
         <div style="margin-bottom:8px;">
-          <input type="password" id="newPwdInput" class="input-premium" placeholder="New Encryption Key" style="padding:8px 12px; font-size:13px;">
+          <input type="password" id="newPwdInput" class="input-premium" placeholder="New Password" style="padding:8px 12px; font-size:13px;">
         </div>
         <div style="margin-bottom:12px;">
-          <input type="password" id="confirmPwdInput" class="input-premium" placeholder="Verify Hash Structure" style="padding:8px 12px; font-size:13px;">
+          <input type="password" id="confirmPwdInput" class="input-premium" placeholder="Repeat Password" style="padding:8px 12px; font-size:13px;">
         </div>
-        <button id="savePwdBtn" class="btn-premium" style="width:100%; padding:10px; font-size:12px;">Push Cipher Update</button>
+        <button id="savePwdBtn" class="btn-premium" style="width:100%; padding:10px; font-size:12px;">Update Password</button>
         <div id="pwdMsg" style="font-size:11px; margin-top:8px; font-family:var(--mono); text-align:center;"></div>
       </div>
     </div>
 
-    <button class="nav-pill" id="signOutBtn" style="color:var(--danger); margin-top:8px;"><span style="font-size:16px;">↩</span><span>Disconnect System Node</span></button>
+    <button class="nav-pill" id="signOutBtn" style="color:var(--danger); margin-top:8px;"><span style="font-size:16px;">↩</span><span>Sign Out</span></button>
   </nav>
 
   <!-- RIGHT WORKING SPACE CONTAINER -->
@@ -425,12 +425,12 @@
     <header class="command-deck">
       <div style="display:flex; align-items:center; gap:16px;">
         <button class="mobile-trigger" id="menuToggle">☰</button>
-        <div class="deck-title" id="topbarTitle">Task Tracker Platform</div>
+        <div class="deck-title" id="topbarTitle">Task Tracker</div>
       </div>
       <div class="deck-actions">
-        <button id="refreshBtn" class="deck-btn">⟳ Cluster Resync</button>
+        <button id="refreshBtn" class="deck-btn">⟳ Sync Data</button>
         <div class="notif-wrap">
-          <button id="notifBtn" class="deck-btn">🔔 Live Feeds <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
+          <button id="notifBtn" class="deck-btn">🔔 Alerts <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
           <div class="notif-dropdown" id="notifDropdown"></div>
         </div>
         <span id="userEmail" class="deck-identity"></span>
@@ -444,7 +444,7 @@
       <section class="dashboard-metrics-container" id="globalDashboardDeck">
         <div class="metric-card completed-metrics">
           <div>
-            <div class="metric-label">Completed Targets Array</div>
+            <div class="metric-label">Completed Targets</div>
             <div class="metric-value-row">
               <div class="metric-number" id="dashCompletedCount">00</div>
               <div class="metric-percentage" id="dashCompletedPct">0%</div>
@@ -457,7 +457,7 @@
         
         <div class="metric-card pending-metrics">
           <div>
-            <div class="metric-label">Active Pending Pipelines</div>
+            <div class="metric-label">Pending Targets</div>
             <div class="metric-value-row">
               <div class="metric-number" id="dashPendingCount">00</div>
               <div class="metric-percentage" id="dashPendingPct">0%</div>
@@ -470,10 +470,10 @@
 
         <div class="metric-card breached-metrics">
           <div>
-            <div class="metric-label">Chrono Matrix Breaches</div>
+            <div class="metric-label">Overdue Passed Timelines</div>
             <div class="metric-value-row">
               <div class="metric-number" id="dashBreachedCount">00</div>
-              <div class="metric-percentage" style="color: var(--danger);" id="dashBreachedLabel">Passed Timelines</div>
+              <div class="metric-percentage" style="color: var(--danger);" id="dashBreachedLabel">Passed Deadlines</div>
             </div>
           </div>
           <div class="metric-progress-track">
@@ -485,66 +485,66 @@
       <!-- MASTER LAYER MODULE: PROJECT FRAME GRID -->
       <div id="projectsView">
         <div class="workspace-bar">
-          <input type="text" id="newProjectName" class="input-premium" placeholder="Define environment operational workspace perimeter configuration…">
-          <button id="addProjectBtn" class="btn-premium">Initialize Blueprint Matrix</button>
+          <input type="text" id="newProjectName" class="input-premium" placeholder="Enter a new project name…">
+          <button id="addProjectBtn" class="btn-premium">Create Project</button>
         </div>
-        <div class="nav-group-label" style="padding-left:0; margin-bottom:16px;">Active Network Context Scopes</div>
+        <div class="nav-group-label" style="padding-left:0; margin-bottom:16px;">Your Projects</div>
         <div class="ecosystem-grid" id="projectsGrid"></div>
-        <div class="empty" id="projectsEmpty" style="display:none;">Operational space clear. No active cluster workspaces mapped to profile registry tokens. Create one above.</div>
+        <div class="empty" id="projectsEmpty" style="display:none;">No projects yet — create your first one above.</div>
       </div>
 
       <!-- MASTER VIEW MODULE: BLUEPRINT SUBSYSTEM CONSOLE -->
       <div id="projectView" style="display:none;">
         <div class="context-header">
           <div>
-            <button class="backbtn" id="backBtn">← Return to Global Context Directory</button>
+            <button class="backbtn" id="backBtn">← All Projects</button>
             <h2 id="projectName" style="margin-top:12px;"></h2>
             <p id="projectDesc"></p>
           </div>
-          <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Purge Local Environment Cluster</button>
+          <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Delete Project</button>
         </div>
 
         <div class="context-tabs">
-          <button class="tabbtn active" data-tab="tasks">Tactical Array</button>
-          <button class="tabbtn" data-tab="timeline">Chronometer Streams</button>
-          <button class="tabbtn" data-tab="notes">Field Logs Memory</button>
-          <button class="tabbtn" data-tab="members">Node Authorization Access</button>
+          <button class="tabbtn active" data-tab="tasks">Tasks</button>
+          <button class="tabbtn" data-tab="timeline">Timeline</button>
+          <button class="tabbtn" data-tab="notes">Notes</button>
+          <button class="tabbtn" data-tab="members">Members</button>
         </div>
 
         <!-- System Task Matrices Grid Workspace Panel -->
         <div class="tabpane active" id="pane-tasks">
           <div class="workspace-bar" style="grid-template-columns: 2fr 1fr 1fr auto; gap:12px;">
-            <input type="text" id="newTaskInput" class="input-premium" placeholder="Allocate new operations process parameter target…">
-            <select id="newTaskAssignee" class="input-premium" style="padding:10px;"><option value="">Unassigned Node</option></select>
+            <input type="text" id="newTaskInput" class="input-premium" placeholder="Add a task…">
+            <select id="newTaskAssignee" class="input-premium" style="padding:10px;"><option value="">Unassigned</option></select>
             <input type="date" id="newTaskDue" class="input-premium" style="padding:10px;">
-            <button id="addTaskBtn" class="btn-premium">Map Target Process</button>
+            <button id="addTaskBtn" class="btn-premium">Add Task</button>
           </div>
           <div id="taskList"></div>
-          <div class="empty" id="tasksEmpty" style="display:none;">Queue index clean. System threads reporting normal idle operation vectors.</div>
+          <div class="empty" id="tasksEmpty" style="display:none;">No tasks yet — add one above.</div>
         </div>
 
         <!-- Telemetry Streams Chronometer Matrix Map Layer -->
         <div class="tabpane" id="pane-timeline">
           <div id="timelineList"></div>
-          <div class="empty" id="timelineEmpty" style="display:none;">Chronometer data empty. Tag chronological target metrics inside operations tab to trace trajectory charts.</div>
+          <div class="empty" id="timelineEmpty" style="display:none;">No tasks with due dates yet.</div>
         </div>
 
         <!-- Notes Frame Space Matrix Elements Logs Layer -->
         <div class="tabpane" id="pane-notes">
           <div class="workspace-bar">
-            <textarea id="newNoteInput" class="input-premium" placeholder="Append streaming field telemetry block data payload logs… e.g. Logistics pipeline status frame update" rows="2"></textarea>
-            <button id="addNoteBtn" class="btn-premium">Push Static Data Capture</button>
+            <textarea id="newNoteInput" class="input-premium" placeholder="Meeting note… e.g. Client wants invoice export by Friday" rows="2"></textarea>
+            <button id="addNoteBtn" class="btn-premium">Add Note</button>
           </div>
           <div id="noteList"></div>
-          <div class="empty" id="notesEmpty" style="display:none;">Buffered logs cleared. Storage disk clusters reading zero bytes content data.</div>
+          <div class="empty" id="notesEmpty" style="display:none;">No notes yet.</div>
         </div>
 
         <!-- Node Interfacing Core Communications Registry Group Panel -->
         <div class="tabpane" id="pane-members">
           <div class="invite-row">
-            <input type="text" id="inviteEmail" class="input-premium" placeholder="Target identity validation signature (@username string or data registry email block)">
-            <select id="inviteRole" class="input-premium" style="max-width: 240px;"><option value="editor">Write Permission Privileges [Editor]</option><option value="viewer">Read Only Metrics Level [Viewer]</option></select>
-            <button id="inviteBtn" class="btn-premium">Broadcast Access invitation</button>
+            <input type="text" id="inviteEmail" class="input-premium" placeholder="Teammate's email or @username (must have an account already)">
+            <select id="inviteRole" class="input-premium" style="max-width: 240px;"><option value="editor">Editor</option><option value="viewer">Viewer</option></select>
+            <button id="inviteBtn" class="btn-premium">Invite</button>
           </div>
           <div id="pendingInvitesList"></div>
           <div id="memberList"></div>
@@ -555,34 +555,34 @@
       <div id="invoiceView">
         <div class="inv-toolbar">
           <div>
-            <button class="backbtn" id="invBackBtn">← Return to Domain Management</button>
-            <h2 id="invViewTitle" style="margin-top:12px;">Invoices Balances Ledger Array</h2>
+            <button class="backbtn" id="invBackBtn">← Back</button>
+            <h2 id="invViewTitle" style="margin-top:12px;">Invoices</h2>
           </div>
-          <button class="btn-premium" id="newInvoiceBtn">+ Create New Ledger Entry Payload</button>
+          <button class="btn-premium" id="newInvoiceBtn">+ New Invoice</button>
         </div>
         <div id="invoiceList"></div>
-        <div class="empty" id="invoicesEmpty" style="display:none;">Transaction buffer reading empty. No invoice files generated within the database pipeline framework.</div>
+        <div class="empty" id="invoicesEmpty" style="display:none;">No invoices yet — create your first one.</div>
 
         <!-- Transaction Vector Form Input Stack Interface Template -->
         <div id="invoiceForm" style="display:none;">
           <div class="inv-workspace-block">
-            <h4>Invoice Signature Definitions Block</h4>
+            <h4>Invoice Header</h4>
             <div class="inv-grid">
               <div class="inv-field full">
-                <label>Operational Scope / Contract Title Variable *</label>
+                <label>Invoice Title / Subject *</label>
                 <input type="text" id="inv_title" class="input-premium" placeholder="e.g. INVOICE TO TRANSBORDER LOGISTICS FOR MONTH OF JUNE 2026">
               </div>
               <div class="inv-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap:16px; margin-top:16px; width:100%;">
-                <div class="inv-field"><label>Serial Transaction Tracking Code *</label>
+                <div class="inv-field"><label>Invoice No. *</label>
                   <input type="text" id="inv_number" class="input-premium" placeholder="e.g. TR/00F/C/06/26">
                 </div>
-                <div class="inv-field"><label>Timestamp Initialization Entry *</label>
+                <div class="inv-field"><label>Date *</label>
                   <input type="date" id="inv_issue_date" class="input-premium">
                 </div>
-                <div class="inv-field"><label>Transaction State Mode</label>
-                  <select id="inv_status" class="input-premium"><option value="draft">Draft Framework</option><option value="sent">Dispatched Vector</option><option value="paid">Settled Record Frame</option></select>
+                <div class="inv-field"><label>Status</label>
+                  <select id="inv_status" class="input-premium"><option value="draft">Draft</option><option value="sent">Sent</option><option value="paid">Paid</option></select>
                 </div>
-                <div class="inv-field"><label>Currency Unit Framework Code</label>
+                <div class="inv-field"><label>Currency</label>
                   <select id="inv_currency" class="input-premium"><option value="NGN">NGN — Nigerian Naira (₦)</option><option value="USD">USD — US Dollar ($)</option><option value="GBP">GBP — British Pound (£)</option><option value="EUR">EUR — Euro (€)</option><option value="KES">KES — Kenyan Shilling</option><option value="GHS">GHS — Ghana Cedi (₵)</option></select>
                 </div>
               </div>
@@ -590,66 +590,66 @@
           </div>
 
           <div class="inv-workspace-block">
-            <h4>Billing Target Parameters Map Vector</h4>
+            <h4>Bill To</h4>
             <div class="inv-grid">
               <div class="inv-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:16px; width:100%;">
-                <div class="inv-field"><label>Recipient Corporation Entity Name *</label>
+                <div class="inv-field"><label>Client / Company Name *</label>
                   <input type="text" id="inv_client_name" class="input-premium" placeholder="e.g. Transborder Logistics Limited">
                 </div>
-                <div class="inv-field"><label>Communications Endpoint Mail Destination</label>
+                <div class="inv-field"><label>Client Email</label>
                   <input type="email" id="inv_client_email" class="input-premium" placeholder="client@company.com">
                 </div>
-                <div class="inv-field"><label>Communications Protocol Phone Line</label>
+                <div class="inv-field"><label>Client Phone</label>
                   <input type="text" id="inv_client_phone" class="input-premium" placeholder="+234 000 000 0000">
                 </div>
               </div>
-              <div class="inv-field full" style="margin-top:16px;"><label>Physical Geolocation Grid Node Location</label>
+              <div class="inv-field full" style="margin-top:16px;"><label>Client Address</label>
                 <textarea id="inv_client_address" class="input-premium" rows="2" placeholder="Street, City, State"></textarea>
               </div>
             </div>
           </div>
 
           <div class="inv-workspace-block">
-            <h4>Line Calculation Parameters Stack</h4>
+            <h4>Line Items</h4>
             <div class="inv-items-head" style="display:grid; grid-template-columns:40px 3fr 1fr 1fr 1fr 40px; gap:12px; padding:0 12px; margin-bottom:12px;">
-              <span>Idx</span><span style="flex:3">Service Framework Parameters Scope</span><span>Qty</span><span>Unit Value</span><span>Net Comp</span><span></span>
+              <span>No.</span><span style="flex:3">Description</span><span>Qty</span><span>Unit Price</span><span>Total</span><span></span>
             </div>
             <div id="invItemsContainer"></div>
-            <button class="inv-add-item" id="addInvItem">+ Dynamic Allocate Line Item Parameters</button>
+            <button class="inv-add-item" id="addInvItem">+ Add line item</button>
             <div class="inv-totals">
-              <div class="inv-total-row"><span>AGGREGATE NET VAL</span><span id="invSubtotal">₦0.00</span></div>
-              <div class="inv-total-row grand"><span>TOTAL TRANSACTION PAYLOAD SUM</span><span id="invTotal">₦0.00</span></div>
+              <div class="inv-total-row"><span>SUBTOTAL</span><span id="invSubtotal">₦0.00</span></div>
+              <div class="inv-total-row grand"><span>TOTAL</span><span id="invTotal">₦0.00</span></div>
             </div>
           </div>
 
           <div class="inv-workspace-block">
-            <h4>Depository System Settlement Targets</h4>
+            <h4>Payment Details</h4>
             <div class="inv-grid" style="grid-template-columns: 1fr 1fr 1fr; gap:16px;">
-              <div class="inv-field"><label>System Depository Label Signature</label>
+              <div class="inv-field"><label>Account Name</label>
                 <input type="text" id="inv_account_name" class="input-premium" value="479Code Tech Solutions Ltd">
               </div>
-              <div class="inv-field"><label>Depository Matrix Allocation Serial</label>
+              <div class="inv-field"><label>Account Number</label>
                 <input type="text" id="inv_account_number" class="input-premium" value="0013942057">
               </div>
-              <div class="inv-field"><label>Clearing House Routing Code</label>
+              <div class="inv-field"><label>Bank Name</label>
                 <input type="text" id="inv_bank_name" class="input-premium" value="TAJ Bank">
               </div>
             </div>
-            <div class="inv-field full" style="margin-top:16px;"><label>Secondary Framework Notes / Terms Overrides Override Parameter Matrix</label>
-              <textarea id="inv_notes" class="input-premium" rows="2" placeholder="Settlement variables details context configurations instructions…"></textarea>
+            <div class="inv-field full" style="margin-top:16px;"><label>Additional Notes</label>
+              <textarea id="inv_notes" class="input-premium" rows="2" placeholder="Any other payment instructions or notes…"></textarea>
             </div>
           </div>
 
           <div class="inv-actions">
-            <button class="inv-btn primary" id="saveInvoiceBtn">Commit Data Payload Frame</button>
-            <button class="inv-btn secondary" id="previewInvoiceBtn">🖨 Transmit Signal to Print / Export PDF Frame</button>
-            <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Purge Log Record</button>
-            <button class="inv-btn secondary" id="cancelInvoiceBtn">Drop Frame Memory Cache</button>
+            <button class="inv-btn primary" id="saveInvoiceBtn">Save Invoice</button>
+            <button class="inv-btn secondary" id="previewInvoiceBtn">🖨 Preview & Download PDF</button>
+            <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Delete</button>
+            <button class="inv-btn secondary" id="cancelInvoiceBtn">Cancel</button>
           </div>
         </div>
       </div>
 
-      <footer>backed by Supabase Architecture Framework Networks · 479Code Core Control Terminals</footer>
+      <footer>backed by Supabase · 479Code Operations Core Controls</footer>
     </div>
   </div>
 </div>
@@ -687,13 +687,13 @@ document.getElementById('forgotSubmit').onclick = async () => {
   err.textContent = ''; msg.textContent = '';
   if(!email){ err.textContent = 'Enter your email address.'; return; }
   const btn = document.getElementById('forgotSubmit');
-  btn.disabled = true; btn.textContent = 'Transmitting Verification Token…';
+  btn.disabled = true; btn.textContent = 'Sending reset link…';
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://479code.github.io/479Code-TaskTracker/'
   });
-  btn.disabled = false; btn.textContent = 'Transmit Key Recovery Signal';
+  btn.disabled = false; btn.textContent = 'Send Reset Link';
   if(error){ err.style.display='block'; err.textContent = error.message; return; }
-  msg.textContent = '✓ Dynamic key reconfiguration token generated. Check system data routes endpoint frame.';
+  msg.textContent = '✓ Reset link sent! Check your inbox to set a new password.';
 };
 
 (async function handlePasswordRecovery(){
@@ -706,17 +706,17 @@ document.getElementById('forgotSubmit').onclick = async () => {
     const recoveryDiv = document.createElement('div');
     recoveryDiv.className = 'auth-deck';
     recoveryDiv.innerHTML = `
-      <h3 style="margin-bottom:8px; font-size:18px; color:var(--text); font-weight:800;">Patch Encryption Variable Vector</h3>
-      <p style="margin-bottom:24px; font-size:13.5px; color:var(--muted); font-family:var(--mono);">Override primary key credentials profile record configuration parameters.</p>
+      <h3 style="margin-bottom:8px; font-size:18px; color:var(--text); font-weight:800;">Set New Password</h3>
+      <p style="margin-bottom:24px; font-size:13.5px; color:var(--muted); font-family:var(--mono);">Choose a strong password for your account.</p>
       <div class="field">
-        <label>New Cipher Passcode Hash</label>
-        <input type="password" id="recoveryPwd" class="input-premium" placeholder="Min 6 characters alphanumeric payload">
+        <label>New Password</label>
+        <input type="password" id="recoveryPwd" class="input-premium" placeholder="Min. 6 characters">
       </div>
       <div class="field" style="margin-bottom:24px;">
-        <label>Re-verify Cipher Payload Alignment</label>
-        <input type="password" id="recoveryPwdConfirm" class="input-premium" placeholder="Min 6 characters alphanumeric payload">
+        <label>Confirm Password</label>
+        <input type="password" id="recoveryPwdConfirm" class="input-premium" placeholder="Repeat password">
       </div>
-      <button id="recoverySubmit" class="btn-premium" style="width:100%;">Execute Encryption Key Patch Override</button>
+      <button id="recoverySubmit" class="btn-premium" style="width:100%;">Save New Password</button>
       <div id="recoveryErr" class="autherr"></div>
       <div id="recoveryMsg" class="authmsg"></div>
     `;
@@ -728,14 +728,14 @@ document.getElementById('forgotSubmit').onclick = async () => {
       const err = document.getElementById('recoveryErr');
       const msg = document.getElementById('recoveryMsg');
       err.textContent = ''; msg.textContent = '';
-      if(pwd.length < 6){ err.textContent = 'Data validation size failure. Min 6 array element tokens mandatory.'; return; }
-      if(pwd !== confirm){ err.textContent = "Data payload collision string equality test mismatch."; return; }
+      if(pwd.length < 6){ err.textContent = 'Password must be at least 6 characters.'; return; }
+      if(pwd !== confirm){ err.textContent = "Passwords don't match."; return; }
       const btn = document.getElementById('recoverySubmit');
-      btn.disabled = true; btn.textContent = 'Injecting Encryption Key Byte Blocks…';
+      btn.disabled = true; btn.textContent = 'Saving password…';
       const { error } = await sb.auth.updateUser({ password: pwd });
-      btn.disabled = false; btn.textContent = 'Execute Encryption Key Patch Override';
+      btn.disabled = false; btn.textContent = 'Save New Password';
       if(error){ err.textContent = error.message; return; }
-      msg.textContent = '✓ Configuration data layer patched successfully. Synchronizing identity modules…';
+      msg.textContent = '✓ Password updated! Signing you in…';
       setTimeout(() => { window.location.hash = ''; location.reload(); }, 1500);
     };
   }
@@ -750,7 +750,7 @@ function setAuthMode(mode){
   document.getElementById('tabSignUp').classList.toggle('active', mode==='signup');
   document.getElementById('fullNameField').style.display = mode==='signup' ? 'block' : 'none';
   document.getElementById('usernameField').style.display = mode==='signup' ? 'block' : 'none';
-  document.getElementById('authSubmit').textContent = mode==='signin' ? 'Connect Session Terminal' : 'Enroll Node Framework Profile';
+  document.getElementById('authSubmit').textContent = mode==='signin' ? 'Sign In' : 'Create Account';
   document.getElementById('authErr').textContent = '';
   document.getElementById('authMsg').textContent = '';
 }
@@ -764,14 +764,14 @@ document.getElementById('authSubmit').onclick = async () => {
   const msg = document.getElementById('authMsg');
   err.textContent = ''; msg.textContent = '';
 
-  if(!email || !password){ err.textContent = 'Mandatory declaration failure error: Input valid parameters for email/password frames.'; return; }
+  if(!email || !password){ err.textContent = 'Email and password required.'; return; }
   const btn = document.getElementById('authSubmit');
   btn.disabled = true;
 
   if(authMode === 'signup'){
     if(username){
       const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-      if(existing){ err.textContent = 'Ecosystem collision check exception: Namespace variant string allocated to profile index.'; btn.disabled = false; return; }
+      if(existing){ err.textContent = 'That username is taken — try another.'; btn.disabled = false; return; }
     }
     const { data, error } = await sb.auth.signUp({
       email, password,
@@ -789,7 +789,7 @@ document.getElementById('authSubmit').onclick = async () => {
     if(data.session){
       await onLoggedIn();
     } else {
-      msg.textContent = 'Ecosystem endpoint initialized. Verification routing signal dispatched to email vector frame. Verify data to proceed.';
+      msg.textContent = 'Account created — check your email to confirm, then sign in.';
       setAuthMode('signin');
     }
   } else {
@@ -823,7 +823,7 @@ function switchModule(module){
   
   if(module === 'projects'){
     document.getElementById('navProjects').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Task Tracker Platform';
+    document.getElementById('topbarTitle').textContent = 'Task Tracker';
     document.getElementById('invoiceView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
     document.getElementById('projectsView').style.display = 'block';
@@ -831,7 +831,7 @@ function switchModule(module){
     loadProjects();
   } else if(module === 'invoices'){
     document.getElementById('navInvoices').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Financial Balances Ledger Array';
+    document.getElementById('topbarTitle').textContent = 'Invoices';
     document.getElementById('projectsView').style.display = 'none';
     document.getElementById('projectView').style.display = 'none';
     document.getElementById('globalDashboardDeck').style.display = 'none';
@@ -857,7 +857,7 @@ async function onLoggedIn(){
 
 async function refreshUsernameButton(){
   const profile = await getProfile(currentUser.id);
-  const display = profile?.username ? '@'+profile.username : 'Configure System Node Name';
+  const display = profile?.username ? '@'+profile.username : 'Set username';
   document.getElementById('usernameLabel').textContent = display;
   document.getElementById('usernameEditInput').value = profile?.username || '';
 }
@@ -881,17 +881,17 @@ document.getElementById('usernameSaveBtn').onclick = async () => {
   const username = raw.replace(/[^a-z0-9_]/g,'');
   const msg = document.getElementById('usernameMsg');
   msg.style.color = 'var(--danger)';
-  if(!username || username.length < 3){ msg.textContent = 'Constraints violation error: Required formatting size match failure (Min 3 characters, _).'; return; }
+  if(!username || username.length < 3){ msg.textContent = 'At least 3 characters (letters, numbers, _).'; return; }
 
   const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-  if(existing && existing.id !== currentUser.id){ msg.textContent = 'Identity token lock exception: Identifier already claimed.'; return; }
+  if(existing && existing.id !== currentUser.id){ msg.textContent = 'That username is taken.'; return; }
 
   const { error } = await sb.from('profiles').update({ username }).eq('id', currentUser.id);
   if(error){ msg.textContent = error.message; return; }
 
   delete profilesCache[currentUser.id];
   msg.style.color = 'var(--done)';
-  msg.textContent = 'Core Variable Registered!';
+  msg.textContent = 'Saved!';
   await refreshUsernameButton();
   setTimeout(()=>{ document.getElementById('usernameDropdown').classList.remove('open'); }, 800);
 };
@@ -910,19 +910,19 @@ document.getElementById('savePwdBtn').onclick = async () => {
   const msg = document.getElementById('pwdMsg');
   msg.style.color = 'var(--danger)';
 
-  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Cryptographic boundary condition failure. Minimum size length constraint mismatch.'; return; }
-  if(newPwd !== confirmPwd){ msg.textContent = "Data payload collision string equality test mismatch."; return; }
+  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Password must be at least 6 characters.'; return; }
+  if(newPwd !== confirmPwd){ msg.textContent = "Passwords don't match."; return; }
 
   const btn = document.getElementById('savePwdBtn');
-  btn.disabled = true; btn.textContent = 'Injecting new encryption parameters…';
+  btn.disabled = true; btn.textContent = 'Updating password…';
 
   const { error } = await sb.auth.updateUser({ password: newPwd });
-  btn.disabled = false; btn.textContent = 'Push Cipher Update';
+  btn.disabled = false; btn.textContent = 'Update Password';
 
   if(error){ msg.textContent = error.message; return; }
 
   msg.style.color = 'var(--done)';
-  msg.textContent = '✓ Cipher framework successfully modified inside operational systems.';
+  msg.textContent = '✓ Password updated successfully!';
   document.getElementById('newPwdInput').value = '';
   document.getElementById('confirmPwdInput').value = '';
   setTimeout(() => { document.getElementById('changePwdDropdown').classList.remove('open'); }, 1500);
@@ -930,7 +930,7 @@ document.getElementById('savePwdBtn').onclick = async () => {
 
 document.getElementById('refreshBtn').onclick = async () => {
   const btn = document.getElementById('refreshBtn');
-  btn.textContent = '⟳ Syncing Core Array Layers…';
+  btn.textContent = '⟳ Syncing Core Data…';
   if(document.getElementById('projectView').style.display !== 'none' && currentProject){
     await loadMembers(); await loadTasks(); await loadNotes();
   } else {
@@ -938,7 +938,7 @@ document.getElementById('refreshBtn').onclick = async () => {
   }
   await checkDueReminders();
   await loadNotifications();
-  btn.textContent = '⟳ Cluster Resync';
+  btn.textContent = '⟳ Sync Data';
 };
 
 document.getElementById('notifBtn').onclick = (e) => {
@@ -953,18 +953,18 @@ document.getElementById('notifBtn').onclick = (e) => {
   if(session){ await onLoggedIn(); }
 })();
 
-/* ---------------- TELEMETRY PLATFORM GLOBAL CONTEXT ALERTS & DASHBOARD CALCS ---------------- */
+/* ---------------- PLATFORM GLOBAL CONTEXT ALERTS & DASHBOARD CALCS ---------------- */
 function showError(msg){
   const b = document.getElementById('errBanner');
   b.className = 'banner';
-  b.textContent = '⚠️ Telemetry Layer Failure Exception: ' + msg;
+  b.textContent = '⚠️ Error: ' + msg;
   b.style.display = 'block';
   setTimeout(()=>{ b.style.display='none'; }, 4000);
 }
 function showOk(msg){
   const b = document.getElementById('errBanner');
   b.className = 'banner ok';
-  b.textContent = '✓ Network Handshake Telemetry Confirmed: ' + msg;
+  b.textContent = '✓ Confirmed: ' + msg;
   b.style.display = 'block';
   setTimeout(()=>{ b.style.display='none'; }, 3000);
 }
@@ -1021,9 +1021,8 @@ function updateDashboardUI(completed, pending, breached) {
   document.getElementById('dashPendingBar').style.width = pendingPct + '%';
 
   document.getElementById('dashBreachedCount').textContent = String(breached).padStart(2, '0');
-  // Breaches are treated as an absolute warning load out of pending items
-  const breachedPct = pending > 0 ? Math.round((breached / pending) * 100) : 0;
-  document.getElementById('dashBreachedBar').style.width = (total > 0 ? Math.round((breached / total) * 100) : 0) + '%';
+  const breachedPct = total > 0 ? Math.round((breached / total) * 100) : 0;
+  document.getElementById('dashBreachedBar').style.width = breachedPct + '%';
 }
 
 /* ---------------- TACTICAL OPERATIONS SCOPE ARCHITECTURES ---------------- */
@@ -1041,7 +1040,7 @@ document.getElementById('backBtn').onclick = () => {
   document.getElementById('projectView').style.display = 'none';
   document.getElementById('projectsView').style.display = 'block';
   document.getElementById('globalDashboardDeck').style.display = 'grid';
-  loadProjects(); // Recalculate global scope upon return
+  loadProjects(); 
 };
 
 async function loadProjects(){
@@ -1065,24 +1064,23 @@ async function loadProjects(){
     card.className = 'ecosystem-card';
     card.innerHTML = `
       <h3>${escapeHtml(m.projects.name)}</h3>
-      <p>${escapeHtml(m.projects.description || 'Ecosystem environment configuration maps running un-profiled parameters status streams.')}</p>
+      <p>${escapeHtml(m.projects.description || 'No description yet')}</p>
       <div class="ecosystem-meta">
         <span class="badge todo">${m.role}</span>
-        <span style="font-size:12.5px; color:var(--accent); font-weight:700; font-family:var(--mono)">Initialize System Core →</span>
+        <span style="font-size:12.5px; color:var(--accent); font-weight:700; font-family:var(--mono)">Enter Console →</span>
       </div>
     `;
     card.onclick = () => openProject(m.projects, m.role);
     grid.appendChild(card);
   });
 
-  // Execute global layout dashboard data extraction passes
   await compileGlobalDashboardMetrics(projectIds);
 }
 
 async function openProject(project, role){
   currentProject = { ...project, myRole: role };
   document.getElementById('projectsView').style.display = 'none';
-  document.getElementById('globalDashboardDeck').style.display = 'none'; // isolate workspace viewport
+  document.getElementById('globalDashboardDeck').style.display = 'none'; 
   document.getElementById('projectView').style.display = 'block';
   document.getElementById('projectName').textContent = project.name;
   document.getElementById('projectDesc').textContent = project.description || '';
@@ -1096,10 +1094,10 @@ async function openProject(project, role){
 }
 
 document.getElementById('deleteProjectBtn').onclick = async () => {
-  if(!confirm(`CRITICAL OPERATIONAL REMOVAL THREAD TRIGGERED:\n\nPurge workspace instance "${currentProject.name}"?\n\nThis completely erases all child database processes, tactical logs maps, timeline variables and nodes authentication bindings. This operation cannot be rolled back.`)) return;
+  if(!confirm(`Delete "${currentProject.name}"?\n\nThis will permanently remove all tasks, subtasks, notes and members. This cannot be undone.`)) return;
   const { error } = await sb.from('projects').delete().eq('id', currentProject.id);
   if(error){ showError(error.message); return; }
-  showOk('System target frame successfully unmapped from database registry blocks.');
+  showOk('Project deleted.');
   document.getElementById('projectView').style.display = 'none';
   document.getElementById('projectsView').style.display = 'block';
   document.getElementById('globalDashboardDeck').style.display = 'grid';
@@ -1115,7 +1113,7 @@ function switchTab(tab){
   document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'pane-'+tab));
 }
 
-/* ---------------- MODULE: NODE INTERFACING COLLABORATORS NETWORK ---------------- */
+/* ---------------- MODULE: NETWORK COLLABORATORS ---------------- */
 async function loadMembers(){
   const { data, error } = await sb
     .from('project_members')
@@ -1132,8 +1130,8 @@ async function loadMembers(){
     const isMe = m.user_id === currentUser.id;
     row.innerHTML = `
       <div class="member-info">
-        <span class="member-email">${escapeHtml(m.profiles?.full_name || m.profiles?.email || 'Unknown Identity Cluster Node')} ${isMe?'[Identity Host Anchor]':''}</span>
-        <span class="member-role">${escapeHtml(m.profiles?.email||'')} · Permission Parameter Token Scope: [${m.role.toUpperCase()}]</span>
+        <span class="member-email">${escapeHtml(m.profiles?.full_name || m.profiles?.email || 'Unknown Teammate')} ${isMe?'(you)':''}</span>
+        <span class="member-role">${escapeHtml(m.profiles?.email||'')} · ${m.role}</span>
       </div>
     `;
     if(currentProject.myRole === 'owner' && !isMe){
@@ -1150,7 +1148,7 @@ async function loadMembers(){
   });
 
   const assignSel = document.getElementById('newTaskAssignee');
-  assignSel.innerHTML = '<option value="">Unassigned Operations Node Target</option>';
+  assignSel.innerHTML = '<option value="">Unassigned</option>';
   projectMembers.forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.user_id;
@@ -1170,20 +1168,20 @@ document.getElementById('inviteBtn').onclick = async () => {
     ? sb.from('profiles').select('*').eq('email', handle).maybeSingle()
     : sb.from('profiles').select('*').eq('username', handle.toLowerCase().replace(/^@/,'')).maybeSingle();
   const { data: profile, error: pErr } = await lookup;
-  if(pErr || !profile){ showError('Ecosystem index mismatch: Identity node record not mapped to core configuration directory fields.'); return; }
-  if(profile.id === currentUser.id){ showError("Operational loop block logic conflict: Identity target references core local host anchor."); return; }
+  if(pErr || !profile){ showError('No account found with that email/username — they need to sign up first.'); return; }
+  if(profile.id === currentUser.id){ showError("That's you."); return; }
   const already = projectMembers.find(m => m.user_id === profile.id);
-  if(already){ showError('Active permission matrix duplication: Targeted system node verified within operational boundaries.'); return; }
+  if(already){ showError('Already a member of this project.'); return; }
   const { error } = await sb.from('project_invites').insert({
     project_id: currentProject.id, invited_user_id: profile.id, invited_by: currentUser.id, role
   });
   if(error){
-    if(error.message.includes('duplicate')) showError('Data channel transmission buffer warning: Invitation record pending feedback validation cycles.');
+    if(error.message.includes('duplicate')) showError('They already have a pending invite.');
     else showError(error.message);
     return;
   }
   document.getElementById('inviteEmail').value = '';
-  showOk('Handshake sequence initialization invitation token transmitted safely to ' + (profile.full_name || profile.email));
+  showOk('Invite sent to ' + (profile.full_name || profile.email) + ' — pending acceptance');
   await loadPendingInvites();
 };
 
@@ -1201,20 +1199,20 @@ async function loadPendingInvites(){
     row.innerHTML = `
       <div class="member-info">
         <span class="member-email">${escapeHtml(inv.profiles?.full_name || inv.profiles?.email)}</span>
-        <span class="member-role">Awaiting signature validation · Assigned token framework authority level: [${inv.role}]</span>
+        <span class="member-role">pending · invited as ${inv.role}</span>
       </div>
     `;
     const cancel = document.createElement('button');
     cancel.className = 'del';
     cancel.innerHTML = '✕';
-    cancel.title = 'Revoke broadcast target signal link';
+    cancel.title = 'Cancel Invite';
     cancel.onclick = async () => { await sb.from('project_invites').delete().eq('id', inv.id); await loadPendingInvites(); };
     row.appendChild(cancel);
     wrap.appendChild(row);
   });
 }
 
-/* ---------------- MODULE: CORE SECURITY LIVE ALERTS ENGINE ---------------- */
+/* ---------------- MODULE: CORE LIVE ALERTS ENGINE ---------------- */
 async function loadNotifications(){
   const { data, error } = await sb.from('notifications')
     .select('*, projects(name)')
@@ -1231,7 +1229,7 @@ async function loadNotifications(){
   const dd = document.getElementById('notifDropdown');
   dd.innerHTML = '';
   if(!data || data.length===0){
-    dd.innerHTML = '<div class="notif-empty">Telemetry queues clean. Dynamic event matrix reading zero indicators.</div>';
+    dd.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
     return;
   }
 
@@ -1247,7 +1245,7 @@ async function loadNotifications(){
       if(invite && invite.status === 'pending'){
         const actions = document.createElement('div');
         actions.className = 'notif-actions';
-        actions.innerHTML = `<button class="accept">Bind Network Token</button><button class="reject">Drop Frame Link</button>`;
+        actions.innerHTML = `<button class="accept">Accept</button><button class="reject">Reject</button>`;
         actions.querySelector('.accept').onclick = async () => { await respondInvite(n.invite_id, 'accepted'); };
         actions.querySelector('.reject').onclick = async () => { await respondInvite(n.invite_id, 'rejected'); };
         item.appendChild(actions);
@@ -1264,7 +1262,7 @@ async function loadNotifications(){
 async function respondInvite(inviteId, status){
   const { error } = await sb.from('project_invites').update({ status, responded_at: new Date().toISOString() }).eq('id', inviteId);
   if(error){ showError(error.message); return; }
-  showOk(status === 'accepted' ? 'Handshake established. Local context scope modified.' : 'System transmission parameters rejected.');
+  showOk(status === 'accepted' ? 'Joined the project!' : 'Invite declined.');
   await loadNotifications();
   await loadProjects();
 }
@@ -1295,12 +1293,12 @@ async function checkDueReminders(){
     const overdue = t.due_date < todayStr;
     await sb.from('notifications').insert({
       user_id: currentUser.id, type: 'due_reminder', project_id: t.project_id, task_id: t.id,
-      content: (overdue ? '⚠️ Target Breach Alert: Overdue task window collapse ' : '⏰ Target Chronicle Telemetry Warning: Deadline window contraction ') + '"' + t.title + '"' + (overdue ? '' : ' (Target parameter target frame ' + t.due_date + ')')
+      content: (overdue ? '⚠️ Overdue task: ' : '⏰ Due soon: ') + '"' + t.title + '"' + (overdue ? '' : ' (due ' + t.due_date + ')')
     });
   }
 }
 
-/* ---------------- MODULE: OPERATIONS TASK ARRAYS AND ALLOCATIONS ---------------- */
+/* ---------------- MODULE: TASKS AND SUBTASKS AllOCATIONS ---------------- */
 function assigneeName(id){
   if(!id) return null;
   const m = projectMembers.find(x => x.user_id === id);
@@ -1392,7 +1390,7 @@ async function loadTasks(){
     const soonStr = soon.toISOString().slice(0,10);
     const dueClass = t.due_date ? (t.due_date < today && t.status!=='done' ? 'overdue' : t.due_date <= soonStr && t.status!=='done' ? 'soon' : '') : '';
     const dueHtml = t.due_date
-      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue Chrono Breach:':dueClass==='soon'?'⏰ Approaching Target Deadline:':'System Target Line:'} ${t.due_date}</div>`
+      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue:':'⏰ Due soon:'} ${t.due_date}</div>`
       : '';
 
     row.innerHTML = `
@@ -1403,20 +1401,20 @@ async function loadTasks(){
           ${dueHtml}
           <div class="task-meta">
             <span class="badge ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
-            <button class="status-cycle" data-cycle="${t.id}">Cycle State →</button>
-            <button class="edit-task-btn" data-edit="${t.id}">✏️ Mod Field Parameters</button>
-            ${aName ? `<span class="badge todo">👤 Assigned Host Node: ${escapeHtml(aName)}</span>` : ''}
-            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' Sub Processes Active' : '+ Dynamic Sub Allocator'} ▾</button>
+            <button class="status-cycle" data-cycle="${t.id}">Change status →</button>
+            <button class="edit-task-btn" data-edit="${t.id}">✏️ Edit</button>
+            ${aName ? `<span class="badge todo">👤 ${escapeHtml(aName)}</span>` : ''}
+            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' subtasks' : '+ Subtask'} ▾</button>
           </div>
           ${subs.length ? `
             <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(doneCount/subs.length*100)}%"></div></div>
-            <div class="progress-label">${doneCount}/${subs.length} inner sub-processes committed to runtime block</div>
+            <div class="progress-label">${doneCount}/${subs.length} subtasks complete</div>
           ` : ''}
           <div class="subtasks-wrapper" id="subs-${t.id}">
             ${subs.map(s => subtaskHtml(s)).join('')}
             <div style="display:flex; gap:8px; margin-top:12px;">
-              <input type="text" class="input-premium" style="padding:6px 12px; font-size:12.5px;" placeholder="Input discrete secondary component parameter criteria…" id="subinput-${t.id}">
-              <button data-addsub="${t.id}" class="btn-premium" style="padding:6px 16px; font-size:12px;">Deploy Sub-Vector</button>
+              <input type="text" class="input-premium" style="padding:6px 12px; font-size:12.5px;" placeholder="Add subtask…" id="subinput-${t.id}">
+              <button data-addsub="${t.id}" class="btn-premium" style="padding:6px 16px; font-size:12px;">Add</button>
             </div>
           </div>
         </div>
@@ -1449,9 +1447,9 @@ function openTaskEdit(taskId, allTasks){
 
   const dueWrap = document.createElement('div');
   dueWrap.className = 'task-due';
-  dueWrap.innerHTML = `📅 Override Chronicle Deadline Target: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
-    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done); border-color:var(--done);">Apply Dynamic Patch</button>
-    <button class="edit-task-btn" data-canceledit="${taskId}">Drop updates</button>`;
+  dueWrap.innerHTML = `📅 Due date: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
+    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done); border-color:var(--done);">Save</button>
+    <button class="edit-task-btn" data-canceledit="${taskId}">Cancel</button>`;
   const metaEl = body.querySelector('.task-meta');
   body.insertBefore(dueWrap, metaEl);
 
@@ -1480,7 +1478,7 @@ function subtaskHtml(s){
   `;
 }
 
-function statusLabel(s){ return s==='todo'?'Stacked Queue': s==='progress'?'Compiling Thread':'Committed Block'; }
+function statusLabel(s){ return s==='todo'?'To do': s==='progress'?'In progress':'Done'; }
 
 async function toggleTaskDone(id, allTasks){
   const t = allTasks.find(x=>x.id===id);
@@ -1509,7 +1507,7 @@ async function addSubtask(parentId){
   setTimeout(()=>{ const s = document.getElementById('subs-'+parentId); if(s) s.classList.add('open'); }, 50);
 }
 
-/* ---------------- MODULE: OPERATIONAL MEMORY FIELD LOGS ---------------- */
+/* ---------------- MODULE: FIELD NOTES LOGS ---------------- */
 document.getElementById('addNoteBtn').onclick = async () => {
   const input = document.getElementById('newNoteInput');
   const content = input.value.trim();
@@ -1536,10 +1534,10 @@ async function loadNotes(){
     div.innerHTML = `
       <div class="note-text">${escapeHtml(n.content)}</div>
       <div class="note-meta">
-        <span class="note-author">Signee Identifier: ${escapeHtml(author?.full_name || author?.email || 'Unknown System Node Anchor ID')} · Timestamp Entry: [${new Date(n.created_at).toLocaleString()}]</span>
+        <span class="note-author">By: ${escapeHtml(author?.full_name || author?.email || 'Unknown')} · ${new Date(n.created_at).toLocaleString()}</span>
         <div class="note-actions">
-          ${n.converted_task_id ? `<span class="note-converted">✓ Transpiled into Active Process Matrix Block</span>` : `<button data-convert="${n.id}">Transpile Note to Task Element</button>`}
-          <button data-notedel="${n.id}">Wipe Log Payload</button>
+          ${n.converted_task_id ? `<span class="note-converted">✓ Converted to task</span>` : `<button data-convert="${n.id}">Convert to task</button>`}
+          <button data-notedel="${n.id}">Delete</button>
         </div>
       </div>
     `;
@@ -1562,12 +1560,12 @@ async function convertNoteToTask(noteId){
   }).select().single();
   if(error){ showError(error.message); return; }
   await sb.from('notes').update({ converted_task_id: task.id }).eq('id', noteId);
-  showOk('Log parameter block structural updates transpiled onto main tactical project tree arrays.');
+  showOk('Converted to task successfully.');
   await loadNotes();
   await loadTasks();
 }
 
-/* ============ MODULE: ADVANCED FISCAL LEDGER SYSTEM (INVOICES) ============ */
+/* ============ MODULE: INVOICES ============ */
 const INVOICE_OWNER_EMAIL = '479code@gmail.com';
 let editingInvoiceId = null;
 let invItems = [];
@@ -1578,7 +1576,7 @@ function showInvoiceView(){
   document.getElementById('invoiceView').style.display = 'block';
   document.getElementById('invoiceForm').style.display = 'none';
   document.getElementById('invoiceList').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = 'Financial Invoices Ledger Architecture';
+  document.getElementById('invViewTitle').textContent = 'Invoices';
   loadInvoices();
 }
 
@@ -1587,7 +1585,7 @@ document.getElementById('invBackBtn').onclick = () => {
     document.getElementById('invoiceForm').style.display = 'none';
     document.getElementById('invoiceList').style.display = 'block';
     document.getElementById('newInvoiceBtn').style.display = 'block';
-    document.getElementById('invViewTitle').textContent = 'Financial Invoices Ledger Architecture';
+    document.getElementById('invViewTitle').textContent = 'Invoices';
   } else {
     document.getElementById('invoiceView').style.display = 'none';
     document.getElementById('projectsView').style.display = 'block';
@@ -1608,21 +1606,21 @@ document.getElementById('saveInvoiceBtn').onclick = async () => {
     const { error } = await sb.from('invoices').insert({...inv, created_by: currentUser.id});
     if(error){ showError(error.message); return; }
   }
-  showOk('Invoice records compiled successfully inside centralized transaction tables.');
+  showOk('Invoice saved successfully.');
   document.getElementById('invBackBtn').click();
 };
 
 document.getElementById('previewInvoiceBtn').onclick = () => {
   const inv = gatherInvoiceForm(true);
-  if(!inv){ showError('System tracking validation missing parameter bounds. Check Serial IDs, Calendar definitions, and target organization parameters fields.'); return; }
+  if(!inv){ showError('Fill in at least the Invoice No., Client Name, and Date first.'); return; }
   printInvoice(inv);
 };
 
 document.getElementById('deleteInvoiceBtn').onclick = async () => {
   if(!editingInvoiceId) return;
-  if(!confirm('CRITICAL DATA WIPE WARNING:\n\nPurge this ledger transaction node framework instance absolutely from memory buffer array tables? Data configuration drops permanently.')) return;
+  if(!confirm('Delete this invoice? This cannot be undone.')) return;
   await sb.from('invoices').delete().eq('id', editingInvoiceId);
-  showOk('Ledger invoice record structure removed completely from table slots.');
+  showOk('Invoice record removed.');
   document.getElementById('invBackBtn').click();
 };
 
@@ -1676,7 +1674,7 @@ function openInvoiceForm(invoice){
   document.getElementById('invoiceList').style.display = 'none';
   document.getElementById('newInvoiceBtn').style.display = 'none';
   document.getElementById('invoiceForm').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Modify Ledger Invoice Frame Variable Blocks' : 'Generate New Data Ledger Invoice Parameters Allocation';
+  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Edit Invoice' : 'New Invoice';
 }
 
 function autoInvNumber(){
@@ -1695,9 +1693,9 @@ function renderInvItems(){
     row.className = 'inv-split-row';
     row.innerHTML = `
       <span style="font-family:var(--mono); font-size:12px; color:var(--muted); text-align:center;">[${i+1}]</span>
-      <input type="text" placeholder="Service runtime metric target descriptions scope details…" value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
-      <input type="number" placeholder="Volume units" value="${item.qty||''}" min="0" data-i="${i}" data-f="qty">
-      <input type="number" placeholder="Base unit value" value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
+      <input type="text" placeholder="Description" value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
+      <input type="number" placeholder="Qty" value="${item.qty||''}" min="0" data-i="${i}" data-f="qty">
+      <input type="number" placeholder="Unit Price" value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
       <span class="inv-item-total" style="font-family:var(--mono); font-size:14px; text-align:right; font-weight:700;">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
       <button class="del" data-rmi="${i}">✕</button>
     `;
@@ -1760,7 +1758,7 @@ async function loadInvoices(){
   });
 }
 
-/* ---- SIGNAL BROADCAST SYSTEM PRINT PDF COMPILER FUNCTIONS ---- */
+/* ---- PRINT PDF FUNCTIONS ---- */
 function printInvoice(inv){
   const sym     = currSymbol(inv.currency||'NGN');
   const cur     = inv.currency || 'NGN';
@@ -1797,7 +1795,7 @@ function printInvoice(inv){
   const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Invoice Payload Summary Vector ${escapeHtml(inv.invoice_number)}</title>
+<title>Invoice Summary ${escapeHtml(inv.invoice_number)}</title>
 <style>
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Times New Roman',Times,serif; color:#1a1a1a; background:#fff; padding:30px 40px; max-width:850px; margin:0 auto; font-size:13px;}
@@ -1853,18 +1851,18 @@ function printInvoice(inv){
 </div>
 ${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title)}</h2></div>` : ''}
 <div class="meta-row">
-  <div><strong>Invoice Serial Target Ref:</strong> ${escapeHtml(inv.invoice_number)}</div>
-  <div><strong>Dispatched Entry Timestamp:</strong> ${fmtDate(inv.issue_date)}</div>
+  <div><strong>Invoice Ref:</strong> ${escapeHtml(inv.invoice_number)}</div>
+  <div><strong>Date:</strong> ${fmtDate(inv.issue_date)}</div>
 </div>
 <div class="bill-to">
-  <div class="label">BILL TO ACCOUNT TARGET CLUSTER NODE:</div>
+  <div class="label">BILL TO:</div>
   <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400; font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
 </div>
 <table class="items">
   <thead>
     <tr>
       <th style="width:60px;">Item No.</th>
-      <th style="text-align:left;">Description Framework Parameters</th>
+      <th style="text-align:left;">Description</th>
       <th style="width:60px;">QTY</th>
       <th style="width:130px;">Unit Price</th>
       <th style="width:130px;">Total Gross</th>
@@ -1874,7 +1872,7 @@ ${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_t
   <tfoot>
     <tr>
       <td colspan="3"></td>
-      <td style="text-align:right;">SUBTOTAL CALCULATED</td>
+      <td style="text-align:right;">SUBTOTAL</td>
       <td style="text-align:right; font-family:'Courier New',monospace;">${cur} — ${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td>
     </tr>
   </tfoot>
@@ -1882,20 +1880,20 @@ ${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_t
 <div class="totals-box">
   <table class="totals-inner">
     <tr><td>SUBTOTAL SUM</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
-    <tr><td>NET FRAME DUE BALANCE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+    <tr><td>NET DUE BALANCE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
   </table>
 </div>
 ${(inv.account_name||inv.account_number||inv.bank_name) ? `
 <div class="payment-section">
-  <h3>Secure Settlement Account Channels Routing Vectors:</h3>
-  ${inv.account_name   ? `<p>DEPOSITORY LABEL PATH: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
-  ${inv.account_number ? `<p>DEPOSITORY MATRIX ROUTING: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
-  ${inv.bank_name      ? `<p>CLEARING HOUSE GATEWAY: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
+  <h3>Payment Details:</h3>
+  ${inv.account_name   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
+  ${inv.account_number ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
+  ${inv.bank_name      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
   ${inv.notes          ? `<p style="margin-top:6px;">${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</p>` : ''}
 </div>` : ''}
 <div class="sig-section">
   <div style="height:44px;"></div>
-  <p>COMPILATION SIGNATURE ASSURANCE: 479CODE TECH. SOLUTIONS LTD.</p>
+  <p>479CODE TECH. SOLUTIONS LTD.</p>
 </div>
 <div class="footer-band">
   <p>E-mail: <a href="mailto:479code@gmail.com">479code@gmail.com</a> &nbsp;&nbsp; Tel: +2347069655288</p>
@@ -1904,7 +1902,7 @@ ${(inv.account_name||inv.account_number||inv.bank_name) ? `
 </body></html>`;
 
   const w = window.open('','_blank','width=960,height=760');
-  if(!w){ showError('Signal popup interface blocked by user host rules. Allow popups to pass raw invoice layout streams.'); return; }
+  if(!w){ showError('Popup interface blocked. Please allow popups to view invoice print streams.'); return; }
   w.document.write(html);
   w.document.close();
 }
