@@ -510,6 +510,26 @@
         </div>
       </div>
     </div>
+
+    <div class="notif-wrap" style="width:100%;">
+      <button class="nav-item" id="changePwdBtn" style="width:100%;">
+        <span class="nav-icon">🔑</span><span class="nav-label">Change password</span>
+      </button>
+      <div class="notif-dropdown" id="changePwdDropdown" style="left:0;right:auto;width:240px;padding:14px;">
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em;">Set new password</div>
+        <div style="margin-bottom:8px;">
+          <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">New password</label>
+          <input type="password" id="newPwdInput" placeholder="Min. 6 characters" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 10px;outline:none;font-size:14px;box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">Confirm password</label>
+          <input type="password" id="confirmPwdInput" placeholder="Repeat password" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 10px;outline:none;font-size:14px;box-sizing:border-box;">
+        </div>
+        <button id="savePwdBtn" style="width:100%;background:var(--accent);color:#1a1206;border:none;border-radius:6px;padding:10px;font-weight:700;cursor:pointer;font-size:13px;">Update password</button>
+        <div id="pwdMsg" style="font-size:11px;margin-top:8px;min-height:14px;font-family:var(--mono);"></div>
+      </div>
+    </div>
+
     <button class="nav-item" id="signOutBtn"><span class="nav-icon">↩</span><span class="nav-label">Sign out</span></button>
   </nav>
 
@@ -870,7 +890,12 @@ document.getElementById('usernameBtn').onclick = (e) => {
   document.getElementById('usernameDropdown').classList.toggle('open');
 };
 document.addEventListener('click', (e) => {
-  if(!e.target.closest('.notif-wrap')) document.getElementById('usernameDropdown')?.classList.remove('open');
+  if(!e.target.closest('.notif-wrap')) {
+    document.getElementById('usernameDropdown')?.classList.remove('open');
+    document.getElementById('changePwdDropdown')?.classList.remove('open');
+  }
+  const dd = document.getElementById('notifDropdown');
+  if(!e.target.closest('.notif-wrap')) dd.classList.remove('open');
 });
 
 document.getElementById('usernameSaveBtn').onclick = async () => {
@@ -891,6 +916,38 @@ document.getElementById('usernameSaveBtn').onclick = async () => {
   msg.textContent = 'Saved!';
   await refreshUsernameButton();
   setTimeout(()=>{ document.getElementById('usernameDropdown').classList.remove('open'); }, 800);
+};
+
+document.getElementById('changePwdBtn').onclick = (e) => {
+  e.stopPropagation();
+  document.getElementById('usernameDropdown').classList.remove('open');
+  document.getElementById('notifDropdown').classList.remove('open');
+  document.getElementById('changePwdDropdown').classList.toggle('open');
+  document.getElementById('newPwdInput').focus();
+};
+
+document.getElementById('savePwdBtn').onclick = async () => {
+  const newPwd = document.getElementById('newPwdInput').value;
+  const confirmPwd = document.getElementById('confirmPwdInput').value;
+  const msg = document.getElementById('pwdMsg');
+  msg.style.color = 'var(--danger)';
+
+  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Password must be at least 6 characters.'; return; }
+  if(newPwd !== confirmPwd){ msg.textContent = "Passwords don't match."; return; }
+
+  const btn = document.getElementById('savePwdBtn');
+  btn.disabled = true; btn.textContent = 'Updating…';
+
+  const { error } = await sb.auth.updateUser({ password: newPwd });
+  btn.disabled = false; btn.textContent = 'Update password';
+
+  if(error){ msg.textContent = error.message; return; }
+
+  msg.style.color = 'var(--done)';
+  msg.textContent = '✓ Password updated successfully!';
+  document.getElementById('newPwdInput').value = '';
+  document.getElementById('confirmPwdInput').value = '';
+  setTimeout(() => { document.getElementById('changePwdDropdown').classList.remove('open'); }, 1500);
 };
 
 document.getElementById('refreshBtn').onclick = async () => {
