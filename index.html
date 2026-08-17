@@ -63,155 +63,15 @@
   .autherr{color:var(--danger);font-size:12px;margin-top:8px;min-height:14px;}
   .authmsg{color:var(--done);font-size:12px;margin-top:8px;}
 
-  /* ============ LAYOUT ============ */
-  #appRoot{ display:none; min-height:100vh; width:100%; }
-
-  /* Sidebar - fixed, out of document flow entirely */
-  .sidebar{
-    width:220px; background:var(--panel); border-right:1px solid var(--line);
-    display:flex; flex-direction:column; padding:16px 10px;
-    position:fixed; top:0; left:0; bottom:0; z-index:100; overflow-y:auto;
-    transition:transform .28s cubic-bezier(.4,0,.2,1);
-  }
-  .sidebar-logo{ display:flex; align-items:center; gap:10px; padding:6px 6px 18px; cursor:pointer; border-bottom:1px solid var(--line); margin-bottom:14px; flex:none; }
-  .sidebar-brand-text{ display:flex; flex-direction:column; }
-  .sidebar-appname{ font-size:15px; font-weight:700; color:var(--text); margin-top:1px; }
-  .sidebar-section-label{ font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); padding:0 8px; margin-bottom:6px; margin-top:4px; }
-  .sidebar-spacer{ flex:1; min-height:20px; }
-  .nav-item{ display:flex; align-items:center; gap:10px; width:100%; background:none; border:none; color:var(--muted); font-size:13.5px; padding:10px; border-radius:8px; cursor:pointer; text-align:left; transition:background .15s, color .15s; margin-bottom:2px; flex:none; }
-  .nav-item:hover{ background:var(--panel-2); color:var(--text); }
-  .nav-item.active{ background:var(--accent-dim); color:var(--accent); font-weight:600; }
-  .nav-icon{ font-size:16px; flex:none; }
-  .nav-label{ font-size:13px; }
-  .nav-user-row{ width:100%; flex:none; }
-
-  /* Main area - offset from sidebar on desktop */
-  .main-area{ display:flex; flex-direction:column; min-height:100vh; margin-left:220px; }
-  .topbar{ display:flex; align-items:center; gap:8px; padding:0 20px; height:56px; background:var(--bg); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:50; flex:none; }
-  .topbar-menu{ display:none; background:none; border:none; color:var(--text); font-size:24px; cursor:pointer; padding:4px 8px; flex:none; }
-  .topbar-title{ font-size:16px; font-weight:700; flex:1; color:var(--text); }
-  .topbar-right{ display:flex; align-items:center; gap:8px; flex:none; }
-  .topbar-btn{ background:var(--panel); border:1px solid var(--line); color:var(--muted); font-size:13px; padding:6px 12px; border-radius:6px; cursor:pointer; }
-  .topbar-btn:hover{ color:var(--text); border-color:var(--accent); }
-  .topbar-email{ font-family:var(--mono); font-size:11px; color:var(--muted); }
-  .wrap{ flex:1; max-width:960px; padding:24px 24px; width:100%; box-sizing:border-box; }
-
-  .sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:99; }
-  .sidebar-overlay.show{ display:block; }
-  header.app{ display:none; }
-
-  /* ============ MOBILE (≤768px) ============ */
-  @media screen and (max-width:768px){
-    /* Sidebar hidden off-left as a slide-in drawer */
-    .sidebar{ transform:translateX(-100%); width:78vw; max-width:290px; border-right:none; }
-    .sidebar.open{ transform:translateX(0); box-shadow:8px 0 40px rgba(0,0,0,.7); }
-
-    /* Main: full screen, no offset */
-    .main-area{ margin-left:0; width:100vw; max-width:100vw; overflow-x:hidden; }
-    .topbar{ padding:0 14px; height:52px; }
-    .topbar-menu{ display:flex; align-items:center; justify-content:center; }
-    .topbar-title{ font-size:15px; }
-    .topbar-email{ display:none; }
-    .topbar-btn{ font-size:12px; padding:6px 10px; }
-    .notif-dropdown{ width:calc(100vw - 20px); right:0; left:auto; max-height:60vh; }
-
-    .wrap{ padding:16px 16px 80px; }
-
-    /* Auth */
-    #authScreen{ padding:24px 20px; }
-    .auth-logo{ width:130px; }
-    .authbox{ padding:20px 18px; }
-    .field input{ font-size:16px; padding:13px; }
-    .authsubmit{ padding:14px; font-size:16px; }
-
-    /* Add bars — full column */
-    .addbar{ flex-direction:column; gap:10px; padding:12px; }
-    .addbar input[type=text],
-    .addbar textarea{ width:100%; font-size:16px; padding:14px 12px; }
-    .addbar input[type=date],
-    .addbar select{ width:100%; font-size:15px; padding:13px 12px; }
-    .addbar button{ width:100%; padding:15px; font-size:16px; font-weight:700; }
-
-    /* Invite */
-    .invite-row{ flex-direction:column; gap:10px; }
-    .invite-row input{ font-size:16px; padding:13px; }
-    .invite-row select{ padding:13px; font-size:15px; }
-    .invite-row button{ width:100%; padding:13px; font-size:15px; }
-
-    /* Projects */
-    .section-title{ font-size:13px; }
-    .projects-grid{ grid-template-columns:1fr; gap:14px; }
-    .project-card{ padding:20px; border-radius:14px; }
-    .project-card h3{ font-size:17px; }
-    .project-card p{ font-size:14px; }
-    .rolepill{ font-size:11px; padding:4px 10px; }
-
-    /* Project detail */
-    .backbtn{ font-size:15px; padding:8px 0; margin-bottom:14px; display:block; }
-    .project-head h2{ font-size:22px; }
-
-    /* Tabs */
-    .tabs{ overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; margin:0 -16px; padding:0 16px; }
-    .tabs::-webkit-scrollbar{ display:none; }
-    .tabs button{ font-size:14px; padding:12px 16px; white-space:nowrap; }
-
-    /* Tasks */
-    .task{ padding:16px 14px; margin-bottom:12px; }
-    .chk{ width:26px; height:26px; flex:none; }
-    .task-title{ font-size:15px; line-height:1.45; }
-    .task-meta{ gap:8px; margin-top:12px; }
-    .tag{ font-size:12px; padding:4px 10px; }
-    .status-cycle,.exp-btn{ font-size:12px; padding:4px 10px; }
-    .del{ font-size:20px; padding:5px 10px; }
-
-    /* Subtasks */
-    .subaddbar{ flex-direction:column; gap:8px; }
-    .subaddbar input{ font-size:15px; padding:12px; }
-    .subaddbar button{ width:100%; padding:12px; font-size:15px; }
-
-    /* Timeline */
-    .tl-item{ flex-wrap:wrap; gap:8px; padding:14px; }
-    .tl-title{ width:100%; order:-1; font-size:15px; font-weight:600; }
-    .tl-date{ font-size:13px; }
-    .tl-bar{ width:100%; height:8px; }
-
-    /* Notes */
-    .note{ padding:16px 14px; }
-    .note-text{ font-size:15px; }
-    .note-meta{ flex-direction:column; gap:10px; }
-    .note-actions button{ font-size:13px; padding:7px 14px; }
-
-    /* Members */
-    .member-row{ padding:14px; gap:10px; }
-    .member-email{ font-size:15px; }
-
-    /* Invoice */
-    .inv-toolbar{ flex-direction:column; gap:12px; }
-    .inv-toolbar #newInvoiceBtn{ width:100%; text-align:center; padding:15px; font-size:16px; }
-    .inv-list-item{ flex-direction:column; gap:10px; padding:16px; }
-    .inv-amount{ font-size:18px; }
-    .inv-list-right{ flex-direction:row; align-items:center; gap:12px; }
-    .inv-form{ padding:16px 14px; }
-    .inv-grid{ grid-template-columns:1fr; gap:12px; }
-    .inv-field input,.inv-field select,.inv-field textarea{ font-size:16px; padding:13px 12px; }
-    .inv-items-head{ display:none; }
-    .inv-item-row{ display:grid !important; grid-template-columns:26px 1fr 54px 70px 26px !important; gap:6px !important; }
-    .inv-item-row input{ padding:10px 6px !important; font-size:14px !important; }
-    .inv-item-total{ display:none; }
-    .inv-totals{ margin-top:20px; }
-    .inv-total-row{ font-size:15px; }
-    .inv-total-row.grand{ font-size:18px; }
-    .inv-actions{ flex-direction:column; gap:10px; }
-    .inv-btn{ width:100%; padding:15px; font-size:16px; }
-
-    footer{ padding:20px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
-  }
-
-  @media screen and (max-width:360px){
-    .wrap{ padding:12px 12px 80px; }
-    .project-card h3{ font-size:16px; }
-    .task-title{ font-size:14px; }
-  }
+  /* ---------- App shell ---------- */
+  #appRoot{display:none;animation:fadeIn .4s ease both;}
+  header.app{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin:0 0 4px;}
+  h1{margin:0;font-size:20px;font-weight:650;}
+  .userbar{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .userbar button{background:var(--panel);border:1px solid var(--line);color:var(--muted);font-size:11px;padding:6px 10px;border-radius:6px;cursor:pointer;}
+  .userbar button:hover{color:var(--text);border-color:var(--accent);}
   .notif-wrap{position:relative;}
   .notif-badge{background:var(--danger);color:#fff;border-radius:20px;font-size:9.5px;padding:1px 5px;margin-left:3px;font-weight:700;}
   .notif-dropdown{display:none;position:absolute;right:0;top:calc(100% + 8px);width:320px;max-height:420px;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.4);}
@@ -288,18 +148,6 @@
   .status-cycle:hover,.exp-btn:hover{border-color:var(--accent);color:var(--accent);}
   .del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;flex:none;}
   .del:hover{color:var(--danger);}
-  .del-project-btn{background:#2a1414;border:1px solid var(--danger);color:var(--danger);font-size:12px;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:var(--mono);white-space:nowrap;}
-  .del-project-btn:hover{background:var(--danger);color:#fff;}
-
-  /* Task inline edit */
-  .task-title-edit{background:var(--panel-2);border:1px solid var(--accent);color:var(--text);border-radius:6px;padding:5px 8px;font-size:14.5px;width:100%;outline:none;font-family:var(--sans);}
-  .task-due{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:6px;}
-  .task-due.overdue{color:var(--danger);}
-  .task-due.soon{color:var(--prog);}
-  .task-due-edit{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:3px 6px;font-size:11px;font-family:var(--mono);outline:none;}
-  .task-due-edit:focus{border-color:var(--accent);}
-  .edit-task-btn{font-family:var(--mono);font-size:10.5px;background:none;border:1px solid var(--line);color:var(--muted);padding:2px 8px;border-radius:20px;cursor:pointer;}
-  .edit-task-btn:hover{border-color:var(--accent);color:var(--accent);}
 
   .progress-bar{height:5px;background:var(--panel-2);border-radius:4px;overflow:hidden;margin-top:8px;}
   .progress-fill{height:100%;background:var(--done);transition:width .3s ease;border-radius:4px;}
@@ -367,7 +215,7 @@
   .inv-field.full{ grid-column:1/-1; }
 
   /* Line items */
-  .inv-items-head{ display:grid; grid-template-columns:32px 3fr 1fr 1fr 1fr 32px; gap:6px; margin-bottom:6px; }
+  .inv-items-head{ display:grid; grid-template-columns:3fr 1fr 1fr 1fr 32px; gap:8px; margin-bottom:6px; }
   .inv-items-head span{ font-size:10.5px; color:var(--muted); font-family:var(--mono); text-transform:uppercase; }
   .inv-item-row{ display:grid; grid-template-columns:3fr 1fr 1fr 1fr 32px; gap:8px; margin-bottom:6px; align-items:center; }
   .inv-item-row input{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-size:13px; outline:none; width:100%; }
@@ -390,6 +238,112 @@
   .inv-btn.success{ background:var(--done-dim); color:var(--done); border:1px solid var(--done); }
   .inv-btn.danger{ background:#2a1414; color:var(--danger); border:1px solid var(--danger); }
 
+  @media(max-width:600px){
+    .inv-grid{ grid-template-columns:1fr; }
+    .inv-items-head{ grid-template-columns:2fr 1fr 1fr 32px; }
+    .inv-items-head span:nth-child(3){ display:none; }
+    .inv-item-row{ grid-template-columns:2fr 1fr 1fr 32px; }
+    .inv-item-row input:nth-child(3){ display:none; }
+    .inv-actions{ flex-direction:column; }
+    .inv-btn{ width:100%; text-align:center; }
+  }
+  @media (max-width: 600px){
+    body{ padding: 0 0 80px; }
+    .wrap{ padding: 14px 12px; }
+
+    /* --- Auth --- */
+    #authScreen{ padding: 16px 12px; gap: 10px; }
+    .auth-logo{ width: 120px; }
+    .authbox{ padding: 16px; }
+
+    /* --- Header --- */
+    header.app{
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+      position: sticky; top: 0; z-index: 40;
+      background: var(--bg);
+      padding: 12px 0 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand{ gap: 8px; }
+    .header-logo{ width: 32px; }
+    h1{ font-size: 17px; }
+    .eyebrow{ font-size: 10px; margin-bottom: 2px; }
+
+    .userbar{
+      width: 100%;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .userbar #userEmail{ display: none; }
+    .userbar button{ font-size: 11px; padding: 6px 10px; }
+
+    /* notification dropdown full-width on mobile */
+    .notif-dropdown{ width: calc(100vw - 24px); right: auto; left: 0; }
+    #usernameDropdown{ width: 240px; }
+
+    /* --- Add bars --- */
+    .addbar{
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px;
+    }
+    .addbar input[type=text],
+    .addbar textarea{ width: 100%; flex: none; font-size: 15px; padding: 10px; }
+    .addbar select{ flex: 1; font-size: 13px; padding: 8px; }
+    .addbar input[type=date]{ flex: 1; font-size: 13px; padding: 8px; }
+    .addbar button{ width: 100%; padding: 11px; font-size: 14px; }
+
+    /* invite row */
+    .invite-row{ flex-wrap: wrap; }
+    .invite-row input{ width: 100%; flex: none; }
+    .invite-row select{ flex: 1; }
+    .invite-row button{ flex: 1; padding: 10px; }
+
+    /* --- Projects grid --- */
+    .projects-grid{ grid-template-columns: 1fr; gap: 10px; }
+    .project-card{ padding: 14px; }
+    .project-card h3{ font-size: 15px; }
+
+    /* --- Tabs --- */
+    .tabs{ gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tabs button{ font-size: 12px; padding: 10px 10px; margin-right: 8px; white-space: nowrap; }
+
+    /* --- Tasks --- */
+    .task{ padding: 12px; }
+    .task-title{ font-size: 14px; }
+    .task-meta{ gap: 6px; }
+    .tag{ font-size: 10px; padding: 2px 7px; }
+    .status-cycle, .exp-btn{ font-size: 10px; padding: 2px 7px; }
+
+    /* subtask add bar */
+    .subaddbar{ flex-wrap: wrap; }
+    .subaddbar input{ width: 100%; flex: none; }
+    .subaddbar button{ width: 100%; padding: 8px; }
+
+    /* --- Timeline --- */
+    .tl-item{ flex-wrap: wrap; gap: 8px; }
+    .tl-date{ min-width: auto; font-size: 11px; }
+    .tl-title{ flex: none; width: 100%; order: -1; }
+    .tl-bar{ width: 100%; flex: none; }
+
+    /* --- Notes --- */
+    .note-meta{ flex-direction: column; align-items: flex-start; }
+
+    /* --- Member rows --- */
+    .member-row{ flex-wrap: wrap; gap: 8px; }
+
+    /* --- Bottom nav safe area (PWA) --- */
+    footer{ padding-bottom: env(safe-area-inset-bottom, 12px); }
+
+    /* bigger tap targets */
+    .chk{ width: 24px; height: 24px; border-radius: 7px; }
+    .del{ font-size: 18px; padding: 4px 8px; }
+    .backbtn{ font-size: 13px; padding: 4px 0; margin-bottom: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -435,36 +389,16 @@
     <button class="authsubmit" id="authSubmit">Sign in</button>
     <div class="autherr" id="authErr"></div>
     <div class="authmsg" id="authMsg"></div>
-    <div style="text-align:center;margin-top:12px;">
-      <button id="forgotBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--mono);">Forgot password?</button>
-    </div>
-  </div>
-
-  <!-- Forgot password panel -->
-  <div id="forgotPanel" style="display:none;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:340px;">
-    <h3 style="margin:0 0 14px;font-size:15px;color:var(--text);">Reset your password</h3>
-    <div class="field">
-      <label>Email address</label>
-      <input type="email" id="forgotEmail" placeholder="479code@gmail.com" autocomplete="email">
-    </div>
-    <button class="authsubmit" id="forgotSubmit">Send reset link</button>
-    <div class="autherr" id="forgotErr"></div>
-    <div class="authmsg" id="forgotMsg"></div>
-    <div style="text-align:center;margin-top:12px;">
-      <button id="backToLoginBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--mono);">← Back to sign in</button>
-    </div>
   </div>
 </div>
 
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
 <!-- ============ APP ROOT ============ -->
 <div id="appRoot">
+<div class="wrap">
 
-  <!-- SIDEBAR -->
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo" id="brandHome">
-      <svg class="logo-svg" style="width:38px;height:auto;" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
+  <header class="app">
+    <div class="brand" id="brandHome">
+      <svg class="logo-svg header-logo" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
         <g fill="var(--accent)">
           <rect class="bar" x="195" y="60" width="40" height="320"/><rect class="bar" x="250" y="115" width="18" height="265"/>
           <rect class="bar" x="283" y="92" width="28" height="288"/><rect class="bar" x="326" y="118" width="22" height="262"/>
@@ -478,29 +412,17 @@
           <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="800" font-size="58" fill="#14181d" letter-spacing="2">CODE</text>
         </g>
       </svg>
-      <div class="sidebar-brand-text">
-        <span class="eyebrow" style="margin:0;">479Code</span>
-        <span class="sidebar-appname">Operations</span>
+      <div>
+        <p class="eyebrow">479Code · Operations</p>
+        <h1>Task Tracker</h1>
       </div>
     </div>
-
-    <div class="sidebar-section-label">Modules</div>
-    <button class="nav-item active" id="navProjects" onclick="switchModule('projects')">
-      <span class="nav-icon">📋</span><span class="nav-label">Task Tracker</span>
-    </button>
-    <button class="nav-item" id="navInvoices" onclick="switchModule('invoices')" style="display:none;">
-      <span class="nav-icon">🧾</span><span class="nav-label">Invoice Generator</span>
-    </button>
-
-    <div class="sidebar-spacer"></div>
-
-    <div class="sidebar-section-label">Account</div>
-    <div class="nav-user-row">
-      <div class="notif-wrap" style="width:100%;">
-        <button class="nav-item" id="usernameBtn" style="width:100%;">
-          <span class="nav-icon">👤</span><span class="nav-label" id="usernameLabel">Set username</span>
-        </button>
-        <div class="notif-dropdown" id="usernameDropdown" style="left:0;right:auto;width:220px;">
+    <div class="userbar">
+      <button id="refreshBtn" title="Refresh">⟳ Refresh</button>
+      <button id="invoiceNavBtn" style="display:none;">🧾 Invoices</button>
+      <div class="notif-wrap">
+        <button id="usernameBtn">Set username</button>
+        <div class="notif-dropdown" id="usernameDropdown">
           <div class="field" style="margin:4px 4px 8px;">
             <label>Username</label>
             <input type="text" id="usernameEditInput" placeholder="e.g. Uthy479" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:8px;outline:none;">
@@ -509,28 +431,15 @@
           <div id="usernameMsg" style="font-size:11px;margin-top:6px;min-height:14px;font-family:var(--mono);"></div>
         </div>
       </div>
-    </div>
-    <button class="nav-item" id="signOutBtn"><span class="nav-icon">↩</span><span class="nav-label">Sign out</span></button>
-  </nav>
-
-  <!-- MAIN AREA -->
-  <div class="main-area">
-
-    <!-- TOP BAR -->
-    <div class="topbar">
-      <button class="topbar-menu" id="menuToggle">☰</button>
-      <div class="topbar-title" id="topbarTitle">Task Tracker</div>
-      <div class="topbar-right">
-        <button id="refreshBtn" class="topbar-btn" title="Refresh">⟳</button>
-        <div class="notif-wrap">
-          <button id="notifBtn" class="topbar-btn">🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
-          <div class="notif-dropdown" id="notifDropdown"></div>
-        </div>
-        <span id="userEmail" class="topbar-email"></span>
+      <div class="notif-wrap">
+        <button id="notifBtn">🔔 <span id="notifBadge" class="notif-badge" style="display:none;">0</span></button>
+        <div class="notif-dropdown" id="notifDropdown"></div>
       </div>
+      <span id="userEmail"></span>
+      <button id="signOutBtn">Sign out</button>
     </div>
+  </header>
 
-  <div class="wrap">
   <div class="banner" id="errBanner"></div>
 
   <!-- PROJECTS LIST VIEW -->
@@ -547,12 +456,9 @@
   <!-- PROJECT DETAIL VIEW -->
   <div id="projectView" style="display:none;">
     <button class="backbtn" id="backBtn">← All projects</button>
-    <div class="project-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-      <div>
-        <h2 id="projectName"></h2>
-        <p id="projectDesc"></p>
-      </div>
-      <button class="del-project-btn" id="deleteProjectBtn" style="display:none;">🗑 Delete Project</button>
+    <div class="project-head">
+      <h2 id="projectName"></h2>
+      <p id="projectDesc"></p>
     </div>
 
     <div class="tabs">
@@ -601,6 +507,7 @@
     </div>
   </div>
 
+  <footer>backed by Supabase · real-time team data</footer>
 
   <!-- ============ INVOICE VIEW ============ -->
   <div id="invoiceView">
@@ -616,19 +523,30 @@
 
     <!-- Create / Edit form -->
     <div id="invoiceForm" style="display:none;">
+      <div class="inv-form">
+        <h3>Client Details</h3>
+        <div class="inv-grid">
+          <div class="inv-field"><label>Client Name *</label><input type="text" id="inv_client_name" placeholder="Company or person name"></div>
+          <div class="inv-field"><label>Client Email</label><input type="email" id="inv_client_email" placeholder="client@example.com"></div>
+          <div class="inv-field"><label>Client Phone</label><input type="text" id="inv_client_phone" placeholder="+1 234 567 8900"></div>
+          <div class="inv-field"><label>Currency</label>
+            <select id="inv_currency">
+              <option value="USD">USD — US Dollar</option>
+              <option value="NGN">NGN — Nigerian Naira</option>
+              <option value="GBP">GBP — British Pound</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="KES">KES — Kenyan Shilling</option>
+              <option value="GHS">GHS — Ghana Cedi</option>
+            </select>
+          </div>
+          <div class="inv-field full"><label>Client Address</label><textarea id="inv_client_address" rows="2" placeholder="Street, City, Country"></textarea></div>
+        </div>
+      </div>
 
       <div class="inv-form">
-        <h3>Invoice Header</h3>
+        <h3>Invoice Details</h3>
         <div class="inv-grid">
-          <div class="inv-field full"><label>Invoice Title / Subject *</label>
-            <input type="text" id="inv_title" placeholder="e.g. INVOICE TO TRANSBORDER LOGISTICS FOR MONTH OF JUNE 2026">
-          </div>
-          <div class="inv-field"><label>Receipt / Invoice No. *</label>
-            <input type="text" id="inv_number" placeholder="e.g. TR/00F/C/06/26">
-          </div>
-          <div class="inv-field"><label>Date *</label>
-            <input type="date" id="inv_issue_date">
-          </div>
+          <div class="inv-field"><label>Invoice Number *</label><input type="text" id="inv_number" placeholder="INV-001"></div>
           <div class="inv-field"><label>Status</label>
             <select id="inv_status">
               <option value="draft">Draft</option>
@@ -636,81 +554,35 @@
               <option value="paid">Paid</option>
             </select>
           </div>
-          <div class="inv-field"><label>Currency</label>
-            <select id="inv_currency">
-              <option value="NGN">NGN — Nigerian Naira (₦)</option>
-              <option value="USD">USD — US Dollar ($)</option>
-              <option value="GBP">GBP — British Pound (£)</option>
-              <option value="EUR">EUR — Euro (€)</option>
-              <option value="KES">KES — Kenyan Shilling</option>
-              <option value="GHS">GHS — Ghana Cedi (₵)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="inv-form">
-        <h3>Bill To</h3>
-        <div class="inv-grid">
-          <div class="inv-field"><label>Client / Company Name *</label>
-            <input type="text" id="inv_client_name" placeholder="e.g. Transborder Logistics Limited">
-          </div>
-          <div class="inv-field"><label>Client Email</label>
-            <input type="email" id="inv_client_email" placeholder="client@company.com">
-          </div>
-          <div class="inv-field"><label>Client Phone</label>
-            <input type="text" id="inv_client_phone" placeholder="+234 000 000 0000">
-          </div>
-          <div class="inv-field full"><label>Client Address</label>
-            <textarea id="inv_client_address" rows="2" placeholder="Street, City, State"></textarea>
-          </div>
+          <div class="inv-field"><label>Issue Date *</label><input type="date" id="inv_issue_date"></div>
+          <div class="inv-field"><label>Due Date</label><input type="date" id="inv_due_date"></div>
+          <div class="inv-field full"><label>Notes / Payment Instructions</label><textarea id="inv_notes" rows="2" placeholder="Bank details, payment terms, thank you message…"></textarea></div>
         </div>
       </div>
 
       <div class="inv-form">
         <h3>Line Items</h3>
         <div class="inv-items-head">
-          <span>No.</span><span style="flex:3">Description</span><span>Qty</span><span>Unit Price</span><span>Total</span><span></span>
+          <span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span>
         </div>
         <div id="invItemsContainer"></div>
         <button class="inv-add-item" id="addInvItem">+ Add line item</button>
         <div class="inv-totals">
-          <div class="inv-total-row"><span>SUBTOTAL</span><span id="invSubtotal">₦0.00</span></div>
-          <div class="inv-total-row grand"><span>TOTAL</span><span id="invTotal">₦0.00</span></div>
-        </div>
-      </div>
-
-      <div class="inv-form">
-        <h3>Payment Details</h3>
-        <div class="inv-grid">
-          <div class="inv-field"><label>Account Name</label>
-            <input type="text" id="inv_account_name" value="479Code Tech Solutions Ltd">
-          </div>
-          <div class="inv-field"><label>Account Number</label>
-            <input type="text" id="inv_account_number" value="0013942057">
-          </div>
-          <div class="inv-field"><label>Bank Name</label>
-            <input type="text" id="inv_bank_name" value="TAJ Bank">
-          </div>
-          <div class="inv-field full"><label>Additional Notes</label>
-            <textarea id="inv_notes" rows="2" placeholder="Any other payment instructions or notes…"></textarea>
-          </div>
+          <div class="inv-total-row"><span>Subtotal</span><span id="invSubtotal">0.00</span></div>
+          <div class="inv-total-row grand"><span>TOTAL</span><span id="invTotal">0.00</span></div>
         </div>
       </div>
 
       <div class="inv-actions">
         <button class="inv-btn primary" id="saveInvoiceBtn">Save Invoice</button>
-        <button class="inv-btn secondary" id="previewInvoiceBtn">🖨 Preview & Download PDF</button>
-        <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Delete</button>
+        <button class="inv-btn secondary" id="previewInvoiceBtn">Preview & Download PDF</button>
+        <button class="inv-btn danger" id="deleteInvoiceBtn" style="display:none;">Delete Invoice</button>
         <button class="inv-btn secondary" id="cancelInvoiceBtn">Cancel</button>
       </div>
     </div>
   </div>
-
-  <footer>backed by Supabase · 479Code Operations</footer>
-  </div><!-- end .wrap -->
-  </div><!-- end .main-area -->
-</div><!-- end #appRoot -->
+</div>
+</div>
 
 <script>
 const SUPABASE_URL = 'https://ztkdzudunwlhkrclejot.supabase.co';
@@ -724,19 +596,6 @@ let profilesCache = {};
 
 /* ---------------- AUTH ---------------- */
 let authMode = 'signin';
-
-document.getElementById('forgotBtn').onclick = () => {
-  document.getElementById('authScreen').querySelector('.authbox').style.display = 'none';
-  document.getElementById('forgotPanel').style.display = 'block';
-  document.getElementById('forgotEmail').value = document.getElementById('emailInput').value || '';
-  document.getElementById('forgotErr').textContent = '';
-  document.getElementById('forgotMsg').textContent = '';
-};
-
-document.getElementById('backToLoginBtn').onclick = () => {
-  document.getElementById('forgotPanel').style.display = 'none';
-  document.getElementById('authScreen').querySelector('.authbox').style.display = 'block';
-};
 
 document.getElementById('tabSignIn').onclick = () => setAuthMode('signin');
 document.getElementById('tabSignUp').onclick = () => setAuthMode('signup');
@@ -804,41 +663,6 @@ document.getElementById('signOutBtn').onclick = async () => {
   location.reload();
 };
 
-document.getElementById('brandHome').onclick = () => switchModule('projects');
-
-// Mobile sidebar toggle
-document.getElementById('menuToggle').onclick = () => {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('show');
-};
-document.getElementById('sidebarOverlay').onclick = () => {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('show');
-};
-
-function switchModule(module){
-  // close mobile sidebar
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('show');
-
-  // update nav active state
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  if(module === 'projects'){
-    document.getElementById('navProjects').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Task Tracker';
-    document.getElementById('invoiceView').style.display = 'none';
-    document.getElementById('projectView').style.display = 'none';
-    document.getElementById('projectsView').style.display = 'block';
-    loadProjects();
-  } else if(module === 'invoices'){
-    document.getElementById('navInvoices').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Invoice Generator';
-    document.getElementById('projectsView').style.display = 'none';
-    document.getElementById('projectView').style.display = 'none';
-    showInvoiceView();
-  }
-}
-
 async function onLoggedIn(){
   const { data: { user } } = await sb.auth.getUser();
   currentUser = user;
@@ -846,7 +670,7 @@ async function onLoggedIn(){
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('userEmail').textContent = user.email;
   if(user.email === INVOICE_OWNER_EMAIL){
-    document.getElementById('navInvoices').style.display = 'flex';
+    document.getElementById('invoiceNavBtn').style.display = 'block';
   }
   await loadProjects();
   await refreshUsernameButton();
@@ -858,9 +682,7 @@ async function onLoggedIn(){
 async function refreshUsernameButton(){
   const profile = await getProfile(currentUser.id);
   const btn = document.getElementById('usernameBtn');
-  const lbl = document.getElementById('usernameLabel');
-  const display = profile?.username ? '@'+profile.username : 'Set username';
-  if(lbl) lbl.textContent = display;
+  btn.textContent = profile?.username ? '@'+profile.username : 'Set username';
   document.getElementById('usernameEditInput').value = profile?.username || '';
 }
 
@@ -999,7 +821,6 @@ async function openProject(project, role){
   document.getElementById('projectView').style.display = 'block';
   document.getElementById('projectName').textContent = project.name;
   document.getElementById('projectDesc').textContent = project.description || '';
-  document.getElementById('deleteProjectBtn').style.display = role === 'owner' ? 'block' : 'none';
   switchTab('tasks');
   await loadMembers();
   await loadTasks();
@@ -1007,16 +828,6 @@ async function openProject(project, role){
   await loadPendingInvites();
   await loadTimeline();
 }
-
-document.getElementById('deleteProjectBtn').onclick = async () => {
-  if(!confirm(`Delete "${currentProject.name}"?\n\nThis will permanently remove all tasks, subtasks, notes and members. This cannot be undone.`)) return;
-  const { error } = await sb.from('projects').delete().eq('id', currentProject.id);
-  if(error){ showError(error.message); return; }
-  showOk('Project deleted');
-  document.getElementById('projectView').style.display = 'none';
-  document.getElementById('projectsView').style.display = 'block';
-  await loadProjects();
-};
 
 /* ---------------- TABS ---------------- */
 document.querySelectorAll('.tabbtn').forEach(btn => {
@@ -1299,24 +1110,15 @@ async function loadTasks(){
     row.className = 'task' + (t.status==='done' ? ' done':'');
 
     const aName = assigneeName(t.assignee_id);
-    const today = new Date().toISOString().slice(0,10);
-    const soon = new Date(); soon.setDate(soon.getDate()+2);
-    const soonStr = soon.toISOString().slice(0,10);
-    const dueClass = t.due_date ? (t.due_date < today && t.status!=='done' ? 'overdue' : t.due_date <= soonStr && t.status!=='done' ? 'soon' : '') : '';
-    const dueHtml = t.due_date
-      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue:':dueClass==='soon'?'⏰ Due soon:':'Due:'} ${t.due_date}</div>`
-      : '';
 
     row.innerHTML = `
       <div class="task-row">
         <div class="chk ${t.status==='done'?'checked':''}" data-id="${t.id}"></div>
         <div class="task-body">
-          <div class="task-title" id="ttitle-${t.id}">${escapeHtml(t.title)}</div>
-          ${dueHtml}
+          <div class="task-title">${escapeHtml(t.title)}</div>
           <div class="task-meta">
             <span class="tag ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
             <button class="status-cycle" data-cycle="${t.id}">Change status →</button>
-            <button class="edit-task-btn" data-edit="${t.id}">✏️ Edit</button>
             ${aName ? `<span class="tag todo">👤 ${escapeHtml(aName)}</span>` : ''}
             <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' subtask' + (subs.length>1?'s':'') : '+ Subtask'} ▾</button>
           </div>
@@ -1348,39 +1150,6 @@ async function loadTasks(){
   list.querySelectorAll('[data-addsub]').forEach(el => el.onclick = () => addSubtask(el.dataset.addsub));
   list.querySelectorAll('[data-subchk]').forEach(el => el.onclick = () => toggleTaskDone(el.dataset.subchk, data));
   list.querySelectorAll('[data-subdel]').forEach(el => el.onclick = () => deleteTask(el.dataset.subdel));
-  list.querySelectorAll('[data-edit]').forEach(el => el.onclick = () => openTaskEdit(el.dataset.edit, data));
-}
-
-function openTaskEdit(taskId, allTasks){
-  const t = allTasks.find(x=>x.id===taskId);
-  if(!t) return;
-  const titleEl = document.getElementById('ttitle-'+taskId);
-  if(!titleEl) return;
-  const body = titleEl.parentElement;
-
-  // Replace title with input
-  titleEl.outerHTML = `<input class="task-title-edit" id="tedit-${taskId}" value="${escapeHtml(t.title)}" type="text">`;
-
-  // Add due date editor below
-  const dueWrap = document.createElement('div');
-  dueWrap.className = 'task-due';
-  dueWrap.innerHTML = `📅 Due date: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
-    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done);border-color:var(--done);">Save</button>
-    <button class="edit-task-btn" data-canceledit="${taskId}">Cancel</button>`;
-  const metaEl = body.querySelector('.task-meta');
-  body.insertBefore(dueWrap, metaEl);
-
-  const input = document.getElementById('tedit-'+taskId);
-  if(input){ input.focus(); input.select(); }
-
-  dueWrap.querySelector('[data-save]').onclick = async () => {
-    const newTitle = document.getElementById('tedit-'+taskId)?.value.trim() || t.title;
-    const newDue = document.getElementById('tdue-'+taskId)?.value || null;
-    const { error } = await sb.from('tasks').update({ title: newTitle, due_date: newDue, updated_at: new Date().toISOString() }).eq('id', taskId);
-    if(error){ showError(error.message); return; }
-    await loadTasks(); await loadTimeline();
-  };
-  dueWrap.querySelector('[data-canceledit]').onclick = () => loadTasks();
 }
 
 function subtaskHtml(s){
@@ -1509,6 +1278,7 @@ function showInvoiceView(){
   loadInvoices();
 }
 
+document.getElementById('invoiceNavBtn').onclick = showInvoiceView;
 
 document.getElementById('invBackBtn').onclick = () => {
   if(document.getElementById('invoiceForm').style.display !== 'none'){
@@ -1524,7 +1294,7 @@ document.getElementById('invBackBtn').onclick = () => {
 
 document.getElementById('newInvoiceBtn').onclick = () => openInvoiceForm(null);
 document.getElementById('cancelInvoiceBtn').onclick = () => document.getElementById('invBackBtn').click();
-document.getElementById('addInvItem').onclick = () => { invItems.push({desc:'',qty:'',rate:''}); renderInvItems(); };
+document.getElementById('addInvItem').onclick = () => { invItems.push({desc:'',qty:1,rate:0}); renderInvItems(); };
 
 document.getElementById('saveInvoiceBtn').onclick = async () => {
   const inv = gatherInvoiceForm();
@@ -1542,7 +1312,7 @@ document.getElementById('saveInvoiceBtn').onclick = async () => {
 
 document.getElementById('previewInvoiceBtn').onclick = () => {
   const inv = gatherInvoiceForm(true);
-  if(!inv){ showError('Fill in at least the Invoice No., Client Name, and Date first.'); return; }
+  if(!inv) return;
   printInvoice(inv);
 };
 
@@ -1555,49 +1325,42 @@ document.getElementById('deleteInvoiceBtn').onclick = async () => {
 };
 
 function gatherInvoiceForm(preview = false){
-  const num    = document.getElementById('inv_number').value.trim();
+  const num = document.getElementById('inv_number').value.trim();
   const client = document.getElementById('inv_client_name').value.trim();
-  const issue  = document.getElementById('inv_issue_date').value;
-  if(!num || !client || !issue) return null;
+  const issue = document.getElementById('inv_issue_date').value;
+  if(!num || !client || !issue){
+    if(!preview) showError('Invoice number, client name, and issue date are required.');
+    return null;
+  }
   return {
-    invoice_number   : num,
-    invoice_title    : document.getElementById('inv_title').value.trim(),
-    receipt_number   : num,
-    client_name      : client,
-    client_email     : document.getElementById('inv_client_email').value.trim(),
-    client_phone     : document.getElementById('inv_client_phone').value.trim(),
-    client_address   : document.getElementById('inv_client_address').value.trim(),
-    issue_date       : issue,
-    due_date         : null,
-    currency         : document.getElementById('inv_currency').value,
-    status           : document.getElementById('inv_status').value,
-    account_name     : document.getElementById('inv_account_name').value.trim(),
-    account_number   : document.getElementById('inv_account_number').value.trim(),
-    bank_name        : document.getElementById('inv_bank_name').value.trim(),
-    notes            : document.getElementById('inv_notes').value.trim(),
-    items            : JSON.parse(JSON.stringify(invItems))
+    invoice_number: num,
+    client_name: client,
+    client_email: document.getElementById('inv_client_email').value.trim(),
+    client_phone: document.getElementById('inv_client_phone').value.trim(),
+    client_address: document.getElementById('inv_client_address').value.trim(),
+    issue_date: issue,
+    due_date: document.getElementById('inv_due_date').value || null,
+    currency: document.getElementById('inv_currency').value,
+    status: document.getElementById('inv_status').value,
+    notes: document.getElementById('inv_notes').value.trim(),
+    items: JSON.parse(JSON.stringify(invItems))
   };
 }
 
 function openInvoiceForm(invoice){
   editingInvoiceId = invoice?.id || null;
-  invItems = invoice?.items?.length ? JSON.parse(JSON.stringify(invoice.items)) : [
-    {desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''}
-  ];
+  invItems = invoice?.items ? JSON.parse(JSON.stringify(invoice.items)) : [{desc:'',qty:1,rate:0}];
 
-  document.getElementById('inv_title').value          = invoice?.invoice_title || '';
-  document.getElementById('inv_number').value         = invoice?.invoice_number || autoInvNumber();
-  document.getElementById('inv_client_name').value    = invoice?.client_name || '';
-  document.getElementById('inv_client_email').value   = invoice?.client_email || '';
-  document.getElementById('inv_client_phone').value   = invoice?.client_phone || '';
+  document.getElementById('inv_number').value = invoice?.invoice_number || autoInvNumber();
+  document.getElementById('inv_client_name').value = invoice?.client_name || '';
+  document.getElementById('inv_client_email').value = invoice?.client_email || '';
+  document.getElementById('inv_client_phone').value = invoice?.client_phone || '';
   document.getElementById('inv_client_address').value = invoice?.client_address || '';
-  document.getElementById('inv_issue_date').value     = invoice?.issue_date || new Date().toISOString().slice(0,10);
-  document.getElementById('inv_currency').value       = invoice?.currency || 'NGN';
-  document.getElementById('inv_status').value         = invoice?.status || 'draft';
-  document.getElementById('inv_account_name').value   = invoice?.account_name || '479Code Tech Solutions Ltd';
-  document.getElementById('inv_account_number').value = invoice?.account_number || '0013942057';
-  document.getElementById('inv_bank_name').value      = invoice?.bank_name || 'TAJ Bank';
-  document.getElementById('inv_notes').value          = invoice?.notes || '';
+  document.getElementById('inv_issue_date').value = invoice?.issue_date || new Date().toISOString().slice(0,10);
+  document.getElementById('inv_due_date').value = invoice?.due_date || '';
+  document.getElementById('inv_currency').value = invoice?.currency || 'USD';
+  document.getElementById('inv_status').value = invoice?.status || 'draft';
+  document.getElementById('inv_notes').value = invoice?.notes || '';
   document.getElementById('deleteInvoiceBtn').style.display = editingInvoiceId ? 'block' : 'none';
 
   renderInvItems();
@@ -1608,26 +1371,21 @@ function openInvoiceForm(invoice){
 }
 
 function autoInvNumber(){
-  const now = new Date();
-  return `INV/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+  return 'INV-' + String(Date.now()).slice(-5);
 }
 
 function renderInvItems(){
   const container = document.getElementById('invItemsContainer');
   container.innerHTML = '';
   invItems.forEach((item, i) => {
-    const qty  = parseFloat(item.qty)  || 0;
-    const rate = parseFloat(item.rate) || 0;
-    const amt  = (qty * rate).toFixed(2);
     const row = document.createElement('div');
     row.className = 'inv-item-row';
-    row.style.cssText = 'display:grid;grid-template-columns:32px 3fr 1fr 1fr 1fr 32px;gap:6px;margin-bottom:6px;align-items:center;';
+    const amt = ((parseFloat(item.qty)||0) * (parseFloat(item.rate)||0)).toFixed(2);
     row.innerHTML = `
-      <span style="font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;">${i+1}</span>
-      <input type="text"   placeholder="Description"   value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
-      <input type="number" placeholder="Qty"            value="${item.qty||''}"  min="0"        data-i="${i}" data-f="qty">
-      <input type="number" placeholder="Unit Price"     value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
-      <span class="inv-item-total" style="font-size:13px;font-family:var(--mono);text-align:right;">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
+      <input type="text" placeholder="Description" value="${escapeHtml(item.desc)}" data-i="${i}" data-f="desc">
+      <input type="number" placeholder="1" value="${item.qty}" min="0" data-i="${i}" data-f="qty">
+      <input type="number" placeholder="0.00" value="${item.rate}" min="0" step="0.01" data-i="${i}" data-f="rate">
+      <span class="inv-item-total">${amt}</span>
       <button class="del" data-rmi="${i}">✕</button>
     `;
     container.appendChild(row);
@@ -1636,11 +1394,11 @@ function renderInvItems(){
     inp.oninput = () => {
       const i = parseInt(inp.dataset.i);
       invItems[i][inp.dataset.f] = inp.value;
-      const q = parseFloat(invItems[i].qty)||0;
-      const r = parseFloat(invItems[i].rate)||0;
-      const sym = currSymbol(document.getElementById('inv_currency').value);
-      inp.closest('.inv-item-row').querySelector('.inv-item-total').textContent = q&&r ? sym+(q*r).toLocaleString('en',{minimumFractionDigits:2}) : '—';
       updateInvTotals();
+      // update the amount cell live without full re-render
+      const row = inp.closest('.inv-item-row');
+      const amt = ((parseFloat(invItems[i].qty)||0) * (parseFloat(invItems[i].rate)||0)).toFixed(2);
+      row.querySelector('.inv-item-total').textContent = amt;
     };
   });
   container.querySelectorAll('[data-rmi]').forEach(btn => {
@@ -1650,37 +1408,36 @@ function renderInvItems(){
 }
 
 function updateInvTotals(){
-  const cur = document.getElementById('inv_currency')?.value || 'NGN';
-  const sym = currSymbol(cur);
-  const subtotal = invItems.reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
-  const fmt = n => sym + n.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const subtotal = invItems.reduce((s,it) => s + (parseFloat(it.qty)||0)*(parseFloat(it.rate)||0), 0);
+  const cur = document.getElementById('inv_currency')?.value || 'USD';
+  const fmt = (n) => currSymbol(cur) + n.toFixed(2);
   document.getElementById('invSubtotal').textContent = fmt(subtotal);
-  document.getElementById('invTotal').textContent    = fmt(subtotal);
+  document.getElementById('invTotal').textContent = fmt(subtotal);
 }
-document.getElementById('inv_currency').onchange = () => { renderInvItems(); };
+document.getElementById('inv_currency').onchange = updateInvTotals;
 
 function currSymbol(c){ return {USD:'$',NGN:'₦',GBP:'£',EUR:'€',KES:'KSh ',GHS:'₵'}[c]||c+' '; }
 
 async function loadInvoices(){
-  const { data, error } = await sb.from('invoices').select('*').eq('created_by', currentUser.id).order('created_at',{ascending:false});
+  const { data, error } = await sb.from('invoices').select('*').eq('created_by', currentUser.id).order('created_at', {ascending:false});
   if(error){ showError(error.message); return; }
-  const list  = document.getElementById('invoiceList');
+  const list = document.getElementById('invoiceList');
   const empty = document.getElementById('invoicesEmpty');
   list.innerHTML = '';
   empty.style.display = (!data||data.length===0) ? 'block' : 'none';
   (data||[]).forEach(inv => {
     const total = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
-    const sym   = currSymbol(inv.currency||'NGN');
-    const row   = document.createElement('div');
+    const sym = currSymbol(inv.currency||'USD');
+    const row = document.createElement('div');
     row.className = 'inv-list-item';
     row.innerHTML = `
       <div class="inv-list-info">
         <div class="inv-list-num">${escapeHtml(inv.invoice_number)}</div>
         <div class="inv-list-client">${escapeHtml(inv.client_name)}</div>
-        <div class="inv-list-date">${escapeHtml(inv.invoice_title||'')} &nbsp;·&nbsp; ${inv.issue_date}</div>
+        <div class="inv-list-date">Issued ${inv.issue_date}${inv.due_date?' · Due '+inv.due_date:''}</div>
       </div>
       <div class="inv-list-right">
-        <span class="inv-amount">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</span>
+        <span class="inv-amount">${sym}${total.toFixed(2)}</span>
         <span class="inv-status ${inv.status}">${inv.status}</span>
       </div>
     `;
@@ -1689,168 +1446,83 @@ async function loadInvoices(){
   });
 }
 
-/* ---- Print / PDF: exact 479Code template ---- */
 function printInvoice(inv){
-  const sym     = currSymbol(inv.currency||'NGN');
-  const cur     = inv.currency || 'NGN';
-  const subtotal = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
-  const fmtNum  = n => n ? sym + parseFloat(n).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-  const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '';
+  const total = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
+  const sym = currSymbol(inv.currency||'USD');
+  const rows = (inv.items||[]).map(it => `
+    <tr>
+      <td>${escapeHtml(it.desc||'')}</td>
+      <td style="text-align:center">${it.qty}</td>
+      <td style="text-align:right">${sym}${parseFloat(it.rate||0).toFixed(2)}</td>
+      <td style="text-align:right">${sym}${((parseFloat(it.qty)||0)*(parseFloat(it.rate)||0)).toFixed(2)}</td>
+    </tr>`).join('');
 
-  const itemRows = (inv.items||[]).map((it,i) => {
-    const qty   = parseFloat(it.qty)||0;
-    const rate  = parseFloat(it.rate)||0;
-    const total = qty && rate ? sym + (qty*rate).toLocaleString('en',{minimumFractionDigits:2}) : '—';
-    const unitP = rate ? sym + rate.toLocaleString('en',{minimumFractionDigits:2}) : '—';
-    return `<tr>
-      <td style="text-align:center;border:1px solid #ccc;padding:8px 6px;">${i+1}</td>
-      <td style="border:1px solid #ccc;padding:8px 10px;">${escapeHtml(it.desc||'')}</td>
-      <td style="text-align:center;border:1px solid #ccc;padding:8px 6px;">${qty||'—'}</td>
-      <td style="text-align:right;border:1px solid #ccc;padding:8px 10px;">${unitP}</td>
-      <td style="text-align:right;border:1px solid #ccc;padding:8px 10px;font-weight:600;">${total}</td>
-    </tr>`;
-  }).join('');
-
-  const logoSVG = `<svg width="90" height="78" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg">
-    <g fill="#1a1a1a">
-      <rect x="195" y="60" width="40" height="320"/><rect x="250" y="115" width="18" height="265"/>
-      <rect x="283" y="92" width="28" height="288"/><rect x="326" y="118" width="22" height="262"/>
-      <rect x="363" y="168" width="34" height="212"/><rect x="412" y="120" width="22" height="260"/>
-      <rect x="450" y="58" width="38" height="322"/><rect x="503" y="205" width="16" height="175"/>
-      <rect x="534" y="78" width="34" height="302"/>
-    </g>
-    <rect x="40" y="380" width="528" height="86" fill="#9aa0a6" rx="3"/>
-    <text x="62" y="442" font-family="monospace" font-weight="800" font-size="58" fill="#1a1a1a">479</text>
-    <text x="556" y="442" text-anchor="end" font-family="monospace" font-weight="800" font-size="58" fill="#1a1a1a" letter-spacing="2">CODE</text>
-  </svg>`;
-
-  const html = `<!DOCTYPE html>
-<html><head>
-<meta charset="UTF-8">
-<title>Invoice ${escapeHtml(inv.invoice_number)}</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;background:#fff;padding:30px 40px;max-width:850px;margin:0 auto;font-size:13px;}
-  .top-line{border-top:2.5px solid #1a1a1a;margin-bottom:0;}
-  .bottom-line{border-bottom:2.5px solid #1a1a1a;margin-top:0;}
-  .header-band{display:flex;align-items:center;padding:14px 0 10px;border-bottom:1.5px solid #1a1a1a;margin-bottom:0;}
-  .header-logo{margin-right:20px;flex:none;}
-  .header-company{flex:1;text-align:center;}
-  .header-company h1{font-size:15px;font-weight:700;letter-spacing:.03em;margin-bottom:3px;}
-  .header-company p{font-size:12px;line-height:1.6;color:#333;}
-  .inv-title-bar{text-align:center;padding:14px 0 12px;border-bottom:1px solid #ccc;}
-  .inv-title-bar h2{font-size:13.5px;font-weight:700;text-decoration:underline;text-transform:uppercase;letter-spacing:.04em;}
-  .meta-row{display:flex;justify-content:flex-end;gap:40px;padding:10px 0 8px;font-size:12.5px;}
-  .meta-row div{text-align:right;}
-  .meta-row strong{text-decoration:underline;}
-  .bill-to{margin:10px 0 16px;}
-  .bill-to .label{font-size:12px;font-weight:700;text-decoration:underline;margin-bottom:4px;}
-  .bill-to .client{font-size:13px;font-weight:700;}
-  table.items{width:100%;border-collapse:collapse;margin-bottom:0;}
-  table.items thead tr{background:#333;color:#fff;}
-  table.items thead th{padding:9px 10px;font-size:12px;font-weight:700;text-align:center;border:1px solid #ccc;text-transform:uppercase;letter-spacing:.04em;}
-  table.items thead th:nth-child(2){text-align:left;}
-  table.items tbody tr:nth-child(even){background:#f9f9f9;}
-  table.items tfoot tr{background:#f0f0f0;}
-  table.items tfoot td{padding:9px 10px;font-weight:700;font-size:12.5px;border:1px solid #ccc;text-transform:uppercase;}
-  .totals-box{display:flex;justify-content:flex-end;margin:20px 0 24px;}
-  .totals-inner{border:1.5px solid #1a1a1a;min-width:260px;}
-  .totals-inner tr td{padding:9px 16px;font-size:13px;border-bottom:1px solid #ccc;}
-  .totals-inner tr:last-child td{border-bottom:none;font-weight:700;font-size:14px;background:#f5f5f5;}
-  .totals-inner td:last-child{text-align:right;font-family:'Courier New',monospace;font-weight:600;}
-  .payment-section{margin:10px 0 24px;}
-  .payment-section h3{font-size:13px;font-weight:700;text-decoration:underline;text-transform:uppercase;margin-bottom:8px;}
-  .payment-section p{font-size:13px;line-height:1.8;}
-  .payment-section strong{font-weight:700;}
-  .sig-section{margin:16px 0 24px;}
-  .sig-section p{font-size:13px;font-weight:700;margin-top:4px;}
-  .footer-band{border-top:2.5px solid #1a1a1a;padding:10px 0 4px;text-align:center;}
-  .footer-band p{font-size:11.5px;color:#333;}
-  .footer-band a{color:#1a1a1a;}
-  @media print{
-    body{padding:15px 20px;}
-    @page{margin:10mm;}
-  }
-</style>
-</head>
-<body>
-
-<div class="top-line"></div>
-<div class="header-band">
-  <div class="header-logo">${logoSVG}</div>
-  <div class="header-company">
-    <h1>479Code Tech. Solution Ltd.</h1>
-    <p>Address: NO. 98 Norman Williams Street, Ikoyi, Lagos State</p>
-    <p>Phone: 07069655288, 07074733491</p>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Invoice ${escapeHtml(inv.invoice_number)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;padding:40px;max-width:800px;margin:0 auto;}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;}
+    .company h1{font-size:28px;font-weight:800;letter-spacing:-.5px;}
+    .company p{font-size:13px;color:#666;margin-top:4px;}
+    .inv-meta{text-align:right;}
+    .inv-meta h2{font-size:22px;color:#ff8a3d;margin-bottom:8px;}
+    .inv-meta p{font-size:13px;color:#666;margin-bottom:2px;}
+    .parties{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:32px;padding:24px;background:#f7f8fa;border-radius:10px;}
+    .party h4{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:8px;}
+    .party p{font-size:13.5px;line-height:1.5;color:#333;}
+    table{width:100%;border-collapse:collapse;margin-bottom:24px;}
+    thead tr{background:#0c0f12;color:#fff;}
+    thead th{padding:10px 14px;text-align:left;font-size:12px;font-weight:600;}
+    thead th:last-child,thead th:nth-child(3),thead th:nth-child(2){text-align:right;}
+    tbody tr{border-bottom:1px solid #eee;}
+    tbody td{padding:10px 14px;font-size:13.5px;}
+    .totals{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-bottom:32px;}
+    .total-row{display:flex;gap:40px;font-size:13px;color:#666;}
+    .total-row.grand{font-size:17px;font-weight:800;color:#1a1a1a;padding-top:8px;border-top:2px solid #1a1a1a;}
+    .notes{background:#f7f8fa;border-radius:8px;padding:16px;font-size:13px;color:#555;line-height:1.5;}
+    .notes h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:6px;}
+    .status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+    .status-draft{background:#eee;color:#666;} .status-sent{background:#fff3cd;color:#856404;} .status-paid{background:#d4edda;color:#155724;}
+    @media print{body{padding:20px;} @page{margin:15mm;}}
+  </style></head><body>
+  <div class="header">
+    <div class="company">
+      <h1>479Code</h1>
+      <p>479code@gmail.com</p>
+    </div>
+    <div class="inv-meta">
+      <h2>INVOICE</h2>
+      <p><strong>${escapeHtml(inv.invoice_number)}</strong></p>
+      <p>Issued: ${inv.issue_date}</p>
+      ${inv.due_date ? `<p>Due: ${inv.due_date}</p>` : ''}
+      <p style="margin-top:6px"><span class="status-badge status-${inv.status}">${inv.status}</span></p>
+    </div>
   </div>
-</div>
-
-${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title)}</h2></div>` : ''}
-
-<div class="meta-row">
-  <div><strong>Receipt:</strong> ${escapeHtml(inv.invoice_number)}</div>
-  <div><strong>Date:</strong> ${fmtDate(inv.issue_date)}</div>
-</div>
-
-<div class="bill-to">
-  <div class="label">BILL TO:</div>
-  <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400;font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
-</div>
-
-<table class="items">
-  <thead>
-    <tr>
-      <th style="width:60px;">Item No.</th>
-      <th style="text-align:left;">Description</th>
-      <th style="width:60px;">QTY</th>
-      <th style="width:130px;">Unit Price</th>
-      <th style="width:130px;">Total</th>
-    </tr>
-  </thead>
-  <tbody>${itemRows}</tbody>
-  <tfoot>
-    <tr>
-      <td colspan="3"></td>
-      <td style="text-align:right;">SUBTOTAL</td>
-      <td style="text-align:right;font-family:'Courier New',monospace;">${cur} — ${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td>
-    </tr>
-  </tfoot>
-</table>
-
-<div class="totals-box">
-  <table class="totals-inner">
-    <tr><td>SUBTOTAL</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
-    <tr><td>TOTAL</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
+  <div class="parties">
+    <div class="party"><h4>From</h4><p><strong>479Code</strong><br>479code@gmail.com</p></div>
+    <div class="party"><h4>Bill To</h4>
+      <p><strong>${escapeHtml(inv.client_name)}</strong>
+      ${inv.client_email ? `<br>${escapeHtml(inv.client_email)}` : ''}
+      ${inv.client_phone ? `<br>${escapeHtml(inv.client_phone)}` : ''}
+      ${inv.client_address ? `<br>${escapeHtml(inv.client_address).replace(/\n/g,'<br>')}` : ''}</p>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Description</th><th style="text-align:center">Qty</th><th style="text-align:right">Rate</th><th style="text-align:right">Amount</th></tr></thead>
+    <tbody>${rows}</tbody>
   </table>
-</div>
+  <div class="totals">
+    <div class="total-row grand"><span>TOTAL (${inv.currency||'USD'})</span><span>${sym}${total.toFixed(2)}</span></div>
+  </div>
+  ${inv.notes ? `<div class="notes"><h4>Notes</h4>${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</div>` : ''}
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`;
 
-${(inv.account_name||inv.account_number||inv.bank_name) ? `
-<div class="payment-section">
-  <h3>Payment Details:</h3>
-  ${inv.account_name   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
-  ${inv.account_number ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
-  ${inv.bank_name      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
-  ${inv.notes          ? `<p style="margin-top:6px;">${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</p>` : ''}
-</div>` : ''}
-
-<div class="sig-section">
-  <div style="height:44px;"></div>
-  <p>479CODE TECH. SOLUTIONS LTD.</p>
-</div>
-
-<div class="footer-band">
-  <p>E-mail: <a href="mailto:479code@gmail.com">479code@gmail.com</a> &nbsp;&nbsp; Tel: +2347069655288</p>
-</div>
-
-<script>window.onload=()=>{ window.print(); }<\/script>
-</body></html>`;
-
-  const w = window.open('','_blank','width=960,height=760');
-  if(!w){ showError('Pop-up blocked — please allow pop-ups for this site to print invoices.'); return; }
+  const w = window.open('','_blank','width=900,height=700');
   w.document.write(html);
   w.document.close();
 }
-
 
 </script>
 </body>
