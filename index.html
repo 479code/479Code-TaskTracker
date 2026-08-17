@@ -510,26 +510,6 @@
         </div>
       </div>
     </div>
-
-    <div class="notif-wrap" style="width:100%;">
-      <button class="nav-item" id="changePwdBtn" style="width:100%;">
-        <span class="nav-icon">🔑</span><span class="nav-label">Change password</span>
-      </button>
-      <div class="notif-dropdown" id="changePwdDropdown" style="left:0;right:auto;width:240px;padding:14px;">
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em;">Set new password</div>
-        <div style="margin-bottom:8px;">
-          <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">New password</label>
-          <input type="password" id="newPwdInput" placeholder="Min. 6 characters" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 10px;outline:none;font-size:14px;box-sizing:border-box;">
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">Confirm password</label>
-          <input type="password" id="confirmPwdInput" placeholder="Repeat password" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:9px 10px;outline:none;font-size:14px;box-sizing:border-box;">
-        </div>
-        <button id="savePwdBtn" style="width:100%;background:var(--accent);color:#1a1206;border:none;border-radius:6px;padding:10px;font-weight:700;cursor:pointer;font-size:13px;">Update password</button>
-        <div id="pwdMsg" style="font-size:11px;margin-top:8px;min-height:14px;font-family:var(--mono);"></div>
-      </div>
-    </div>
-
     <button class="nav-item" id="signOutBtn"><span class="nav-icon">↩</span><span class="nav-label">Sign out</span></button>
   </nav>
 
@@ -758,71 +738,6 @@ document.getElementById('backToLoginBtn').onclick = () => {
   document.getElementById('authScreen').querySelector('.authbox').style.display = 'block';
 };
 
-document.getElementById('forgotSubmit').onclick = async () => {
-  const email = document.getElementById('forgotEmail').value.trim();
-  const err = document.getElementById('forgotErr');
-  const msg = document.getElementById('forgotMsg');
-  err.textContent = ''; msg.textContent = '';
-  if(!email){ err.textContent = 'Enter your email address.'; return; }
-  const btn = document.getElementById('forgotSubmit');
-  btn.disabled = true; btn.textContent = 'Sending…';
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://479code.github.io/479Code-TaskTracker/'
-  });
-  btn.disabled = false; btn.textContent = 'Send reset link';
-  if(error){ err.style.display='block'; err.textContent = error.message; return; }
-  msg.textContent = '✓ Reset link sent! Check your inbox and click the link to set a new password.';
-};
-
-// Handle password update when user returns from reset email link
-// Supabase puts #access_token=...&type=recovery in the URL
-(async function handlePasswordRecovery(){
-  const hash = window.location.hash;
-  if(hash.includes('type=recovery')){
-    // Show a "set new password" panel immediately
-    document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('authScreen').querySelector('.authbox').style.display = 'none';
-    document.getElementById('forgotPanel').style.display = 'none';
-
-    const recoveryDiv = document.createElement('div');
-    recoveryDiv.style.cssText = 'background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;width:100%;max-width:340px;';
-    recoveryDiv.innerHTML = `
-      <h3 style="margin:0 0 4px;font-size:16px;color:var(--text);">Set new password</h3>
-      <p style="margin:0 0 16px;font-size:12px;color:var(--muted);font-family:var(--mono);">Choose a strong password for your account.</p>
-      <div class="field" style="margin-bottom:10px;">
-        <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">New password</label>
-        <input type="password" id="recoveryPwd" placeholder="Min. 6 characters" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:10px;outline:none;font-size:15px;box-sizing:border-box;">
-      </div>
-      <div class="field" style="margin-bottom:14px;">
-        <label style="font-size:11px;color:var(--muted);font-family:var(--mono);display:block;margin-bottom:4px;">Confirm password</label>
-        <input type="password" id="recoveryPwdConfirm" placeholder="Repeat password" style="width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:10px;outline:none;font-size:15px;box-sizing:border-box;">
-      </div>
-      <button id="recoverySubmit" class="authsubmit">Save new password</button>
-      <div id="recoveryErr" class="autherr"></div>
-      <div id="recoveryMsg" class="authmsg"></div>
-    `;
-    document.getElementById('authScreen').appendChild(recoveryDiv);
-
-    document.getElementById('recoverySubmit').onclick = async () => {
-      const pwd = document.getElementById('recoveryPwd').value;
-      const confirm = document.getElementById('recoveryPwdConfirm').value;
-      const err = document.getElementById('recoveryErr');
-      const msg = document.getElementById('recoveryMsg');
-      err.textContent = ''; msg.textContent = '';
-      if(pwd.length < 6){ err.textContent = 'Password must be at least 6 characters.'; return; }
-      if(pwd !== confirm){ err.textContent = "Passwords don't match."; return; }
-      const btn = document.getElementById('recoverySubmit');
-      btn.disabled = true; btn.textContent = 'Saving…';
-      const { error } = await sb.auth.updateUser({ password: pwd });
-      btn.disabled = false; btn.textContent = 'Save new password';
-      if(error){ err.textContent = error.message; return; }
-      msg.textContent = '✓ Password updated! Signing you in…';
-      // clear the hash and let the session continue
-      setTimeout(() => { window.location.hash = ''; location.reload(); }, 1500);
-    };
-  }
-})();
-
 document.getElementById('tabSignIn').onclick = () => setAuthMode('signin');
 document.getElementById('tabSignUp').onclick = () => setAuthMode('signup');
 
@@ -955,12 +870,7 @@ document.getElementById('usernameBtn').onclick = (e) => {
   document.getElementById('usernameDropdown').classList.toggle('open');
 };
 document.addEventListener('click', (e) => {
-  if(!e.target.closest('.notif-wrap')) {
-    document.getElementById('usernameDropdown')?.classList.remove('open');
-    document.getElementById('changePwdDropdown')?.classList.remove('open');
-  }
-  const dd = document.getElementById('notifDropdown');
-  if(!e.target.closest('.notif-wrap')) dd.classList.remove('open');
+  if(!e.target.closest('.notif-wrap')) document.getElementById('usernameDropdown')?.classList.remove('open');
 });
 
 document.getElementById('usernameSaveBtn').onclick = async () => {
@@ -981,38 +891,6 @@ document.getElementById('usernameSaveBtn').onclick = async () => {
   msg.textContent = 'Saved!';
   await refreshUsernameButton();
   setTimeout(()=>{ document.getElementById('usernameDropdown').classList.remove('open'); }, 800);
-};
-
-document.getElementById('changePwdBtn').onclick = (e) => {
-  e.stopPropagation();
-  document.getElementById('usernameDropdown').classList.remove('open');
-  document.getElementById('notifDropdown').classList.remove('open');
-  document.getElementById('changePwdDropdown').classList.toggle('open');
-  document.getElementById('newPwdInput').focus();
-};
-
-document.getElementById('savePwdBtn').onclick = async () => {
-  const newPwd = document.getElementById('newPwdInput').value;
-  const confirmPwd = document.getElementById('confirmPwdInput').value;
-  const msg = document.getElementById('pwdMsg');
-  msg.style.color = 'var(--danger)';
-
-  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Password must be at least 6 characters.'; return; }
-  if(newPwd !== confirmPwd){ msg.textContent = "Passwords don't match."; return; }
-
-  const btn = document.getElementById('savePwdBtn');
-  btn.disabled = true; btn.textContent = 'Updating…';
-
-  const { error } = await sb.auth.updateUser({ password: newPwd });
-  btn.disabled = false; btn.textContent = 'Update password';
-
-  if(error){ msg.textContent = error.message; return; }
-
-  msg.style.color = 'var(--done)';
-  msg.textContent = '✓ Password updated successfully!';
-  document.getElementById('newPwdInput').value = '';
-  document.getElementById('confirmPwdInput').value = '';
-  setTimeout(() => { document.getElementById('changePwdDropdown').classList.remove('open'); }, 1500);
 };
 
 document.getElementById('refreshBtn').onclick = async () => {
