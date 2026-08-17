@@ -238,111 +238,127 @@
   .inv-btn.success{ background:var(--done-dim); color:var(--done); border:1px solid var(--done); }
   .inv-btn.danger{ background:#2a1414; color:var(--danger); border:1px solid var(--danger); }
 
-  @media(max-width:600px){
-    .inv-grid{ grid-template-columns:1fr; }
-    .inv-items-head{ grid-template-columns:2fr 1fr 1fr 32px; }
-    .inv-items-head span:nth-child(3){ display:none; }
-    .inv-item-row{ grid-template-columns:2fr 1fr 1fr 32px; }
-    .inv-item-row input:nth-child(3){ display:none; }
-    .inv-actions{ flex-direction:column; }
-    .inv-btn{ width:100%; text-align:center; }
-  }
-  @media (max-width: 600px){
-    body{ padding: 0 0 80px; }
-    .wrap{ padding: 14px 12px; }
+  @media(max-width:768px){
+    /* ---- Auth ---- */
+    body{ overflow-x:hidden; }
+    #authScreen{ padding:20px 16px; gap:12px; }
+    .auth-logo{ width:120px; }
+    .authbox{ padding:18px 16px; }
+    .field input{ font-size:16px; padding:12px 10px; }
+    .authsubmit{ padding:13px; font-size:16px; }
 
-    /* --- Auth --- */
-    #authScreen{ padding: 16px 12px; gap: 10px; }
-    .auth-logo{ width: 120px; }
-    .authbox{ padding: 16px; }
-
-    /* --- Header --- */
+    /* ---- App header ---- */
     header.app{
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 14px;
-      position: sticky; top: 0; z-index: 40;
-      background: var(--bg);
-      padding: 12px 0 10px;
-      border-bottom: 1px solid var(--line);
+      flex-direction:column; align-items:flex-start;
+      gap:10px; margin-bottom:14px;
+      position:sticky; top:0; z-index:40;
+      background:var(--bg); padding:12px 0 10px;
+      border-bottom:1px solid var(--line);
     }
-    .brand{ gap: 8px; }
-    .header-logo{ width: 32px; }
-    h1{ font-size: 17px; }
-    .eyebrow{ font-size: 10px; margin-bottom: 2px; }
+    .brand{ gap:8px; }
+    .header-logo{ width:30px; }
+    h1{ font-size:17px; }
+    .eyebrow{ font-size:10px; margin-bottom:2px; }
+    .userbar{ width:100%; flex-wrap:wrap; gap:6px; }
+    .userbar #userEmail{ display:none; }
+    .userbar button{ font-size:11px; padding:6px 10px; }
 
-    .userbar{
-      width: 100%;
-      justify-content: flex-start;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .userbar #userEmail{ display: none; }
-    .userbar button{ font-size: 11px; padding: 6px 10px; }
+    /* ---- Wrap ---- */
+    .wrap{ padding:14px 14px 60px; }
 
-    /* notification dropdown full-width on mobile */
-    .notif-dropdown{ width: calc(100vw - 24px); right: auto; left: 0; }
-    #usernameDropdown{ width: 240px; }
+    /* ---- Notifications ---- */
+    .notif-dropdown{ width:calc(100vw - 24px); right:auto; left:0; max-height:60vh; }
+    #usernameDropdown{ width:220px; }
 
-    /* --- Add bars --- */
-    .addbar{
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 8px;
-    }
+    /* ---- Add bars ---- */
+    .addbar{ flex-wrap:wrap; gap:8px; padding:10px; }
     .addbar input[type=text],
-    .addbar textarea{ width: 100%; flex: none; font-size: 15px; padding: 10px; }
-    .addbar select{ flex: 1; font-size: 13px; padding: 8px; }
-    .addbar input[type=date]{ flex: 1; font-size: 13px; padding: 8px; }
-    .addbar button{ width: 100%; padding: 11px; font-size: 14px; }
+    .addbar textarea{ width:100%; flex:none; font-size:15px; padding:12px 10px; }
+    .addbar select{ flex:1; font-size:14px; padding:10px 8px; min-width:0; }
+    .addbar input[type=date]{ flex:1; font-size:14px; padding:10px 8px; min-width:0; }
+    .addbar button{ width:100%; padding:13px; font-size:15px; font-weight:700; }
 
-    /* invite row */
-    .invite-row{ flex-wrap: wrap; }
-    .invite-row input{ width: 100%; flex: none; }
-    .invite-row select{ flex: 1; }
-    .invite-row button{ flex: 1; padding: 10px; }
+    /* ---- Invite row ---- */
+    .invite-row{ flex-wrap:wrap; gap:8px; }
+    .invite-row input{ width:100%; flex:none; font-size:15px; padding:11px 10px; }
+    .invite-row select{ flex:1; min-width:0; padding:10px 8px; }
+    .invite-row button{ flex:1; padding:11px; font-size:14px; }
 
-    /* --- Projects grid --- */
-    .projects-grid{ grid-template-columns: 1fr; gap: 10px; }
-    .project-card{ padding: 14px; }
-    .project-card h3{ font-size: 15px; }
+    /* ---- Projects grid ---- */
+    .projects-grid{ grid-template-columns:1fr; gap:12px; }
+    .project-card{ padding:18px 16px; }
+    .project-card h3{ font-size:16px; }
+    .project-card p{ font-size:13px; }
 
-    /* --- Tabs --- */
-    .tabs{ gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .tabs button{ font-size: 12px; padding: 10px 10px; margin-right: 8px; white-space: nowrap; }
+    /* ---- Tabs ---- */
+    .tabs{ gap:0; overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; }
+    .tabs::-webkit-scrollbar{ display:none; }
+    .tabs button{ font-size:13px; padding:11px 14px; margin-right:4px; white-space:nowrap; }
 
-    /* --- Tasks --- */
-    .task{ padding: 12px; }
-    .task-title{ font-size: 14px; }
-    .task-meta{ gap: 6px; }
-    .tag{ font-size: 10px; padding: 2px 7px; }
-    .status-cycle, .exp-btn{ font-size: 10px; padding: 2px 7px; }
+    /* ---- Project head ---- */
+    .backbtn{ font-size:14px; padding:6px 0; margin-bottom:12px; display:block; }
+    .project-head h2{ font-size:20px; }
 
-    /* subtask add bar */
-    .subaddbar{ flex-wrap: wrap; }
-    .subaddbar input{ width: 100%; flex: none; }
-    .subaddbar button{ width: 100%; padding: 8px; }
+    /* ---- Tasks ---- */
+    .task{ padding:14px 12px; margin-bottom:10px; }
+    .task-title{ font-size:14.5px; line-height:1.45; }
+    .task-meta{ gap:6px; flex-wrap:wrap; margin-top:10px; }
+    .tag{ font-size:11px; padding:3px 9px; }
+    .status-cycle,.exp-btn{ font-size:11px; padding:3px 9px; }
+    .chk{ width:24px; height:24px; border-radius:7px; flex:none; }
+    .del{ font-size:18px; padding:4px 10px; }
 
-    /* --- Timeline --- */
-    .tl-item{ flex-wrap: wrap; gap: 8px; }
-    .tl-date{ min-width: auto; font-size: 11px; }
-    .tl-title{ flex: none; width: 100%; order: -1; }
-    .tl-bar{ width: 100%; flex: none; }
+    /* ---- Subtasks ---- */
+    .subaddbar{ flex-wrap:wrap; gap:8px; }
+    .subaddbar input{ width:100%; flex:none; font-size:14px; padding:10px; }
+    .subaddbar button{ width:100%; padding:10px; font-size:14px; }
 
-    /* --- Notes --- */
-    .note-meta{ flex-direction: column; align-items: flex-start; }
+    /* ---- Timeline ---- */
+    .tl-item{ flex-wrap:wrap; gap:8px; }
+    .tl-date{ min-width:auto; font-size:12px; }
+    .tl-title{ flex:none; width:100%; order:-1; font-size:14px; }
+    .tl-bar{ width:100%; flex:none; }
 
-    /* --- Member rows --- */
-    .member-row{ flex-wrap: wrap; gap: 8px; }
+    /* ---- Notes ---- */
+    .note{ padding:14px 12px; }
+    .note-text{ font-size:14px; }
+    .note-meta{ flex-direction:column; align-items:flex-start; gap:8px; }
+    .note-actions button{ font-size:12px; padding:5px 12px; }
 
-    /* --- Bottom nav safe area (PWA) --- */
-    footer{ padding-bottom: env(safe-area-inset-bottom, 12px); }
+    /* ---- Members ---- */
+    .member-row{ flex-wrap:wrap; gap:8px; padding:12px 14px; }
+    .member-email{ font-size:14px; }
 
-    /* bigger tap targets */
-    .chk{ width: 24px; height: 24px; border-radius: 7px; }
-    .del{ font-size: 18px; padding: 4px 8px; }
-    .backbtn{ font-size: 13px; padding: 4px 0; margin-bottom: 10px; }
+    /* ---- Invoice ---- */
+    .inv-toolbar{ flex-direction:column; align-items:stretch; gap:10px; }
+    .inv-toolbar h2{ font-size:18px; }
+    .inv-toolbar .inv-btn{ width:100%; text-align:center; padding:13px; font-size:15px; }
+    .inv-form{ padding:16px 14px; }
+    .inv-grid{ grid-template-columns:1fr; gap:10px; }
+    .inv-field input,.inv-field select,.inv-field textarea{ font-size:15px; padding:11px 10px; }
+    .inv-items-head{ display:none; }
+    .inv-item-row{ grid-template-columns:1fr 60px 70px 30px !important; gap:6px !important; }
+    .inv-item-total{ display:none; }
+    .inv-add-item{ padding:12px; font-size:14px; }
+    .inv-totals{ align-items:stretch; }
+    .inv-total-row{ justify-content:space-between; font-size:14px; }
+    .inv-total-row.grand{ font-size:17px; }
+    .inv-actions{ flex-direction:column; gap:8px; }
+    .inv-btn{ width:100%; text-align:center; padding:13px; font-size:15px; }
+    .inv-list-item{ flex-direction:column; gap:8px; }
+    .inv-list-right{ flex-direction:row; align-items:center; gap:12px; }
+    .inv-amount{ font-size:18px; }
+
+    /* ---- Safe area & footer ---- */
+    footer{ padding-bottom:env(safe-area-inset-bottom, 16px); }
+  }
+
+  /* Extra small phones */
+  @media(max-width:380px){
+    .wrap{ padding:12px 12px 60px; }
+    .project-card h3{ font-size:15px; }
+    .task-title{ font-size:14px; }
+    .addbar button{ padding:12px; font-size:14px; }
   }
 </style>
 </head>
