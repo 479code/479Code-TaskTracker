@@ -652,1464 +652,559 @@
         </div>
       </div>
 
-      <footer>backed by Supabase · 479Code Operations Core Controls</footer>
+      <footer>backed by Firebase · 479Code Operations Core Controls</footer>
     </div>
   </div>
 </div>
 
+
 <script>
-// ============ FIREBASE INIT ============
-const firebaseConfig = {
-  apiKey: "AIzaSyB_uhgA65hFgN_Magr9W8bsAT5YKymwyYY",
-  authDomain: "code-tasktracker.firebaseapp.com",
-  projectId: "code-tasktracker",
-  storageBucket: "code-tasktracker.firebasestorage.app",
-  messagingSenderId: "554261579930",
-  appId: "1:554261579930:web:1f1529f476975d89d63723"
-};
-firebase.initializeApp(firebaseConfig);
-const _auth = firebase.auth();
-const _db = firebase.firestore();
+// ============ FIREBASE ============
+firebase.initializeApp({
+  apiKey:"AIzaSyB_uhgA65hFgN_Magr9W8bsAT5YKymwyYY",
+  authDomain:"code-tasktracker.firebaseapp.com",
+  projectId:"code-tasktracker",
+  storageBucket:"code-tasktracker.firebasestorage.app",
+  messagingSenderId:"554261579930",
+  appId:"1:554261579930:web:1f1529f476975d89d63723"
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
 
-// ============ SUPABASE COMPATIBILITY ADAPTER ============
-// Wraps Firebase so all existing sb.* calls work unchanged
-const usersCache2 = {};
-async function _getUser(uid) {
-  if(usersCache2[uid]) return usersCache2[uid];
-  try { const d = await _db.collection('users').doc(uid).get(); if(d.exists) usersCache2[uid] = d.data(); } catch(e){}
-  return usersCache2[uid] || {};
-}
-function _fbErr(e) { return { data: null, error: e }; }
-function _fbOk(data) { return { data, error: null }; }
-
-const sb = {
-  auth: {
-    getUser: async () => {
-      const u = _auth.currentUser;
-      return { data: { user: u ? { id: u.uid, email: u.email } : null } };
-    },
-    getSession: async () => {
-      return new Promise(res => {
-        const unsub = _auth.onAuthStateChanged(u => {
-          unsub();
-          res({ data: { session: u ? { user: { id: u.uid, email: u.email } } : null } });
-        });
-      });
-    },
-    signUp: async ({ email, password, options }) => {
-      try {
-        const cred = await _auth.createUserWithEmailAndPassword(email, password);
-        const u = cred.user;
-        const fullName = options?.data?.full_name || email.split('@')[0];
-        await _db.collection('users').doc(u.uid).set({ email, fullName, username: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        const session = { user: { id: u.uid, email } };
-        return { data: { user: { id: u.uid, email }, session }, error: null };
-      } catch(e) { return { data: { user: null, session: null }, error: e }; }
-    },
-    signInWithPassword: async ({ email, password }) => {
-      try {
-        await _auth.signInWithEmailAndPassword(email, password);
-        return { data: {}, error: null };
-      } catch(e) { return { data: {}, error: e }; }
-    },
-    signOut: async () => { await _auth.signOut(); },
-    resetPasswordForEmail: async (email, opts) => {
-      try {
-        await _auth.sendPasswordResetEmail(email, opts?.redirectTo ? { url: opts.redirectTo } : undefined);
-        return { error: null };
-      } catch(e) { return { error: e }; }
-    },
-    updateUser: async ({ password }) => {
-      try { await _auth.currentUser.updatePassword(password); return { error: null }; }
-      catch(e) { return { error: e }; }
-    },
-    onAuthStateChange: (cb) => {
-      return _auth.onAuthStateChanged(u => {
-        if(u) cb('SIGNED_IN', { user: { id: u.uid, email: u.email } });
-        else cb('SIGNED_OUT', null);
-      });
-    }
-  },
-  from: (collection) => new _SbCollection(collection)
-};
-
-class _SbCollection {
-  constructor(col) { this._col = col; this._filters = []; this._orderField = null; this._orderAsc = true; this._limitN = null; this._selected = null; }
-  select(fields) { this._selected = fields; return this; }
-  eq(field, val) { this._filters.push({ op:'==', field, val }); return this; }
-  neq(field, val) { this._filters.push({ op:'!=', field, val }); return this; }
-  in(field, vals) { this._filters.push({ op:'in', field, val: vals }); return this; }
-  not(field, op2, val) { this._filters.push({ op:'not-'+op2, field, val }); return this; }
-  lte(field, val) { this._filters.push({ op:'<=', field, val }); return this; }
-  gte(field, val) { this._filters.push({ op:'>=', field, val }); return this; }
-  order(field, opts) { this._orderField = field; this._orderAsc = !opts || opts.ascending !== false; return this; }
-  limit(n) { this._limitN = n; return this; }
-  maybeSingle() { this._limitN = 1; return this._exec('single'); }
-  single() { return this._exec('single'); }
-  async _exec(mode) {
-    try {
-      // Handle sub-collections: tasks, notes, project_invites, notifications
-      let ref;
-      if(this._col === 'tasks' || this._col === 'notes') {
-        const projFilter = this._filters.find(f => f.field === 'project_id');
-        if(projFilter) {
-          ref = _db.collection('projects').doc(projFilter.val).collection(this._col);
-          this._filters = this._filters.filter(f => f.field !== 'project_id');
-        } else { ref = _db.collection(this._col); }
-      } else { ref = _db.collection(this._col); }
-
-      // Special joins for project_members
-      if(this._col === 'project_members') return await this._handleProjectMembers();
-      if(this._col === 'project_invites') return await this._handleProjectInvites();
-      if(this._col === 'notifications') return await this._handleNotifications();
-      if(this._col === 'profiles') return await this._handleProfiles();
-
-      // Apply filters
-      for(const f of this._filters) {
-        if(f.op === '==' ) ref = ref.where(f.field, '==', f.val);
-        else if(f.op === '!=') ref = ref.where(f.field, '!=', f.val);
-        else if(f.op === 'in') { if(f.val && f.val.length > 0) ref = ref.where(f.field, 'in', f.val.slice(0,10)); }
-        else if(f.op === '<=') ref = ref.where(f.field, '<=', f.val);
-        else if(f.op === '>=') ref = ref.where(f.field, '>=', f.val);
-        else if(f.op === 'not-is') ref = ref.where(f.field, '!=', null);
-      }
-      if(this._orderField) ref = ref.orderBy(this._orderField, this._orderAsc ? 'asc' : 'desc');
-      if(this._limitN) ref = ref.limit(this._limitN);
-      const snap = await ref.get();
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Convert Firestore timestamps
-      docs.forEach(d => { for(const k in d) { if(d[k] && typeof d[k].toDate === 'function') d[k] = d[k].toDate().toISOString(); } });
-      if(mode === 'single') return _fbOk(docs[0] || null);
-      return _fbOk(docs);
-    } catch(e) { return _fbErr(e); }
-  }
-  async _handleProfiles() {
-    const emailF = this._filters.find(f => f.field === 'email');
-    const usernameF = this._filters.find(f => f.field === 'username');
-    const idF = this._filters.find(f => f.field === 'id');
-    let q = _db.collection('users');
-    if(idF) { const d = await q.doc(idF.val).get(); if(!d.exists) return _fbOk(null); const data = { id: d.id, ...d.data() }; if(data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate().toISOString(); return _fbOk(data); }
-    if(emailF) q = q.where('email', '==', emailF.val);
-    if(usernameF) q = q.where('username', '==', usernameF.val);
-    if(this._limitN) q = q.limit(this._limitN);
-    const snap = await q.get();
-    const docs = snap.docs.map(d => { const data = { id: d.id, ...d.data() }; if(data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate().toISOString(); return data; });
-    return _fbOk(this._limitN === 1 ? (docs[0] || null) : docs);
-  }
-  async _handleProjectMembers() {
-    const projF = this._filters.find(f => f.field === 'project_id');
-    const userF = this._filters.find(f => f.field === 'user_id');
-    if(userF && !projF) {
-      // Get all projects where user is member (memberIds array)
-      const snap = await _db.collection('projects').where('memberIds', 'array-contains', userF.val).get();
-      const result = [];
-      for(const doc of snap.docs) {
-        const p = { id: doc.id, ...doc.data() };
-        const role = p.members?.[userF.val];
-        if(role) {
-          result.push({ role, user_id: userF.val, project_id: doc.id, projects: { id: doc.id, name: p.name, description: p.description, created_by: p.createdBy } });
-        }
-      }
-      return _fbOk(result);
-    }
-    if(projF) {
-      const doc = await _db.collection('projects').doc(projF.val).get();
-      if(!doc.exists) return _fbOk([]);
-      const p = doc.data();
-      const result = [];
-      for(const [uid, role] of Object.entries(p.members || {})) {
-        const u = await _getUser(uid);
-        result.push({ role, user_id: uid, project_id: projF.val, profiles: { full_name: u.fullName, email: u.email, username: u.username || '' } });
-      }
-      return _fbOk(result);
-    }
-    return _fbOk([]);
-  }
-  async _handleProjectInvites() {
-    const projF = this._filters.find(f => f.field === 'project_id');
-    const invitedF = this._filters.find(f => f.field === 'invited_user_id');
-    const idF = this._filters.find(f => f.field === 'id');
-    if(idF) {
-      const d = await _db.collection('project_invites').doc(idF.val).get();
-      return _fbOk(d.exists ? { id: d.id, ...d.data() } : null);
-    }
-    let q = _db.collection('project_invites');
-    if(projF) q = q.where('project_id', '==', projF.val);
-    if(invitedF) q = q.where('invited_user_id', '==', invitedF.val);
-    const statusF = this._filters.find(f => f.field === 'status');
-    if(statusF) q = q.where('status', '==', statusF.val);
-    const snap = await q.get();
-    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    return _fbOk(this._limitN === 1 ? (docs[0] || null) : docs);
-  }
-  async _handleNotifications() {
-    const userF = this._filters.find(f => f.field === 'user_id');
-    let q = _db.collection('notifications');
-    if(userF) q = q.where('user_id', '==', userF.val);
-    if(this._limitN) q = q.limit(this._limitN);
-    const snap = await q.get();
-    const docs = snap.docs.map(d => { const data = { id: d.id, ...d.data() }; if(data.created_at && typeof data.created_at.toDate === 'function') data.created_at = data.created_at.toDate().toISOString(); return data; });
-    docs.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    return _fbOk(docs);
-  }
-  insert(data) { this._insertData = Array.isArray(data) ? data : [data]; return this; }
-  update(data) { this._updateData = data; return this; }
-  delete() { this._deleteOp = true; return this; }
-  async then(resolve, reject) { resolve(await this._runMutation()); }
-  async _runMutation() {
-    try {
-      if(this._insertData) {
-        for(const item of this._insertData) {
-          const d = { ...item };
-          // Convert snake_case to Firebase fields for tasks/notes
-          if(this._col === 'tasks') {
-            if(d.project_id) { const pId = d.project_id; delete d.project_id; d.projectId = pId; }
-            if(d.parent_task_id !== undefined) { d.parentId = d.parent_task_id; delete d.parent_task_id; }
-            if(d.assignee_id !== undefined) { d.assigneeId = d.assignee_id; delete d.assignee_id; }
-            if(d.due_date !== undefined) { d.dueDate = d.due_date; delete d.due_date; }
-            if(d.created_by !== undefined) { d.createdBy = d.created_by; delete d.created_by; }
-            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-            d.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
-            const projId = currentProject?.id;
-            if(projId) { await _db.collection('projects').doc(projId).collection('tasks').add(d); return _fbOk(null); }
-          }
-          if(this._col === 'notes') {
-            if(d.project_id) { delete d.project_id; }
-            if(d.created_by !== undefined) { d.createdBy = d.created_by; delete d.created_by; }
-            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-            const projId = currentProject?.id;
-            if(projId) { await _db.collection('projects').doc(projId).collection('notes').add(d); return _fbOk(null); }
-          }
-          if(this._col === 'projects') {
-            const name = d.name; const desc = d.description || ''; const createdBy = d.created_by || currentUser?.id;
-            const uid = createdBy;
-            const ref = await _db.collection('projects').add({ name, description: desc, createdBy: uid, members: { [uid]: 'owner' }, memberIds: [uid], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            return _fbOk({ id: ref.id });
-          }
-          if(this._col === 'project_invites') {
-            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-            const ref = await _db.collection('project_invites').add(d);
-            // Create notification for invitee
-            const inviter = await _getUser(d.invited_by);
-            const projDoc = await _db.collection('projects').doc(d.project_id).get();
-            const projName = projDoc.data()?.name || 'a project';
-            await _db.collection('notifications').add({ user_id: d.invited_user_id, type: 'invite', content: (inviter.fullName || inviter.email || 'Someone') + ' invited you to join "' + projName + '"', project_id: d.project_id, invite_id: ref.id, read: false, created_at: new Date().toISOString() });
-            return _fbOk(null);
-          }
-          if(this._col === 'notifications') {
-            d.created_at = d.created_at || new Date().toISOString();
-            await _db.collection('notifications').add(d);
-            return _fbOk(null);
-          }
-          if(this._col === 'invoices') {
-            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-            await _db.collection('invoices').add(d);
-            return _fbOk(null);
-          }
-          await _db.collection(this._col).add(d);
-        }
-        return _fbOk(null);
-      }
-      if(this._updateData) {
-        const idF = this._filters.find(f => f.field === 'id');
-        const d = { ...this._updateData };
-        if(this._col === 'tasks' || this._col === 'notes') {
-          const projId = currentProject?.id;
-          if(idF && projId) {
-            // Convert snake fields
-            if(d.due_date !== undefined) { d.dueDate = d.due_date; delete d.due_date; }
-            if(d.assignee_id !== undefined) { d.assigneeId = d.assignee_id; delete d.assignee_id; }
-            if(d.updated_at !== undefined) { d.updatedAt = firebase.firestore.FieldValue.serverTimestamp(); delete d.updated_at; }
-            if(d.converted_task_id !== undefined) { d.convertedTaskId = d.converted_task_id; delete d.converted_task_id; }
-            await _db.collection('projects').doc(projId).collection(this._col).doc(idF.val).update(d);
-            return _fbOk(null);
-          }
-        }
-        if(this._col === 'profiles') {
-          const uid = _auth.currentUser?.uid;
-          if(uid) { await _db.collection('users').doc(uid).update(d); delete usersCache2[uid]; return _fbOk(null); }
-        }
-        if(this._col === 'project_invites' && idF) {
-          await _db.collection('project_invites').doc(idF.val).update(d);
-          // Handle accept: add to project members
-          if(d.status === 'accepted') {
-            const inv = (await _db.collection('project_invites').doc(idF.val).get()).data();
-            if(inv) {
-              const projDoc = await _db.collection('projects').doc(inv.project_id).get();
-              const proj = projDoc.data();
-              const newMembers = { ...(proj.members || {}), [inv.invited_user_id]: inv.role };
-              const newIds = [...new Set([...(proj.memberIds || []), inv.invited_user_id])];
-              await _db.collection('projects').doc(inv.project_id).update({ members: newMembers, memberIds: newIds });
-              // notify inviter
-              const invitee = await _getUser(inv.invited_user_id);
-              await _db.collection('notifications').add({ user_id: inv.invited_by, type: 'invite_accepted', content: (invitee.fullName || invitee.email || 'Someone') + ' accepted your invite to "' + (proj?.name || '') + '"', project_id: inv.project_id, read: false, created_at: new Date().toISOString() });
-            }
-          }
-          if(d.status === 'rejected') {
-            const inv = (await _db.collection('project_invites').doc(idF.val).get()).data();
-            if(inv) { const invitee = await _getUser(inv.invited_user_id); const projDoc = await _db.collection('projects').doc(inv.project_id).get(); await _db.collection('notifications').add({ user_id: inv.invited_by, type: 'invite_rejected', content: (invitee.fullName || invitee.email || 'Someone') + ' declined your invite.', project_id: inv.project_id, read: false, created_at: new Date().toISOString() }); }
-          }
-          return _fbOk(null);
-        }
-        if(this._col === 'notifications' && idF) { await _db.collection('notifications').doc(idF.val).update(d); return _fbOk(null); }
-        if(this._col === 'invoices' && idF) { await _db.collection('invoices').doc(idF.val).update(d); return _fbOk(null); }
-        return _fbOk(null);
-      }
-      if(this._deleteOp) {
-        const idF = this._filters.find(f => f.field === 'id');
-        const projF2 = this._filters.find(f => f.field === 'project_id');
-        const userF = this._filters.find(f => f.field === 'user_id');
-        if((this._col === 'tasks' || this._col === 'notes') && idF) {
-          const projId = currentProject?.id;
-          if(projId) { await _db.collection('projects').doc(projId).collection(this._col).doc(idF.val).delete(); return _fbOk(null); }
-        }
-        if(this._col === 'projects' && idF) {
-          // Cascade delete tasks + notes
-          const batch = _db.batch();
-          const tasks = await _db.collection('projects').doc(idF.val).collection('tasks').get();
-          tasks.forEach(d => batch.delete(d.ref));
-          const notes = await _db.collection('projects').doc(idF.val).collection('notes').get();
-          notes.forEach(d => batch.delete(d.ref));
-          await batch.commit();
-          await _db.collection('projects').doc(idF.val).delete();
-          return _fbOk(null);
-        }
-        if(this._col === 'project_members' && projF2 && userF) {
-          const projDoc = await _db.collection('projects').doc(projF2.val).get();
-          const proj = projDoc.data();
-          const newMembers = { ...(proj.members || {}) };
-          delete newMembers[userF.val];
-          const newIds = (proj.memberIds || []).filter(x => x !== userF.val);
-          await _db.collection('projects').doc(projF2.val).update({ members: newMembers, memberIds: newIds });
-          return _fbOk(null);
-        }
-        if(this._col === 'project_invites' && idF) { await _db.collection('project_invites').doc(idF.val).delete(); return _fbOk(null); }
-        if(this._col === 'notes' && idF) { const projId = currentProject?.id; if(projId) await _db.collection('projects').doc(projId).collection('notes').doc(idF.val).delete(); return _fbOk(null); }
-        if(this._col === 'invoices' && idF) { await _db.collection('invoices').doc(idF.val).delete(); return _fbOk(null); }
-        return _fbOk(null);
-      }
-      return this._exec();
-    } catch(e) { return _fbErr(e); }
-  }
-}
-
-let currentUser = null;
+let currentUser    = null;
 let currentProject = null;
 let projectMembers = [];
-let profilesCache = {};
+let usersCache     = {};
 
-/* ---------------- INITIAL ACCESS VERIFICATION INFRASTRUCTURE ---------------- */
-let authMode = 'signin';
+function esc(s){ if(s==null)return''; return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+const escapeHtml = esc;
+function showError(m){ const b=document.getElementById('errBanner');b.className='banner';b.textContent='⚠️ '+m;b.style.display='block';setTimeout(()=>b.style.display='none',4000); }
+function showOk(m){ const b=document.getElementById('errBanner');b.className='banner ok';b.textContent='✓ '+m;b.style.display='block';setTimeout(()=>b.style.display='none',3000); }
+async function getUser(uid){ if(usersCache[uid])return usersCache[uid]; try{const d=await db.collection('users').doc(uid).get();if(d.exists)usersCache[uid]=d.data();}catch(e){} return usersCache[uid]||{}; }
 
-document.getElementById('forgotBtn').onclick = () => {
-  document.getElementById('authScreen').querySelector('.auth-deck').style.display = 'none';
-  document.getElementById('forgotPanel').style.display = 'block';
-  document.getElementById('forgotEmail').value = document.getElementById('emailInput').value || '';
-  document.getElementById('forgotErr').textContent = '';
-  document.getElementById('forgotMsg').textContent = '';
-};
-
-document.getElementById('backToLoginBtn').onclick = () => {
-  document.getElementById('forgotPanel').style.display = 'none';
-  document.getElementById('authScreen').querySelector('.auth-deck').style.display = 'block';
-};
-
-document.getElementById('forgotSubmit').onclick = async () => {
-  const email = document.getElementById('forgotEmail').value.trim();
-  const err = document.getElementById('forgotErr');
-  const msg = document.getElementById('forgotMsg');
-  err.textContent = ''; msg.textContent = '';
-  if(!email){ err.textContent = 'Enter your email address.'; return; }
-  const btn = document.getElementById('forgotSubmit');
-  btn.disabled = true; btn.textContent = 'Sending reset link…';
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://479code.github.io/479Code-TaskTracker/'
-  });
-  btn.disabled = false; btn.textContent = 'Send Reset Link';
-  if(error){ err.style.display='block'; err.textContent = error.message; return; }
-  msg.textContent = '✓ Reset link sent! Check your inbox to set a new password.';
-};
-
-(async function handlePasswordRecovery(){
-  const hash = window.location.hash;
-  if(hash.includes('type=recovery')){
-    document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('authScreen').querySelector('.auth-deck').style.display = 'none';
-    document.getElementById('forgotPanel').style.display = 'none';
-
-    const recoveryDiv = document.createElement('div');
-    recoveryDiv.className = 'auth-deck';
-    recoveryDiv.innerHTML = `
-      <h3 style="margin-bottom:8px; font-size:18px; color:var(--text); font-weight:800;">Set New Password</h3>
-      <p style="margin-bottom:24px; font-size:13.5px; color:var(--muted); font-family:var(--mono);">Choose a strong password for your account.</p>
-      <div class="field">
-        <label>New Password</label>
-        <input type="password" id="recoveryPwd" class="input-premium" placeholder="Min. 6 characters">
-      </div>
-      <div class="field" style="margin-bottom:24px;">
-        <label>Confirm Password</label>
-        <input type="password" id="recoveryPwdConfirm" class="input-premium" placeholder="Repeat password">
-      </div>
-      <button id="recoverySubmit" class="btn-premium" style="width:100%;">Save New Password</button>
-      <div id="recoveryErr" class="autherr"></div>
-      <div id="recoveryMsg" class="authmsg"></div>
-    `;
-    document.getElementById('authScreen').appendChild(recoveryDiv);
-
-    document.getElementById('recoverySubmit').onclick = async () => {
-      const pwd = document.getElementById('recoveryPwd').value;
-      const confirm = document.getElementById('recoveryPwdConfirm').value;
-      const err = document.getElementById('recoveryErr');
-      const msg = document.getElementById('recoveryMsg');
-      err.textContent = ''; msg.textContent = '';
-      if(pwd.length < 6){ err.textContent = 'Password must be at least 6 characters.'; return; }
-      if(pwd !== confirm){ err.textContent = "Passwords don't match."; return; }
-      const btn = document.getElementById('recoverySubmit');
-      btn.disabled = true; btn.textContent = 'Saving password…';
-      const { error } = await sb.auth.updateUser({ password: pwd });
-      btn.disabled = false; btn.textContent = 'Save New Password';
-      if(error){ err.textContent = error.message; return; }
-      msg.textContent = '✓ Password updated! Signing you in…';
-      setTimeout(() => { window.location.hash = ''; location.reload(); }, 1500);
-    };
-  }
-})();
-
-document.getElementById('tabSignIn').onclick = () => setAuthMode('signin');
-document.getElementById('tabSignUp').onclick = () => setAuthMode('signup');
-
-function setAuthMode(mode){
-  authMode = mode;
-  document.getElementById('tabSignIn').classList.toggle('active', mode==='signin');
-  document.getElementById('tabSignUp').classList.toggle('active', mode==='signup');
-  document.getElementById('fullNameField').style.display = mode==='signup' ? 'block' : 'none';
-  document.getElementById('usernameField').style.display = mode==='signup' ? 'block' : 'none';
-  document.getElementById('authSubmit').textContent = mode==='signin' ? 'Sign In' : 'Create Account';
-  document.getElementById('authErr').textContent = '';
-  document.getElementById('authMsg').textContent = '';
+// ============ AUTH ============
+let authMode='signin';
+document.getElementById('tabSignIn').onclick=()=>setAuthMode('signin');
+document.getElementById('tabSignUp').onclick=()=>setAuthMode('signup');
+function setAuthMode(m){
+  authMode=m;
+  document.getElementById('tabSignIn').classList.toggle('active',m==='signin');
+  document.getElementById('tabSignUp').classList.toggle('active',m==='signup');
+  document.getElementById('fullNameField').style.display=m==='signup'?'block':'none';
+  document.getElementById('usernameField').style.display=m==='signup'?'block':'none';
+  document.getElementById('authSubmit').textContent=m==='signin'?'Sign In':'Create Account';
+  document.getElementById('authErr').textContent='';
+  document.getElementById('authMsg').textContent='';
 }
 
-document.getElementById('authSubmit').onclick = async () => {
-  const email = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  const fullName = document.getElementById('fullNameInput').value.trim();
-  const username = document.getElementById('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
-  const err = document.getElementById('authErr');
-  const msg = document.getElementById('authMsg');
-  err.textContent = ''; msg.textContent = '';
-
-  if(!email || !password){ err.textContent = 'Email and password required.'; return; }
-  const btn = document.getElementById('authSubmit');
-  btn.disabled = true;
-
-  if(authMode === 'signup'){
-    if(username){
-      const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-      if(existing){ err.textContent = 'That username is taken — try another.'; btn.disabled = false; return; }
-    }
-    const { data, error } = await sb.auth.signUp({
-      email, password,
-      options: { data: { full_name: fullName || email.split('@')[0] } }
-    });
-    if(error){ err.textContent = error.message; btn.disabled = false; return; }
-    const newUserId = data.user?.id;
-    if(newUserId && username){
-      for(let i=0;i<5;i++){
-        const { error: upErr } = await sb.from('profiles').update({ username }).eq('id', newUserId);
-        if(!upErr) break;
-        await new Promise(r=>setTimeout(r,400));
+document.getElementById('authSubmit').onclick=async()=>{
+  const email=document.getElementById('emailInput').value.trim();
+  const password=document.getElementById('passwordInput').value;
+  const fullName=document.getElementById('fullNameInput').value.trim();
+  const username=document.getElementById('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const err=document.getElementById('authErr');const msg=document.getElementById('authMsg');
+  err.textContent='';msg.textContent='';
+  if(!email||!password){err.textContent='Email and password required.';return;}
+  const btn=document.getElementById('authSubmit');btn.disabled=true;
+  try{
+    if(authMode==='signup'){
+      if(username){
+        const existing=await db.collection('users').where('username','==',username).limit(1).get();
+        if(!existing.empty){err.textContent='That username is taken.';btn.disabled=false;return;}
       }
+      const cred=await auth.createUserWithEmailAndPassword(email,password);
+      await db.collection('users').doc(cred.user.uid).set({email,fullName:fullName||email.split('@')[0],username:username||'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      msg.textContent='Account created — signing you in…';
+    }else{
+      await auth.signInWithEmailAndPassword(email,password);
     }
-    if(data.session){
-      await onLoggedIn();
-    } else {
-      msg.textContent = 'Account created — check your email to confirm, then sign in.';
-      setAuthMode('signin');
-    }
-  } else {
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if(error){ err.textContent = error.message; btn.disabled = false; return; }
-    await onLoggedIn();
+  }catch(e){err.textContent=e.message;btn.disabled=false;}
+  btn.disabled=false;
+};
+
+document.getElementById('forgotBtn').onclick=()=>{
+  document.getElementById('authScreen').querySelector('.auth-deck').style.display='none';
+  document.getElementById('forgotPanel').style.display='block';
+  document.getElementById('forgotEmail').value=document.getElementById('emailInput').value||'';
+  document.getElementById('forgotErr').textContent='';
+  document.getElementById('forgotMsg').textContent='';
+};
+document.getElementById('backToLoginBtn').onclick=()=>{
+  document.getElementById('forgotPanel').style.display='none';
+  document.getElementById('authScreen').querySelector('.auth-deck').style.display='block';
+};
+document.getElementById('forgotSubmit').onclick=async()=>{
+  const email=document.getElementById('forgotEmail').value.trim();
+  const err=document.getElementById('forgotErr');const msg=document.getElementById('forgotMsg');
+  err.textContent='';msg.textContent='';
+  if(!email){err.textContent='Enter your email address.';return;}
+  const btn=document.getElementById('forgotSubmit');btn.disabled=true;btn.textContent='Sending…';
+  try{await auth.sendPasswordResetEmail(email,{url:'https://479code.github.io/479Code-TaskTracker/'});msg.textContent='✓ Reset link sent! Check your inbox.';}
+  catch(e){err.textContent=e.message;}
+  btn.disabled=false;btn.textContent='Send Reset Link';
+};
+
+document.getElementById('signOutBtn').onclick=()=>auth.signOut();
+
+auth.onAuthStateChanged(async fbUser=>{
+  if(fbUser){
+    currentUser={id:fbUser.uid,email:fbUser.email};
+    document.getElementById('authScreen').style.display='none';
+    document.getElementById('appRoot').style.display='grid';
+    document.getElementById('userEmail').textContent=fbUser.email;
+    if(fbUser.email===INVOICE_OWNER_EMAIL) document.getElementById('navInvoices').style.display='flex';
+    await loadProjects();
+    await refreshUsernameButton();
+    loadNotifications();
+    setInterval(loadNotifications,30000);
+  }else{
+    currentUser=null;
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('appRoot').style.display='none';
   }
-  btn.disabled = false;
+});
+
+// ============ USERNAME ============
+async function refreshUsernameButton(){
+  const u=await getUser(currentUser.id);
+  document.getElementById('usernameLabel').textContent=u.username?'@'+u.username:'Set username';
+  document.getElementById('usernameEditInput').value=u.username||'';
+}
+document.getElementById('usernameBtn').onclick=(e)=>{e.stopPropagation();document.getElementById('notifDropdown').classList.remove('open');document.getElementById('usernameDropdown').classList.toggle('open');};
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.notif-wrap')){document.getElementById('usernameDropdown')?.classList.remove('open');document.getElementById('changePwdDropdown')?.classList.remove('open');}
+  if(!e.target.closest('.notif-wrap')) document.getElementById('notifDropdown').classList.remove('open');
+});
+document.getElementById('usernameSaveBtn').onclick=async()=>{
+  const raw=document.getElementById('usernameEditInput').value.trim().toLowerCase();
+  const username=raw.replace(/[^a-z0-9_]/g,'');
+  const msg=document.getElementById('usernameMsg');msg.style.color='var(--danger)';
+  if(!username||username.length<3){msg.textContent='At least 3 characters.';return;}
+  const existing=await db.collection('users').where('username','==',username).limit(1).get();
+  if(!existing.empty&&existing.docs[0].id!==currentUser.id){msg.textContent='Username taken.';return;}
+  await db.collection('users').doc(currentUser.id).update({username});
+  delete usersCache[currentUser.id];
+  msg.style.color='var(--done)';msg.textContent='Saved!';
+  await refreshUsernameButton();
+  setTimeout(()=>document.getElementById('usernameDropdown').classList.remove('open'),800);
 };
 
-document.getElementById('signOutBtn').onclick = async () => {
-  await sb.auth.signOut();
-  location.reload();
+// ============ CHANGE PASSWORD ============
+document.getElementById('changePwdBtn').onclick=(e)=>{e.stopPropagation();document.getElementById('usernameDropdown').classList.remove('open');document.getElementById('notifDropdown').classList.remove('open');document.getElementById('changePwdDropdown').classList.toggle('open');document.getElementById('newPwdInput').focus();};
+document.getElementById('savePwdBtn').onclick=async()=>{
+  const np=document.getElementById('newPwdInput').value;
+  const cp=document.getElementById('confirmPwdInput').value;
+  const msg=document.getElementById('pwdMsg');msg.style.color='var(--danger)';
+  if(np.length<6){msg.textContent='Min. 6 characters.';return;}
+  if(np!==cp){msg.textContent="Passwords don't match.";return;}
+  const btn=document.getElementById('savePwdBtn');btn.disabled=true;btn.textContent='Updating…';
+  try{await auth.currentUser.updatePassword(np);msg.style.color='var(--done)';msg.textContent='✓ Updated!';document.getElementById('newPwdInput').value='';document.getElementById('confirmPwdInput').value='';setTimeout(()=>document.getElementById('changePwdDropdown').classList.remove('open'),1500);}
+  catch(e){msg.textContent=e.message;}
+  btn.disabled=false;btn.textContent='Update Password';
 };
 
-document.getElementById('brandHome').onclick = () => switchModule('projects');
-
-document.getElementById('menuToggle').onclick = () => {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('show');
-};
-document.getElementById('sidebarOverlay').onclick = () => {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('show');
-};
-
+// ============ NAV ============
+document.getElementById('brandHome').onclick=()=>switchModule('projects');
+document.getElementById('menuToggle').onclick=()=>{document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('show');};
+document.getElementById('sidebarOverlay').onclick=()=>{document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('show');};
 function switchModule(module){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('show');
-  document.querySelectorAll('.nav-pill').forEach(b => b.classList.remove('active'));
-  
-  if(module === 'projects'){
+  document.querySelectorAll('.nav-pill').forEach(b=>b.classList.remove('active'));
+  if(module==='projects'){
     document.getElementById('navProjects').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Task Tracker';
-    document.getElementById('invoiceView').style.display = 'none';
-    document.getElementById('projectView').style.display = 'none';
-    document.getElementById('projectsView').style.display = 'block';
-    document.getElementById('globalDashboardDeck').style.display = 'grid';
+    document.getElementById('topbarTitle').textContent='Task Tracker';
+    document.getElementById('invoiceView').style.display='none';
+    document.getElementById('projectView').style.display='none';
+    document.getElementById('projectsView').style.display='block';
+    document.getElementById('globalDashboardDeck').style.display='grid';
     loadProjects();
-  } else if(module === 'invoices'){
+  }else if(module==='invoices'){
     document.getElementById('navInvoices').classList.add('active');
-    document.getElementById('topbarTitle').textContent = 'Invoices';
-    document.getElementById('projectsView').style.display = 'none';
-    document.getElementById('projectView').style.display = 'none';
-    document.getElementById('globalDashboardDeck').style.display = 'none';
+    document.getElementById('topbarTitle').textContent='Invoices';
+    document.getElementById('projectsView').style.display='none';
+    document.getElementById('projectView').style.display='none';
+    document.getElementById('globalDashboardDeck').style.display='none';
     showInvoiceView();
   }
 }
+document.getElementById('backBtn').onclick=()=>{
+  document.getElementById('projectView').style.display='none';
+  document.getElementById('projectsView').style.display='block';
+  document.getElementById('globalDashboardDeck').style.display='grid';
+  loadProjects();
+};
+document.getElementById('refreshBtn').onclick=async()=>{
+  const btn=document.getElementById('refreshBtn');btn.textContent='⟳ Syncing…';
+  if(document.getElementById('projectView').style.display!=='none'&&currentProject){await loadMembers();await loadTasks();await loadNotes();}
+  else await loadProjects();
+  loadNotifications();
+  btn.textContent='⟳ Sync Data';
+};
+document.getElementById('notifBtn').onclick=(e)=>{e.stopPropagation();document.getElementById('notifDropdown').classList.toggle('open');if(document.getElementById('notifDropdown').classList.contains('open'))loadNotifications();};
 
-async function onLoggedIn(){
-  const fbUser = _auth.currentUser;
-  currentUser = { id: fbUser.uid, email: fbUser.email };
-  document.getElementById('authScreen').style.display = 'none';
-  document.getElementById('appRoot').style.display = 'grid';
-  document.getElementById('userEmail').textContent = user.email;
-  if(user.email === INVOICE_OWNER_EMAIL){
-    document.getElementById('navInvoices').style.display = 'flex';
-  }
-  await loadProjects();
-  await refreshUsernameButton();
-  await checkDueReminders();
-  await loadNotifications();
-  setInterval(loadNotifications, 30000);
+// ============ TABS ============
+document.querySelectorAll('.tabbtn').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tab));
+function switchTab(tab){
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+tab));
 }
 
-async function refreshUsernameButton(){
-  const profile = await getProfile(currentUser.id);
-  const display = profile?.username ? '@'+profile.username : 'Set username';
-  document.getElementById('usernameLabel').textContent = display;
-  document.getElementById('usernameEditInput').value = profile?.username || '';
-}
-
-document.getElementById('usernameBtn').onclick = (e) => {
-  e.stopPropagation();
-  document.getElementById('notifDropdown').classList.remove('open');
-  document.getElementById('usernameDropdown').classList.toggle('open');
-};
-document.addEventListener('click', (e) => {
-  if(!e.target.closest('.notif-wrap')) {
-    document.getElementById('usernameDropdown')?.classList.remove('open');
-    document.getElementById('changePwdDropdown')?.classList.remove('open');
-  }
-  const dd = document.getElementById('notifDropdown');
-  if(!e.target.closest('.notif-wrap')) dd.classList.remove('open');
-});
-
-document.getElementById('usernameSaveBtn').onclick = async () => {
-  const raw = document.getElementById('usernameEditInput').value.trim().toLowerCase();
-  const username = raw.replace(/[^a-z0-9_]/g,'');
-  const msg = document.getElementById('usernameMsg');
-  msg.style.color = 'var(--danger)';
-  if(!username || username.length < 3){ msg.textContent = 'At least 3 characters (letters, numbers, _).'; return; }
-
-  const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-  if(existing && existing.id !== currentUser.id){ msg.textContent = 'That username is taken.'; return; }
-
-  const { error } = await sb.from('profiles').update({ username }).eq('id', currentUser.id);
-  if(error){ msg.textContent = error.message; return; }
-
-  delete profilesCache[currentUser.id];
-  msg.style.color = 'var(--done)';
-  msg.textContent = 'Saved!';
-  await refreshUsernameButton();
-  setTimeout(()=>{ document.getElementById('usernameDropdown').classList.remove('open'); }, 800);
-};
-
-document.getElementById('changePwdBtn').onclick = (e) => {
-  e.stopPropagation();
-  document.getElementById('usernameDropdown').classList.remove('open');
-  document.getElementById('notifDropdown').classList.remove('open');
-  document.getElementById('changePwdDropdown').classList.toggle('open');
-  document.getElementById('newPwdInput').focus();
-};
-
-document.getElementById('savePwdBtn').onclick = async () => {
-  const newPwd = document.getElementById('newPwdInput').value;
-  const confirmPwd = document.getElementById('confirmPwdInput').value;
-  const msg = document.getElementById('pwdMsg');
-  msg.style.color = 'var(--danger)';
-
-  if(!newPwd || newPwd.length < 6){ msg.textContent = 'Password must be at least 6 characters.'; return; }
-  if(newPwd !== confirmPwd){ msg.textContent = "Passwords don't match."; return; }
-
-  const btn = document.getElementById('savePwdBtn');
-  btn.disabled = true; btn.textContent = 'Updating password…';
-
-  const { error } = await sb.auth.updateUser({ password: newPwd });
-  btn.disabled = false; btn.textContent = 'Update Password';
-
-  if(error){ msg.textContent = error.message; return; }
-
-  msg.style.color = 'var(--done)';
-  msg.textContent = '✓ Password updated successfully!';
-  document.getElementById('newPwdInput').value = '';
-  document.getElementById('confirmPwdInput').value = '';
-  setTimeout(() => { document.getElementById('changePwdDropdown').classList.remove('open'); }, 1500);
-};
-
-document.getElementById('refreshBtn').onclick = async () => {
-  const btn = document.getElementById('refreshBtn');
-  btn.textContent = '⟳ Syncing Core Data…';
-  if(document.getElementById('projectView').style.display !== 'none' && currentProject){
-    await loadMembers(); await loadTasks(); await loadNotes();
-  } else {
-    await loadProjects();
-  }
-  await checkDueReminders();
-  await loadNotifications();
-  btn.textContent = '⟳ Sync Data';
-};
-
-document.getElementById('notifBtn').onclick = (e) => {
-  e.stopPropagation();
-  const dd = document.getElementById('notifDropdown');
-  dd.classList.toggle('open');
-  if(dd.classList.contains('open')) loadNotifications();
-};
-
-// Firebase auth state listener (replaces Supabase session check)
-_auth.onAuthStateChanged(async (fbUser) => {
-  if(fbUser && !currentUser) { await onLoggedIn(); }
-  else if(!fbUser && currentUser) { currentUser = null; document.getElementById('authScreen').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
-});
-
-/* ---------------- PLATFORM GLOBAL CONTEXT ALERTS & DASHBOARD CALCS ---------------- */
-function showError(msg){
-  const b = document.getElementById('errBanner');
-  b.className = 'banner';
-  b.textContent = '⚠️ Error: ' + msg;
-  b.style.display = 'block';
-  setTimeout(()=>{ b.style.display='none'; }, 4000);
-}
-function showOk(msg){
-  const b = document.getElementById('errBanner');
-  b.className = 'banner ok';
-  b.textContent = '✓ Confirmed: ' + msg;
-  b.style.display = 'block';
-  setTimeout(()=>{ b.style.display='none'; }, 3000);
-}
-async function getProfile(userId){
-  if(profilesCache[userId]) return profilesCache[userId];
-  const u = await _getUser(userId);
-  // Map Firebase user fields to Supabase profile shape expected by the UI
-  const profile = { id: userId, email: u.email, full_name: u.fullName, username: u.username || '' };
-  profilesCache[userId] = profile;
-  return profile;
-}
-
-/* Dynamic Global Telemetry Dashboard Calculations */
-async function compileGlobalDashboardMetrics(projectIds) {
-  if (!projectIds || projectIds.length === 0) {
-    updateDashboardUI(0, 0, 0);
-    return;
-  }
-
-  // Fetch tasks from all project subcollections
-  let tasks = [];
-  for(const pid of projectIds) {
-    try {
-      const snap = await _db.collection('projects').doc(pid).collection('tasks').get();
-      snap.forEach(d => { const t = d.data(); tasks.push({ status: t.status, due_date: t.dueDate }); });
-    } catch(e) {}
-  }
-  if (!tasks) return;
-
-  let completed = 0;
-  let pending = 0;
-  let breached = 0;
-  const todayStr = new Date().toISOString().slice(0, 10);
-
-  tasks.forEach(t => {
-    if (t.status === 'done') {
-      completed++;
-    } else {
-      pending++;
-      if (t.due_date && t.due_date < todayStr) {
-        breached++;
-      }
-    }
-  });
-
-  updateDashboardUI(completed, pending, breached);
-}
-
-function updateDashboardUI(completed, pending, breached) {
-  const total = completed + pending;
-  const completedPct = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const pendingPct = total > 0 ? Math.round((pending / total) * 100) : 0;
-
-  document.getElementById('dashCompletedCount').textContent = String(completed).padStart(2, '0');
-  document.getElementById('dashCompletedPct').textContent = completedPct + '%';
-  document.getElementById('dashCompletedBar').style.width = completedPct + '%';
-
-  document.getElementById('dashPendingCount').textContent = String(pending).padStart(2, '0');
-  document.getElementById('dashPendingPct').textContent = pendingPct + '%';
-  document.getElementById('dashPendingBar').style.width = pendingPct + '%';
-
-  document.getElementById('dashBreachedCount').textContent = String(breached).padStart(2, '0');
-  const breachedPct = total > 0 ? Math.round((breached / total) * 100) : 0;
-  document.getElementById('dashBreachedBar').style.width = breachedPct + '%';
-}
-
-/* ---------------- TACTICAL OPERATIONS SCOPE ARCHITECTURES ---------------- */
-document.getElementById('addProjectBtn').onclick = async () => {
-  const input = document.getElementById('newProjectName');
-  const name = input.value.trim();
-  if(!name) return;
-  const { error } = await sb.from('projects').insert({ name, created_by: currentUser.id });
-  if(error){ showError(error.message); return; }
-  input.value = '';
-  await loadProjects();
-};
-
-document.getElementById('backBtn').onclick = () => {
-  document.getElementById('projectView').style.display = 'none';
-  document.getElementById('projectsView').style.display = 'block';
-  document.getElementById('globalDashboardDeck').style.display = 'grid';
-  loadProjects(); 
+// ============ PROJECTS ============
+document.getElementById('addProjectBtn').onclick=async()=>{
+  const inp=document.getElementById('newProjectName');
+  const name=inp.value.trim();if(!name)return;
+  try{
+    await db.collection('projects').add({name,description:'',createdBy:currentUser.id,members:{[currentUser.id]:'owner'},memberIds:[currentUser.id],createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    inp.value='';await loadProjects();
+  }catch(e){showError(e.message);}
 };
 
 async function loadProjects(){
-  const { data: memberships, error } = await sb
-    .from('project_members')
-    .select('role, projects(*)')
-    .eq('user_id', currentUser.id);
-
-  if(error){ showError(error.message); return; }
-
-  const grid = document.getElementById('projectsGrid');
-  const empty = document.getElementById('projectsEmpty');
-  grid.innerHTML = '';
-  empty.style.display = (!memberships || memberships.length===0) ? 'block' : 'none';
-
-  const projectIds = [];
-  (memberships||[]).forEach(m => {
-    if(!m.projects) return;
-    projectIds.push(m.projects.id);
-    const card = document.createElement('div');
-    card.className = 'ecosystem-card';
-    card.innerHTML = `
-      <h3>${escapeHtml(m.projects.name)}</h3>
-      <p>${escapeHtml(m.projects.description || 'No description yet')}</p>
-      <div class="ecosystem-meta">
-        <span class="badge todo">${m.role}</span>
-        <span style="font-size:12.5px; color:var(--accent); font-weight:700; font-family:var(--mono)">Enter Console →</span>
-      </div>
-    `;
-    card.onclick = () => openProject(m.projects, m.role);
-    grid.appendChild(card);
-  });
-
-  await compileGlobalDashboardMetrics(projectIds);
+  try{
+    const snap=await db.collection('projects').where('memberIds','array-contains',currentUser.id).get();
+    const projects=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const grid=document.getElementById('projectsGrid');
+    const empty=document.getElementById('projectsEmpty');
+    grid.innerHTML='';
+    empty.style.display=projects.length===0?'block':'none';
+    // Dashboard metrics
+    let allTasks=[];
+    for(const p of projects){
+      const ts=await db.collection('projects').doc(p.id).collection('tasks').get();
+      ts.forEach(d=>allTasks.push(d.data()));
+    }
+    const today=new Date().toISOString().slice(0,10);
+    const done=allTasks.filter(t=>t.status==='done').length;
+    const pending=allTasks.filter(t=>t.status!=='done').length;
+    const breached=allTasks.filter(t=>t.status!=='done'&&t.dueDate&&t.dueDate<today).length;
+    const total=done+pending;
+    const donePct=total>0?Math.round(done/total*100):0;
+    const pendPct=total>0?Math.round(pending/total*100):0;
+    const brPct=total>0?Math.round(breached/total*100):0;
+    document.getElementById('dashCompletedCount').textContent=String(done).padStart(2,'0');
+    document.getElementById('dashCompletedPct').textContent=donePct+'%';
+    document.getElementById('dashCompletedBar').style.width=donePct+'%';
+    document.getElementById('dashPendingCount').textContent=String(pending).padStart(2,'0');
+    document.getElementById('dashPendingPct').textContent=pendPct+'%';
+    document.getElementById('dashPendingBar').style.width=pendPct+'%';
+    document.getElementById('dashBreachedCount').textContent=String(breached).padStart(2,'0');
+    document.getElementById('dashBreachedBar').style.width=brPct+'%';
+    projects.forEach(p=>{
+      const role=p.members?.[currentUser.id]||'member';
+      const card=document.createElement('div');card.className='ecosystem-card';
+      card.innerHTML=`<h3>${esc(p.name)}</h3><p>${esc(p.description||'No description yet')}</p><div class="ecosystem-meta"><span class="badge todo">${role}</span><span style="font-size:12.5px;color:var(--accent);font-weight:700;font-family:var(--mono)">Enter Console →</span></div>`;
+      card.onclick=()=>openProject(p);grid.appendChild(card);
+    });
+  }catch(e){showError(e.message);}
 }
 
-async function openProject(project, role){
-  currentProject = { ...project, myRole: role };
-  document.getElementById('projectsView').style.display = 'none';
-  document.getElementById('globalDashboardDeck').style.display = 'none'; 
-  document.getElementById('projectView').style.display = 'block';
-  document.getElementById('projectName').textContent = project.name;
-  document.getElementById('projectDesc').textContent = project.description || '';
-  document.getElementById('deleteProjectBtn').style.display = role === 'owner' ? 'block' : 'none';
+async function openProject(p){
+  currentProject={...p,myRole:p.members?.[currentUser.id]||'member'};
+  document.getElementById('projectsView').style.display='none';
+  document.getElementById('globalDashboardDeck').style.display='none';
+  document.getElementById('projectView').style.display='block';
+  document.getElementById('projectName').textContent=p.name;
+  document.getElementById('projectDesc').textContent=p.description||'';
+  document.getElementById('deleteProjectBtn').style.display=currentProject.myRole==='owner'?'block':'none';
   switchTab('tasks');
-  await loadMembers();
-  await loadTasks();
-  await loadNotes();
-  await loadPendingInvites();
-  await loadTimeline();
+  await loadMembers();await loadTasks();await loadNotes();await loadPendingInvites();await loadTimeline();
 }
 
-document.getElementById('deleteProjectBtn').onclick = async () => {
-  if(!confirm(`Delete "${currentProject.name}"?\n\nThis will permanently remove all tasks, subtasks, notes and members. This cannot be undone.`)) return;
-  const { error } = await sb.from('projects').delete().eq('id', currentProject.id);
-  if(error){ showError(error.message); return; }
+document.getElementById('deleteProjectBtn').onclick=async()=>{
+  if(!confirm(`Delete "${currentProject.name}"? This cannot be undone.`))return;
+  const batch=db.batch();
+  const tasks=await db.collection('projects').doc(currentProject.id).collection('tasks').get();
+  tasks.forEach(d=>batch.delete(d.ref));
+  const notes=await db.collection('projects').doc(currentProject.id).collection('notes').get();
+  notes.forEach(d=>batch.delete(d.ref));
+  await batch.commit();
+  await db.collection('projects').doc(currentProject.id).delete();
   showOk('Project deleted.');
-  document.getElementById('projectView').style.display = 'none';
-  document.getElementById('projectsView').style.display = 'block';
-  document.getElementById('globalDashboardDeck').style.display = 'grid';
+  document.getElementById('projectView').style.display='none';
+  document.getElementById('projectsView').style.display='block';
+  document.getElementById('globalDashboardDeck').style.display='grid';
   await loadProjects();
 };
 
-/* ---------------- TAB ROUTING CONTROL ARCHITECTURES ---------------- */
-document.querySelectorAll('.tabbtn').forEach(btn => {
-  btn.onclick = () => switchTab(btn.dataset.tab);
-});
-function switchTab(tab){
-  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
-  document.querySelectorAll('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'pane-'+tab));
-}
-
-/* ---------------- MODULE: NETWORK COLLABORATORS ---------------- */
+// ============ MEMBERS ============
 async function loadMembers(){
-  const { data, error } = await sb
-    .from('project_members')
-    .select('role, user_id, profiles(*)')
-    .eq('project_id', currentProject.id);
-  if(error){ showError(error.message); return; }
-  projectMembers = data || [];
-
-  const list = document.getElementById('memberList');
-  list.innerHTML = '';
-  projectMembers.forEach(m => {
-    const row = document.createElement('div');
-    row.className = 'member-row';
-    const isMe = m.user_id === currentUser.id;
-    row.innerHTML = `
-      <div class="member-info">
-        <span class="member-email">${escapeHtml(m.profiles?.full_name || m.profiles?.email || 'Unknown Teammate')} ${isMe?'(you)':''}</span>
-        <span class="member-role">${escapeHtml(m.profiles?.email||'')} · ${m.role}</span>
-      </div>
-    `;
-    if(currentProject.myRole === 'owner' && !isMe){
-      const del = document.createElement('button');
-      del.className = 'del';
-      del.innerHTML = '✕';
-      del.onclick = async () => {
-        await sb.from('project_members').delete().eq('project_id', currentProject.id).eq('user_id', m.user_id);
-        await loadMembers();
-      };
-      row.appendChild(del);
+  const members=currentProject.members||{};
+  const list=document.getElementById('memberList');list.innerHTML='';projectMembers=[];
+  for(const[uid,role]of Object.entries(members)){
+    const u=await getUser(uid);
+    projectMembers.push({user_id:uid,role,profiles:{full_name:u.fullName,email:u.email,username:u.username||''}});
+    const isMe=uid===currentUser.id;
+    const row=document.createElement('div');row.className='member-row';
+    row.innerHTML=`<div class="member-info"><span class="member-email">${esc(u.fullName||u.email||'Unknown')} ${isMe?'(you)':''}</span><span class="member-role">${esc(u.email||'')} · ${role}</span></div>`;
+    if(currentProject.myRole==='owner'&&!isMe){
+      const del=document.createElement('button');del.className='del';del.innerHTML='✕';
+      del.onclick=async()=>{
+        const newM={...currentProject.members};delete newM[uid];
+        const newIds=(currentProject.memberIds||[]).filter(x=>x!==uid);
+        await db.collection('projects').doc(currentProject.id).update({members:newM,memberIds:newIds});
+        currentProject.members=newM;currentProject.memberIds=newIds;await loadMembers();
+      };row.appendChild(del);
     }
     list.appendChild(row);
-  });
-
-  const assignSel = document.getElementById('newTaskAssignee');
-  assignSel.innerHTML = '<option value="">Unassigned</option>';
-  projectMembers.forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m.user_id;
-    opt.textContent = m.profiles?.full_name || m.profiles?.email;
-    assignSel.appendChild(opt);
-  });
-
-  document.getElementById('inviteBtn').style.display = currentProject.myRole === 'owner' ? 'block' : 'none';
-  document.querySelector('.invite-row').style.display = currentProject.myRole === 'owner' ? 'flex' : 'none';
+  }
+  const sel=document.getElementById('newTaskAssignee');sel.innerHTML='<option value="">Unassigned</option>';
+  projectMembers.forEach(m=>{const o=document.createElement('option');o.value=m.user_id;o.textContent=m.profiles.full_name||m.profiles.email;sel.appendChild(o);});
+  document.getElementById('inviteRowEl').style.display=currentProject.myRole==='owner'?'flex':'none';
 }
 
-document.getElementById('inviteBtn').onclick = async () => {
-  const handle = document.getElementById('inviteEmail').value.trim();
-  const role = document.getElementById('inviteRole').value;
-  if(!handle) return;
-  const lookup = handle.includes('@')
-    ? sb.from('profiles').select('*').eq('email', handle).maybeSingle()
-    : sb.from('profiles').select('*').eq('username', handle.toLowerCase().replace(/^@/,'')).maybeSingle();
-  const { data: profile, error: pErr } = await lookup;
-  if(pErr || !profile){ showError('No account found with that email/username — they need to sign up first.'); return; }
-  if(profile.id === currentUser.id){ showError("That's you."); return; }
-  const already = projectMembers.find(m => m.user_id === profile.id);
-  if(already){ showError('Already a member of this project.'); return; }
-  const { error } = await sb.from('project_invites').insert({
-    project_id: currentProject.id, invited_user_id: profile.id, invited_by: currentUser.id, role
-  });
-  if(error){
-    if(error.message.includes('duplicate')) showError('They already have a pending invite.');
-    else showError(error.message);
-    return;
-  }
-  document.getElementById('inviteEmail').value = '';
-  showOk('Invite sent to ' + (profile.full_name || profile.email) + ' — pending acceptance');
+document.getElementById('inviteBtn').onclick=async()=>{
+  const handle=document.getElementById('inviteEmail').value.trim();
+  const role=document.getElementById('inviteRole').value;if(!handle)return;
+  let found=null;
+  const byEmail=await db.collection('users').where('email','==',handle).limit(1).get();
+  if(!byEmail.empty)byEmail.forEach(d=>{found={uid:d.id,...d.data()};});
+  else{const u=handle.replace(/^@/,'').toLowerCase();const bu=await db.collection('users').where('username','==',u).limit(1).get();if(!bu.empty)bu.forEach(d=>{found={uid:d.id,...d.data()};});}
+  if(!found){showError('No account found with that email/username.');return;}
+  if(found.uid===currentUser.id){showError("That's you.");return;}
+  // Send invite
+  const projDoc=await db.collection('projects').doc(currentProject.id).get();
+  const projName=projDoc.data()?.name||'';
+  const me=await getUser(currentUser.id);
+  await db.collection('project_invites').add({project_id:currentProject.id,invited_user_id:found.uid,invited_by:currentUser.id,role,status:'pending',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  await db.collection('notifications').add({user_id:found.uid,type:'invite',content:(me.fullName||me.email||'Someone')+' invited you to join "'+projName+'"',project_id:currentProject.id,read:false,created_at:new Date().toISOString()});
+  showOk('Invite sent to '+(found.fullName||found.email));
+  document.getElementById('inviteEmail').value='';
   await loadPendingInvites();
 };
 
 async function loadPendingInvites(){
-  if(currentProject.myRole !== 'owner') return;
-  const { data } = await sb.from('project_invites')
-    .select('*, profiles:invited_user_id(*)')
-    .eq('project_id', currentProject.id).eq('status','pending');
-  const wrap = document.getElementById('pendingInvitesList');
-  if(!wrap) return;
-  wrap.innerHTML = '';
-  (data||[]).forEach(inv => {
-    const row = document.createElement('div');
-    row.className = 'member-row';
-    row.innerHTML = `
-      <div class="member-info">
-        <span class="member-email">${escapeHtml(inv.profiles?.full_name || inv.profiles?.email)}</span>
-        <span class="member-role">pending · invited as ${inv.role}</span>
-      </div>
-    `;
-    const cancel = document.createElement('button');
-    cancel.className = 'del';
-    cancel.innerHTML = '✕';
-    cancel.title = 'Cancel Invite';
-    cancel.onclick = async () => { await sb.from('project_invites').delete().eq('id', inv.id); await loadPendingInvites(); };
-    row.appendChild(cancel);
-    wrap.appendChild(row);
-  });
+  if(currentProject.myRole!=='owner')return;
+  const snap=await db.collection('project_invites').where('project_id','==',currentProject.id).where('status','==','pending').get();
+  const wrap=document.getElementById('pendingInvitesList');if(!wrap)return;wrap.innerHTML='';
+  for(const doc of snap.docs){
+    const inv={id:doc.id,...doc.data()};
+    const u=await getUser(inv.invited_user_id);
+    const row=document.createElement('div');row.className='member-row';
+    row.innerHTML=`<div class="member-info"><span class="member-email">${esc(u.fullName||u.email)}</span><span class="member-role">pending · invited as ${inv.role}</span></div>`;
+    const cancel=document.createElement('button');cancel.className='del';cancel.innerHTML='✕';
+    cancel.onclick=async()=>{await db.collection('project_invites').doc(inv.id).delete();await loadPendingInvites();};
+    row.appendChild(cancel);wrap.appendChild(row);
+  }
 }
 
-/* ---------------- MODULE: CORE LIVE ALERTS ENGINE ---------------- */
+// ============ NOTIFICATIONS ============
 async function loadNotifications(){
-  const { data, error } = await sb.from('notifications')
-    .select('*, projects(name)')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending:false })
-    .limit(30);
-  if(error) return;
-
-  const unread = (data||[]).filter(n=>!n.read).length;
-  const badge = document.getElementById('notifBadge');
-  badge.textContent = unread;
-  badge.style.display = unread > 0 ? 'inline-block' : 'none';
-
-  const dd = document.getElementById('notifDropdown');
-  dd.innerHTML = '';
-  if(!data || data.length===0){
-    dd.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
-    return;
-  }
-
-  for(const n of data){
-    const item = document.createElement('div');
-    item.className = 'notif-card' + (n.read ? '' : ' unread');
-    item.innerHTML = `
-      <div class="notif-text">${escapeHtml(n.content)}</div>
-      <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
-    `;
-    if(n.type === 'invite'){
-      const { data: invite } = await sb.from('project_invites').select('status').eq('id', n.invite_id).maybeSingle();
-      if(invite && invite.status === 'pending'){
-        const actions = document.createElement('div');
-        actions.className = 'notif-actions';
-        actions.innerHTML = `<button class="accept">Accept</button><button class="reject">Reject</button>`;
-        actions.querySelector('.accept').onclick = async () => { await respondInvite(n.invite_id, 'accepted'); };
-        actions.querySelector('.reject').onclick = async () => { await respondInvite(n.invite_id, 'rejected'); };
-        item.appendChild(actions);
+  try{
+    const snap=await db.collection('notifications').where('user_id','==',currentUser.id).get();
+    const notifs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,30);
+    const unread=notifs.filter(n=>!n.read).length;
+    const badge=document.getElementById('notifBadge');badge.textContent=unread;badge.style.display=unread>0?'inline-block':'none';
+    const dd=document.getElementById('notifDropdown');dd.innerHTML='';
+    if(notifs.length===0){dd.innerHTML='<div class="notif-empty">No notifications yet.</div>';return;}
+    for(const n of notifs){
+      const item=document.createElement('div');item.className='notif-card'+(n.read?'':' unread');
+      item.innerHTML=`<div class="notif-text">${esc(n.content)}</div><div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>`;
+      if(n.type==='invite'&&n.invite_id){
+        const invDoc=await db.collection('project_invites').doc(n.invite_id).get();
+        if(invDoc.exists&&invDoc.data().status==='pending'){
+          const acts=document.createElement('div');acts.className='notif-actions';
+          acts.innerHTML=`<button class="accept">Accept</button><button class="reject">Reject</button>`;
+          acts.querySelector('.accept').onclick=async()=>respondInvite(n.invite_id,'accepted',n.project_id);
+          acts.querySelector('.reject').onclick=async()=>respondInvite(n.invite_id,'rejected',n.project_id);
+          item.appendChild(acts);
+        }
       }
+      item.onclick=async(e)=>{if(e.target.tagName==='BUTTON')return;if(!n.read){await db.collection('notifications').doc(n.id).update({read:true});n.read=true;item.classList.remove('unread');}};
+      dd.appendChild(item);
     }
-    item.onclick = async (e) => {
-      if(e.target.tagName === 'BUTTON') return;
-      if(!n.read){ await sb.from('notifications').update({ read:true }).eq('id', n.id); n.read = true; item.classList.remove('unread'); }
-    };
-    dd.appendChild(item);
-  }
+  }catch(e){}
 }
 
-async function respondInvite(inviteId, status){
-  const { error } = await sb.from('project_invites').update({ status, responded_at: new Date().toISOString() }).eq('id', inviteId);
-  if(error){ showError(error.message); return; }
-  showOk(status === 'accepted' ? 'Joined the project!' : 'Invite declined.');
-  await loadNotifications();
-  await loadProjects();
+async function respondInvite(inviteId,status,projId){
+  await db.collection('project_invites').doc(inviteId).update({status,responded_at:new Date().toISOString()});
+  if(status==='accepted'){
+    const inv=(await db.collection('project_invites').doc(inviteId).get()).data();
+    const projDoc=await db.collection('projects').doc(projId).get();const proj=projDoc.data();
+    const newM={...(proj.members||{}),[inv.invited_user_id]:inv.role};
+    const newIds=[...new Set([...(proj.memberIds||[]),inv.invited_user_id])];
+    await db.collection('projects').doc(projId).update({members:newM,memberIds:newIds});
+    const me=await getUser(currentUser.id);const projName=proj.name||'';
+    await db.collection('notifications').add({user_id:inv.invited_by,type:'invite_accepted',content:(me.fullName||me.email)+' accepted your invite to "'+projName+'"',project_id:projId,read:false,created_at:new Date().toISOString()});
+    showOk('Joined the project!');
+  }else{showOk('Invite declined.');}
+  await loadNotifications();await loadProjects();
 }
 
-async function checkDueReminders(){
-  const { data: memberships } = await sb.from('project_members').select('project_id').eq('user_id', currentUser.id);
-  const projectIds = (memberships||[]).map(m=>m.project_id);
-  if(projectIds.length===0) return;
+// ============ TASKS ============
+function assigneeName(uid){if(!uid)return null;const m=projectMembers.find(x=>x.user_id===uid);return m?(m.profiles.full_name||m.profiles.email):null;}
+function statusLabel(s){return s==='todo'?'To do':s==='progress'?'In progress':'Done';}
 
-  const soon = new Date(); soon.setDate(soon.getDate()+2);
-  const soonStr = soon.toISOString().slice(0,10);
-
-  const { data: dueTasks } = await sb.from('tasks')
-    .select('*')
-    .in('project_id', projectIds)
-    .not('due_date','is',null)
-    .neq('status','done')
-    .lte('due_date', soonStr);
-
-  if(!dueTasks) return;
-  const todayStr = new Date().toISOString().slice(0,10);
-
-  for(const t of dueTasks){
-    const { data: existing } = await sb.from('notifications')
-      .select('id').eq('task_id', t.id).eq('type','due_reminder').eq('user_id', currentUser.id)
-      .gte('created_at', todayStr).maybeSingle();
-    if(existing) continue;
-    const overdue = t.due_date < todayStr;
-    await sb.from('notifications').insert({
-      user_id: currentUser.id, type: 'due_reminder', project_id: t.project_id, task_id: t.id,
-      content: (overdue ? '⚠️ Overdue task: ' : '⏰ Due soon: ') + '"' + t.title + '"' + (overdue ? '' : ' (due ' + t.due_date + ')')
-    });
-  }
-}
-
-/* ---------------- MODULE: TASKS AND SUBTASKS AllOCATIONS ---------------- */
-function assigneeName(id){
-  if(!id) return null;
-  const m = projectMembers.find(x => x.user_id === id);
-  return m ? (m.profiles?.full_name || m.profiles?.email) : null;
-}
-
-document.getElementById('addTaskBtn').onclick = async () => {
-  const input = document.getElementById('newTaskInput');
-  const assignee = document.getElementById('newTaskAssignee').value || null;
-  const dueInput = document.getElementById('newTaskDue');
-  const due = dueInput.value || null;
-  const title = input.value.trim();
-  if(!title) return;
-  const { error } = await sb.from('tasks').insert({
-    project_id: currentProject.id, title, assignee_id: assignee, due_date: due, created_by: currentUser.id
-  });
-  if(error){ showError(error.message); return; }
-  input.value = '';
-  dueInput.value = '';
-  await loadTasks();
-  await loadTimeline();
+document.getElementById('addTaskBtn').onclick=async()=>{
+  const inp=document.getElementById('newTaskInput');
+  const title=inp.value.trim();if(!title)return;
+  const assignee=document.getElementById('newTaskAssignee').value||null;
+  const due=document.getElementById('newTaskDue').value||null;
+  try{
+    await db.collection('projects').doc(currentProject.id).collection('tasks').add({title,status:'todo',assigneeId:assignee,dueDate:due,parentId:null,createdBy:currentUser.id,createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    inp.value='';document.getElementById('newTaskDue').value='';
+    await loadTasks();await loadTimeline();
+  }catch(e){showError(e.message);}
 };
-
-async function loadTimeline(){
-  const { data, error } = await sb.from('tasks')
-    .select('*')
-    .eq('project_id', currentProject.id)
-    .order('due_date', { ascending: true, nullsFirst: false });
-  if(error) return;
-
-  (data||[]).forEach(t => { if(t.dueDate && !t.due_date) t.due_date = t.dueDate; });
-  const withDue = (data||[]).filter(t => t.due_date);
-  const list = document.getElementById('timelineList');
-  const empty = document.getElementById('timelineEmpty');
-  list.innerHTML = '';
-  empty.style.display = withDue.length === 0 ? 'block' : 'none';
-
-  if(withDue.length === 0) return;
-  const todayStr = new Date().toISOString().slice(0,10);
-  const soon = new Date(); soon.setDate(soon.getDate()+2);
-  const soonStr = soon.toISOString().slice(0,10);
-
-  const minDate = withDue[0].due_date;
-  const maxDate = withDue[withDue.length-1].due_date;
-  const span = Math.max(1, (new Date(maxDate) - new Date(minDate)) / 86400000);
-
-  withDue.forEach(t => {
-    const overdue = t.status !== 'done' && t.due_date < todayStr;
-    const soonFlag = t.status !== 'done' && t.due_date >= todayStr && t.due_date <= soonStr;
-    const pct = Math.min(100, Math.max(2, ((new Date(t.due_date) - new Date(minDate)) / 86400000 / span) * 100));
-    const row = document.createElement('div');
-    row.className = 'tl-item';
-    row.style.cssText = 'display:flex; gap:20px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:18px; margin-bottom:10px; align-items:center;';
-    row.innerHTML = `
-      <span class="tl-date ${overdue?'overdue':soonFlag?'soon':''}">${t.due_date}</span>
-      <span class="tl-title ${t.status==='done'?'done':''}">${escapeHtml(t.title)}</span>
-      <div class="tl-bar"><div class="tl-bar-fill" style="width:${pct}%; background:${t.status==='done' ? 'var(--done)' : overdue ? 'var(--danger)' : soonFlag ? 'var(--prog)' : 'var(--accent)'}"></div></div>
-    `;
-    list.appendChild(row);
-  });
-}
 
 async function loadTasks(){
-  const { data, error } = await sb.from('tasks').select('*').eq('project_id', currentProject.id).order('created_at');
-  if(error){ showError(error.message); return; }
-
-  // Firebase uses camelCase, normalise to snake_case expected by UI
-  (data||[]).forEach(t => {
-    if(t.parentId !== undefined && t.parent_task_id === undefined) t.parent_task_id = t.parentId;
-    if(t.assigneeId !== undefined && t.assignee_id === undefined) t.assignee_id = t.assigneeId;
-    if(t.dueDate !== undefined && t.due_date === undefined) t.due_date = t.dueDate;
-    if(t.createdBy !== undefined && t.created_by === undefined) t.created_by = t.createdBy;
-  });
-  const topTasks = (data||[]).filter(t => !t.parent_task_id);
-  const subtasksByParent = {};
-  (data||[]).filter(t => t.parent_task_id).forEach(t => {
-    (subtasksByParent[t.parent_task_id] = subtasksByParent[t.parent_task_id]||[]).push(t);
-  });
-
-  const list = document.getElementById('taskList');
-  const empty = document.getElementById('tasksEmpty');
-  list.innerHTML = '';
-  empty.style.display = topTasks.length === 0 ? 'block' : 'none';
-
-  const order = {progress:0, todo:1, done:2};
-  topTasks.sort((a,b)=> (order[a.status]??1)-(order[b.status]??1));
-
-  topTasks.forEach(t => {
-    const subs = subtasksByParent[t.id] || [];
-    const doneCount = subs.filter(s=>s.status==='done').length;
-    const row = document.createElement('div');
-    row.className = 'task-node' + (t.status==='done' ? ' done':'');
-
-    const aName = assigneeName(t.assignee_id);
-    const today = new Date().toISOString().slice(0,10);
-    const soon = new Date(); soon.setDate(soon.getDate()+2);
-    const soonStr = soon.toISOString().slice(0,10);
-    const dueClass = t.due_date ? (t.due_date < today && t.status!=='done' ? 'overdue' : t.due_date <= soonStr && t.status!=='done' ? 'soon' : '') : '';
-    const dueHtml = t.due_date
-      ? `<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue:':'⏰ Due soon:'} ${t.due_date}</div>`
-      : '';
-
-    row.innerHTML = `
-      <div style="display:flex; align-items:flex-start; gap:16px;">
-        <div class="chk ${t.status==='done'?'checked':''}" data-id="${t.id}"></div>
-        <div style="flex:1; min-width:0;">
-          <div class="task-title" id="ttitle-${t.id}">${escapeHtml(t.title)}</div>
-          ${dueHtml}
-          <div class="task-meta">
-            <span class="badge ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
-            <button class="status-cycle" data-cycle="${t.id}">Change status →</button>
-            <button class="edit-task-btn" data-edit="${t.id}">✏️ Edit</button>
-            ${aName ? `<span class="badge todo">👤 ${escapeHtml(aName)}</span>` : ''}
-            <button class="exp-btn" data-exp="${t.id}">${subs.length ? subs.length + ' subtasks' : '+ Subtask'} ▾</button>
-          </div>
-          ${subs.length ? `
-            <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(doneCount/subs.length*100)}%"></div></div>
-            <div class="progress-label">${doneCount}/${subs.length} subtasks complete</div>
-          ` : ''}
-          <div class="subtasks-wrapper" id="subs-${t.id}">
-            ${subs.map(s => subtaskHtml(s)).join('')}
-            <div style="display:flex; gap:8px; margin-top:12px;">
-              <input type="text" class="input-premium" style="padding:6px 12px; font-size:12.5px;" placeholder="Add subtask…" id="subinput-${t.id}">
-              <button data-addsub="${t.id}" class="btn-premium" style="padding:6px 16px; font-size:12px;">Add</button>
-            </div>
-          </div>
+  const snap=await db.collection('projects').doc(currentProject.id).collection('tasks').get();
+  const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+  // normalise field names
+  all.forEach(t=>{t.parent_task_id=t.parentId||null;t.assignee_id=t.assigneeId||null;t.due_date=t.dueDate||null;t.created_by=t.createdBy||null;if(t.createdAt&&t.createdAt.toMillis)t._sort=t.createdAt.toMillis();else t._sort=0;});
+  all.sort((a,b)=>a._sort-b._sort);
+  const topTasks=all.filter(t=>!t.parent_task_id);
+  const subtasksByParent={};
+  all.filter(t=>t.parent_task_id).forEach(t=>(subtasksByParent[t.parent_task_id]=subtasksByParent[t.parent_task_id]||[]).push(t));
+  const list=document.getElementById('taskList');const empty=document.getElementById('tasksEmpty');
+  list.innerHTML='';empty.style.display=topTasks.length===0?'block':'none';
+  const order={progress:0,todo:1,done:2};
+  topTasks.sort((a,b)=>(order[a.status]??1)-(order[b.status]??1));
+  topTasks.forEach(t=>{
+    const subs=subtasksByParent[t.id]||[];const doneCount=subs.filter(s=>s.status==='done').length;
+    const row=document.createElement('div');row.className='task-node'+(t.status==='done'?' done':'');
+    const aName=assigneeName(t.assignee_id);
+    const today=new Date().toISOString().slice(0,10);const soon=new Date();soon.setDate(soon.getDate()+2);const soonStr=soon.toISOString().slice(0,10);
+    const dueClass=t.due_date?(t.due_date<today&&t.status!=='done'?'overdue':t.due_date<=soonStr&&t.status!=='done'?'soon':''):'';
+    const dueHtml=t.due_date?`<div class="task-due ${dueClass}">📅 ${dueClass==='overdue'?'⚠️ Overdue:':'⏰ Due soon:'} ${t.due_date}</div>`:'';
+    row.innerHTML=`<div style="display:flex;align-items:flex-start;gap:16px;">
+      <div class="chk ${t.status==='done'?'checked':''}" data-id="${t.id}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="task-title" id="ttitle-${t.id}">${esc(t.title)}</div>
+        ${dueHtml}
+        <div class="task-meta">
+          <span class="badge ${t.status==='done'?'done':t.status==='progress'?'progress':'todo'}">${statusLabel(t.status)}</span>
+          <button class="status-cycle" data-cycle="${t.id}">Change status →</button>
+          <button class="edit-task-btn" data-edit="${t.id}">✏️ Edit</button>
+          ${aName?`<span class="badge todo">👤 ${esc(aName)}</span>`:''}
+          <button class="exp-btn" data-exp="${t.id}">${subs.length?subs.length+' subtasks':'+ Subtask'} ▾</button>
         </div>
-        <button class="del" data-del="${t.id}">✕</button>
+        ${subs.length?`<div class="progress-bar"><div class="progress-fill" style="width:${Math.round(doneCount/subs.length*100)}%"></div></div><div class="progress-label">${doneCount}/${subs.length} subtasks complete</div>`:''}
+        <div class="subtasks-wrapper" id="subs-${t.id}">
+          ${subs.map(s=>`<div class="subtask-row"><div class="chk ${s.status==='done'?'checked':''}" style="width:18px;height:18px;" data-subchk="${s.id}"></div><div style="flex:1;min-width:0;"><div class="task-title" style="font-size:14px;${s.status==='done'?'text-decoration:line-through;color:var(--muted);':''}">${esc(s.title)}</div></div><button class="del" data-subdel="${s.id}">✕</button></div>`).join('')}
+          <div style="display:flex;gap:8px;margin-top:12px;"><input type="text" class="input-premium" style="padding:6px 12px;font-size:12.5px;" placeholder="Add subtask…" id="subinput-${t.id}"><button data-addsub="${t.id}" class="btn-premium" style="padding:6px 16px;font-size:12px;">Add</button></div>
+        </div>
       </div>
-    `;
+      <button class="del" data-del="${t.id}">✕</button>
+    </div>`;
     list.appendChild(row);
   });
-
-  list.querySelectorAll('[data-id]').forEach(el => el.onclick = () => toggleTaskDone(el.dataset.id, data));
-  list.querySelectorAll('[data-cycle]').forEach(el => el.onclick = () => cycleTaskStatus(el.dataset.cycle, data));
-  list.querySelectorAll('[data-del]').forEach(el => el.onclick = () => deleteTask(el.dataset.del));
-  list.querySelectorAll('[data-exp]').forEach(el => el.onclick = () => {
-    document.getElementById('subs-'+el.dataset.exp).classList.toggle('open');
-  });
-  list.querySelectorAll('[data-addsub]').forEach(el => el.onclick = () => addSubtask(el.dataset.addsub));
-  list.querySelectorAll('[data-subchk]').forEach(el => el.onclick = () => toggleTaskDone(el.dataset.subchk, data));
-  list.querySelectorAll('[data-subdel]').forEach(el => el.onclick = () => deleteTask(el.dataset.subdel));
-  list.querySelectorAll('[data-edit]').forEach(el => el.onclick = () => openTaskEdit(el.dataset.edit, data));
+  list.querySelectorAll('[data-id]').forEach(el=>el.onclick=()=>toggleTaskDone(el.dataset.id,all));
+  list.querySelectorAll('[data-cycle]').forEach(el=>el.onclick=()=>cycleTaskStatus(el.dataset.cycle,all));
+  list.querySelectorAll('[data-del]').forEach(el=>el.onclick=()=>deleteTask(el.dataset.del));
+  list.querySelectorAll('[data-exp]').forEach(el=>el.onclick=()=>document.getElementById('subs-'+el.dataset.exp)?.classList.toggle('open'));
+  list.querySelectorAll('[data-addsub]').forEach(el=>el.onclick=()=>addSubtask(el.dataset.addsub));
+  list.querySelectorAll('[data-subchk]').forEach(el=>el.onclick=()=>toggleTaskDone(el.dataset.subchk,all));
+  list.querySelectorAll('[data-subdel]').forEach(el=>el.onclick=()=>deleteTask(el.dataset.subdel));
+  list.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openTaskEdit(el.dataset.edit,all));
 }
 
-function openTaskEdit(taskId, allTasks){
-  const t = allTasks.find(x=>x.id===taskId);
-  if(!t) return;
-  const titleEl = document.getElementById('ttitle-'+taskId);
-  if(!titleEl) return;
-  const body = titleEl.parentElement;
+async function toggleTaskDone(id,all){const t=all.find(x=>x.id===id);if(!t)return;const ns=t.status==='done'?'todo':'done';await db.collection('projects').doc(currentProject.id).collection('tasks').doc(id).update({status:ns,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});await loadTasks();}
+async function cycleTaskStatus(id,all){const t=all.find(x=>x.id===id);if(!t)return;const next={todo:'progress',progress:'done',done:'todo'}[t.status];await db.collection('projects').doc(currentProject.id).collection('tasks').doc(id).update({status:next,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});await loadTasks();}
+async function deleteTask(id){await db.collection('projects').doc(currentProject.id).collection('tasks').doc(id).delete();await loadTasks();await loadTimeline();}
+async function addSubtask(parentId){const inp=document.getElementById('subinput-'+parentId);const title=inp?.value.trim();if(!title)return;await db.collection('projects').doc(currentProject.id).collection('tasks').add({title,status:'todo',parentId,createdBy:currentUser.id,createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});await loadTasks();setTimeout(()=>document.getElementById('subs-'+parentId)?.classList.add('open'),50);}
 
-  titleEl.outerHTML = `<input class="task-title-edit" id="tedit-${taskId}" value="${escapeHtml(t.title)}" type="text">`;
-
-  const dueWrap = document.createElement('div');
-  dueWrap.className = 'task-due';
-  dueWrap.innerHTML = `📅 Due date: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}">
-    <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done); border-color:var(--done);">Save</button>
-    <button class="edit-task-btn" data-canceledit="${taskId}">Cancel</button>`;
-  const metaEl = body.querySelector('.task-meta');
-  body.insertBefore(dueWrap, metaEl);
-
-  const input = document.getElementById('tedit-'+taskId);
-  if(input){ input.focus(); input.select(); }
-
-  dueWrap.querySelector('[data-save]').onclick = async () => {
-    const newTitle = document.getElementById('tedit-'+taskId)?.value.trim() || t.title;
-    const newDue = document.getElementById('tdue-'+taskId)?.value || null;
-    const { error } = await sb.from('tasks').update({ title: newTitle, due_date: newDue, updated_at: new Date().toISOString() }).eq('id', taskId);
-    if(error){ showError(error.message); return; }
-    await loadTasks(); await loadTimeline();
+function openTaskEdit(taskId,allTasks){
+  const t=allTasks.find(x=>x.id===taskId);if(!t)return;
+  const titleEl=document.getElementById('ttitle-'+taskId);if(!titleEl)return;
+  const body=titleEl.parentElement;
+  titleEl.outerHTML=`<input class="task-title-edit" id="tedit-${taskId}" value="${esc(t.title)}" type="text">`;
+  const dueWrap=document.createElement('div');dueWrap.className='task-due';
+  dueWrap.innerHTML=`📅 Due date: <input class="task-due-edit" id="tdue-${taskId}" type="date" value="${t.due_date||''}"> <button class="edit-task-btn" data-save="${taskId}" style="color:var(--done);border-color:var(--done);">Save</button> <button class="edit-task-btn" data-canceledit="${taskId}">Cancel</button>`;
+  body.insertBefore(dueWrap,body.querySelector('.task-meta'));
+  document.getElementById('tedit-'+taskId)?.focus();
+  dueWrap.querySelector('[data-save]').onclick=async()=>{
+    const nt=document.getElementById('tedit-'+taskId)?.value.trim()||t.title;
+    const nd=document.getElementById('tdue-'+taskId)?.value||null;
+    await db.collection('projects').doc(currentProject.id).collection('tasks').doc(taskId).update({title:nt,dueDate:nd,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await loadTasks();await loadTimeline();
   };
-  dueWrap.querySelector('[data-canceledit]').onclick = () => loadTasks();
+  dueWrap.querySelector('[data-canceledit]').onclick=()=>loadTasks();
 }
 
-function subtaskHtml(s){
-  return `
-    <div class="subtask-row">
-      <div class="chk ${s.status==='done'?'checked':''}" style="width:18px; height:18px;" data-subchk="${s.id}"></div>
-      <div style="flex:1; min-width:0;">
-        <div class="task-title" style="font-size:14px; ${s.status==='done'?'text-decoration:line-through; color:var(--muted);':''}">${escapeHtml(s.title)}</div>
-      </div>
-      <button class="del" data-subdel="${s.id}">✕</button>
-    </div>
-  `;
-}
-
-function statusLabel(s){ return s==='todo'?'To do': s==='progress'?'In progress':'Done'; }
-
-async function toggleTaskDone(id, allTasks){
-  const t = allTasks.find(x=>x.id===id);
-  const newStatus = t.status === 'done' ? 'todo' : 'done';
-  await sb.from('tasks').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
-  await loadTasks();
-}
-async function cycleTaskStatus(id, allTasks){
-  const t = allTasks.find(x=>x.id===id);
-  const next = t.status==='todo' ? 'progress' : t.status==='progress' ? 'done' : 'todo';
-  await sb.from('tasks').update({ status: next, updated_at: new Date().toISOString() }).eq('id', id);
-  await loadTasks();
-}
-async function deleteTask(id){
-  await sb.from('tasks').delete().eq('id', id);
-  await loadTasks();
-}
-async function addSubtask(parentId){
-  const input = document.getElementById('subinput-'+parentId);
-  const title = input.value.trim();
-  if(!title) return;
-  await sb.from('tasks').insert({
-    project_id: currentProject.id, parent_task_id: parentId, title, created_by: currentUser.id
+// ============ TIMELINE ============
+async function loadTimeline(){
+  const snap=await db.collection('projects').doc(currentProject.id).collection('tasks').get();
+  const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+  all.forEach(t=>{t.due_date=t.dueDate||null;t.parent_task_id=t.parentId||null;});
+  const withDue=all.filter(t=>t.due_date&&!t.parent_task_id).sort((a,b)=>a.due_date.localeCompare(b.due_date));
+  const list=document.getElementById('timelineList');const empty=document.getElementById('timelineEmpty');
+  list.innerHTML='';empty.style.display=withDue.length===0?'block':'none';
+  if(withDue.length===0)return;
+  const todayStr=new Date().toISOString().slice(0,10);const soon=new Date();soon.setDate(soon.getDate()+2);const soonStr=soon.toISOString().slice(0,10);
+  const minD=withDue[0].due_date;const maxD=withDue[withDue.length-1].due_date;const span=Math.max(1,(new Date(maxD)-new Date(minD))/86400000);
+  withDue.forEach(t=>{
+    const ov=t.status!=='done'&&t.due_date<todayStr;const sf=t.status!=='done'&&t.due_date>=todayStr&&t.due_date<=soonStr;
+    const pct=Math.min(100,Math.max(2,((new Date(t.due_date)-new Date(minD))/86400000/span)*100));
+    const row=document.createElement('div');row.className='tl-item';row.style.cssText='display:flex;gap:20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-md);padding:18px;margin-bottom:10px;align-items:center;';
+    row.innerHTML=`<span class="tl-date ${ov?'overdue':sf?'soon':''}">${t.due_date}</span><span class="tl-title ${t.status==='done'?'done':''}">${esc(t.title)}</span><div class="tl-bar"><div class="tl-bar-fill" style="width:${pct}%;background:${t.status==='done'?'var(--done)':ov?'var(--danger)':sf?'var(--prog)':'var(--accent)'}"></div></div>`;
+    list.appendChild(row);
   });
-  await loadTasks();
-  setTimeout(()=>{ const s = document.getElementById('subs-'+parentId); if(s) s.classList.add('open'); }, 50);
 }
 
-/* ---------------- MODULE: FIELD NOTES LOGS ---------------- */
-document.getElementById('addNoteBtn').onclick = async () => {
-  const input = document.getElementById('newNoteInput');
-  const content = input.value.trim();
-  if(!content) return;
-  const { error } = await sb.from('notes').insert({ project_id: currentProject.id, content, created_by: currentUser.id });
-  if(error){ showError(error.message); return; }
-  input.value = '';
-  await loadNotes();
+// ============ NOTES ============
+document.getElementById('addNoteBtn').onclick=async()=>{
+  const inp=document.getElementById('newNoteInput');const content=inp.value.trim();if(!content)return;
+  await db.collection('projects').doc(currentProject.id).collection('notes').add({content,createdBy:currentUser.id,convertedTaskId:null,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  inp.value='';await loadNotes();
 };
-
 async function loadNotes(){
-  const { data, error } = await sb.from('notes').select('*').eq('project_id', currentProject.id).order('created_at', { ascending:false });
-  if(error){ showError(error.message); return; }
-
-  const list = document.getElementById('noteList');
-  const empty = document.getElementById('notesEmpty');
-  list.innerHTML = '';
-  empty.style.display = (!data || data.length===0) ? 'block' : 'none';
-
-  for(const n of (data||[])){
-    const author = await getProfile(n.created_by);
-    const div = document.createElement('div');
-    div.className = 'note';
-    div.innerHTML = `
-      <div class="note-text">${escapeHtml(n.content)}</div>
-      <div class="note-meta">
-        <span class="note-author">By: ${escapeHtml(author?.full_name || author?.email || 'Unknown')} · ${new Date(n.created_at).toLocaleString()}</span>
-        <div class="note-actions">
-          ${(n.converted_task_id || n.convertedTaskId) ? `<span class="note-converted">✓ Converted to task</span>` : `<button data-convert="${n.id}">Convert to task</button>`}
-          <button data-notedel="${n.id}">Delete</button>
-        </div>
-      </div>
-    `;
+  const snap=await db.collection('projects').doc(currentProject.id).collection('notes').get();
+  const notes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.toMillis()||0)-(a.createdAt?.toMillis()||0));
+  const list=document.getElementById('noteList');const empty=document.getElementById('notesEmpty');
+  list.innerHTML='';empty.style.display=notes.length===0?'block':'none';
+  for(const n of notes){
+    const u=await getUser(n.createdBy||'');
+    const div=document.createElement('div');div.className='note';
+    div.innerHTML=`<div class="note-text">${esc(n.content)}</div><div class="note-meta"><span class="note-author">By: ${esc(u.fullName||u.email||'Unknown')} · ${n.createdAt?.toDate().toLocaleString()||''}</span><div class="note-actions">${n.convertedTaskId?'<span class="note-converted">✓ Converted to task</span>':`<button data-conv="${n.id}">Convert to task</button>`}<button data-ndel="${n.id}">Delete</button></div></div>`;
     list.appendChild(div);
   }
-
-  list.querySelectorAll('[data-convert]').forEach(el => el.onclick = () => convertNoteToTask(el.dataset.convert));
-  list.querySelectorAll('[data-notedel]').forEach(el => el.onclick = async () => {
-    const pId = currentProject?.id; if(pId) await _db.collection('projects').doc(pId).collection('notes').doc(el.dataset.notedel).delete();
-    await loadNotes();
-  });
+  list.querySelectorAll('[data-conv]').forEach(el=>el.onclick=()=>convertNoteToTask(el.dataset.conv));
+  list.querySelectorAll('[data-ndel]').forEach(el=>el.onclick=async()=>{await db.collection('projects').doc(currentProject.id).collection('notes').doc(el.dataset.ndel).delete();await loadNotes();});
 }
-
 async function convertNoteToTask(noteId){
-  const projId = currentProject?.id;
-  let note = null;
-  if(projId) { const d = await _db.collection('projects').doc(projId).collection('notes').doc(noteId).get(); if(d.exists) note = { id: d.id, ...d.data() }; }
-  if(!note) return;
-  const title = note.content.length > 120 ? note.content.slice(0,120)+'…' : note.content;
-  const { data: task, error } = await sb.from('tasks').insert({
-    project_id: currentProject.id, title, created_by: currentUser.id
-  }).select().single();
-  if(error){ showError(error.message); return; }
-  const projId2 = currentProject?.id;
-  if(projId2) await _db.collection('projects').doc(projId2).collection('notes').doc(noteId).update({ convertedTaskId: task.id });
-  showOk('Converted to task successfully.');
-  await loadNotes();
-  await loadTasks();
+  const doc=await db.collection('projects').doc(currentProject.id).collection('notes').doc(noteId).get();
+  if(!doc.exists)return;const n=doc.data();
+  const title=n.content.length>120?n.content.slice(0,120)+'…':n.content;
+  const tRef=await db.collection('projects').doc(currentProject.id).collection('tasks').add({title,status:'todo',parentId:null,createdBy:currentUser.id,createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+  await db.collection('projects').doc(currentProject.id).collection('notes').doc(noteId).update({convertedTaskId:tRef.id});
+  showOk('Converted to task.');await loadNotes();await loadTasks();
 }
 
-/* ============ MODULE: INVOICES ============ */
-const INVOICE_OWNER_EMAIL = '479code@gmail.com';
-let editingInvoiceId = null;
-let invItems = [];
-
-function showInvoiceView(){
-  document.getElementById('projectsView').style.display = 'none';
-  document.getElementById('projectView').style.display = 'none';
-  document.getElementById('invoiceView').style.display = 'block';
-  document.getElementById('invoiceForm').style.display = 'none';
-  document.getElementById('invoiceList').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = 'Invoices';
-  loadInvoices();
-}
-
-document.getElementById('invBackBtn').onclick = () => {
-  if(document.getElementById('invoiceForm').style.display !== 'none'){
-    document.getElementById('invoiceForm').style.display = 'none';
-    document.getElementById('invoiceList').style.display = 'block';
-    document.getElementById('newInvoiceBtn').style.display = 'block';
-    document.getElementById('invViewTitle').textContent = 'Invoices';
-  } else {
-    document.getElementById('invoiceView').style.display = 'none';
-    document.getElementById('projectsView').style.display = 'block';
-  }
+// ============ INVOICES ============
+const INVOICE_OWNER_EMAIL='479code@gmail.com';
+let editingInvoiceId=null;let invItems=[];
+function showInvoiceView(){document.getElementById('projectsView').style.display='none';document.getElementById('projectView').style.display='none';document.getElementById('invoiceView').style.display='block';document.getElementById('invoiceForm').style.display='none';document.getElementById('invoiceList').style.display='block';document.getElementById('invViewTitle').textContent='Invoices';loadInvoices();}
+document.getElementById('invBackBtn').onclick=()=>{if(document.getElementById('invoiceForm').style.display!=='none'){document.getElementById('invoiceForm').style.display='none';document.getElementById('invoiceList').style.display='block';document.getElementById('newInvoiceBtn').style.display='block';document.getElementById('invViewTitle').textContent='Invoices';}else{document.getElementById('invoiceView').style.display='none';document.getElementById('projectsView').style.display='block';}};
+document.getElementById('newInvoiceBtn').onclick=()=>openInvoiceForm(null);
+document.getElementById('cancelInvoiceBtn').onclick=()=>document.getElementById('invBackBtn').click();
+document.getElementById('addInvItem').onclick=()=>{invItems.push({desc:'',qty:'',rate:''});renderInvItems();};
+document.getElementById('saveInvoiceBtn').onclick=async()=>{
+  const inv=gatherInvoiceForm();if(!inv)return;
+  try{
+    if(editingInvoiceId)await db.collection('invoices').doc(editingInvoiceId).update({...inv,updated_at:new Date().toISOString()});
+    else await db.collection('invoices').add({...inv,created_by:currentUser.id,created_at:new Date().toISOString()});
+    showOk('Invoice saved.');document.getElementById('invBackBtn').click();
+  }catch(e){showError(e.message);}
 };
-
-document.getElementById('newInvoiceBtn').onclick = () => openInvoiceForm(null);
-document.getElementById('cancelInvoiceBtn').onclick = () => document.getElementById('invBackBtn').click();
-document.getElementById('addInvItem').onclick = () => { invItems.push({desc:'',qty:'',rate:''}); renderInvItems(); };
-
-document.getElementById('saveInvoiceBtn').onclick = async () => {
-  const inv = gatherInvoiceForm();
-  if(!inv) return;
-  if(editingInvoiceId){
-    const { error } = await sb.from('invoices').update({...inv, updated_at: new Date().toISOString()}).eq('id', editingInvoiceId);
-    if(error){ showError(error.message); return; }
-  } else {
-    const { error } = await sb.from('invoices').insert({...inv, created_by: currentUser.id});
-    if(error){ showError(error.message); return; }
-  }
-  showOk('Invoice saved successfully.');
-  document.getElementById('invBackBtn').click();
-};
-
-document.getElementById('previewInvoiceBtn').onclick = () => {
-  const inv = gatherInvoiceForm(true);
-  if(!inv){ showError('Fill in at least the Invoice No., Client Name, and Date first.'); return; }
-  printInvoice(inv);
-};
-
-document.getElementById('deleteInvoiceBtn').onclick = async () => {
-  if(!editingInvoiceId) return;
-  if(!confirm('Delete this invoice? This cannot be undone.')) return;
-  await sb.from('invoices').delete().eq('id', editingInvoiceId);
-  showOk('Invoice record removed.');
-  document.getElementById('invBackBtn').click();
-};
-
-function gatherInvoiceForm(preview = false){
-  const num    = document.getElementById('inv_number').value.trim();
-  const client = document.getElementById('inv_client_name').value.trim();
-  const issue  = document.getElementById('inv_issue_date').value;
-  if(!num || !client || !issue) return null;
-  return {
-    invoice_number   : num,
-    invoice_title    : document.getElementById('inv_title').value.trim(),
-    receipt_number   : num,
-    client_name      : client,
-    client_email     : document.getElementById('inv_client_email').value.trim(),
-    client_phone     : document.getElementById('inv_client_phone').value.trim(),
-    client_address   : document.getElementById('inv_client_address').value.trim(),
-    issue_date       : issue,
-    due_date         : null,
-    currency         : document.getElementById('inv_currency').value,
-    status           : document.getElementById('inv_status').value,
-    account_name     : document.getElementById('inv_account_name').value.trim(),
-    account_number   : document.getElementById('inv_account_number').value.trim(),
-    bank_name        : document.getElementById('inv_bank_name').value.trim(),
-    notes            : document.getElementById('inv_notes').value.trim(),
-    items            : JSON.parse(JSON.stringify(invItems))
-  };
-}
-
-function openInvoiceForm(invoice){
-  editingInvoiceId = invoice?.id || null;
-  invItems = invoice?.items?.length ? JSON.parse(JSON.stringify(invoice.items)) : [
-    {desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''}
-  ];
-
-  document.getElementById('inv_title').value          = invoice?.invoice_title || '';
-  document.getElementById('inv_number').value         = invoice?.invoice_number || autoInvNumber();
-  document.getElementById('inv_client_name').value    = invoice?.client_name || '';
-  document.getElementById('inv_client_email').value   = invoice?.client_email || '';
-  document.getElementById('inv_client_phone').value   = invoice?.client_phone || '';
-  document.getElementById('inv_client_address').value = invoice?.client_address || '';
-  document.getElementById('inv_issue_date').value     = invoice?.issue_date || new Date().toISOString().slice(0,10);
-  document.getElementById('inv_currency').value       = invoice?.currency || 'NGN';
-  document.getElementById('inv_status').value         = invoice?.status || 'draft';
-  document.getElementById('inv_account_name').value   = invoice?.account_name || '479Code Tech Solutions Ltd';
-  document.getElementById('inv_account_number').value = invoice?.account_number || '0013942057';
-  document.getElementById('inv_bank_name').value      = invoice?.bank_name || 'TAJ Bank';
-  document.getElementById('inv_notes').value          = invoice?.notes || '';
-  document.getElementById('deleteInvoiceBtn').style.display = editingInvoiceId ? 'block' : 'none';
-
-  renderInvItems();
-  document.getElementById('invoiceList').style.display = 'none';
-  document.getElementById('newInvoiceBtn').style.display = 'none';
-  document.getElementById('invoiceForm').style.display = 'block';
-  document.getElementById('invViewTitle').textContent = editingInvoiceId ? 'Edit Invoice' : 'New Invoice';
-}
-
-function autoInvNumber(){
-  const now = new Date();
-  return `INV/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
-}
-
-function renderInvItems(){
-  const container = document.getElementById('invItemsContainer');
-  container.innerHTML = '';
-  invItems.forEach((item, i) => {
-    const qty  = parseFloat(item.qty)  || 0;
-    const rate = parseFloat(item.rate) || 0;
-    const amt  = (qty * rate).toFixed(2);
-    const row = document.createElement('div');
-    row.className = 'inv-split-row';
-    row.innerHTML = `
-      <span style="font-family:var(--mono); font-size:12px; color:var(--muted); text-align:center;">[${i+1}]</span>
-      <input type="text" placeholder="Description" value="${escapeHtml(item.desc||'')}" data-i="${i}" data-f="desc">
-      <input type="number" placeholder="Qty" value="${item.qty||''}" min="0" data-i="${i}" data-f="qty">
-      <input type="number" placeholder="Unit Price" value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate">
-      <span class="inv-item-total" style="font-family:var(--mono); font-size:14px; text-align:right; font-weight:700;">${qty&&rate ? currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString() : '—'}</span>
-      <button class="del" data-rmi="${i}">✕</button>
-    `;
-    container.appendChild(row);
-  });
-  container.querySelectorAll('input').forEach(inp => {
-    inp.oninput = () => {
-      const i = parseInt(inp.dataset.i);
-      invItems[i][inp.dataset.f] = inp.value;
-      const q = parseFloat(invItems[i].qty)||0;
-      const r = parseFloat(invItems[i].rate)||0;
-      const sym = currSymbol(document.getElementById('inv_currency').value);
-      inp.closest('.inv-split-row').querySelector('.inv-item-total').textContent = q&&r ? sym+(q*r).toLocaleString('en',{minimumFractionDigits:2}) : '—';
-      updateInvTotals();
-    };
-  });
-  container.querySelectorAll('[data-rmi]').forEach(btn => {
-    btn.onclick = () => { invItems.splice(parseInt(btn.dataset.rmi),1); renderInvItems(); };
-  });
-  updateInvTotals();
-}
-
-function updateInvTotals(){
-  const cur = document.getElementById('inv_currency')?.value || 'NGN';
-  const sym = currSymbol(cur);
-  const subtotal = invItems.reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
-  const fmt = n => sym + n.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('invSubtotal').textContent = fmt(subtotal);
-  document.getElementById('invTotal').textContent    = fmt(subtotal);
-}
-document.getElementById('inv_currency').onchange = () => { renderInvItems(); };
-
-function currSymbol(c){ return {USD:'$',NGN:'₦',GBP:'£',EUR:'€',KES:'KSh ',GHS:'₵'}[c]||c+' '; }
-
+document.getElementById('previewInvoiceBtn').onclick=()=>{const inv=gatherInvoiceForm(true);if(!inv){showError('Fill in Invoice No., Client Name and Date first.');return;}printInvoice(inv);};
+document.getElementById('deleteInvoiceBtn').onclick=async()=>{if(!editingInvoiceId||!confirm('Delete this invoice?'))return;await db.collection('invoices').doc(editingInvoiceId).delete();showOk('Invoice deleted.');document.getElementById('invBackBtn').click();};
+function gatherInvoiceForm(preview=false){const num=document.getElementById('inv_number').value.trim();const client=document.getElementById('inv_client_name').value.trim();const issue=document.getElementById('inv_issue_date').value;if(!num||!client||!issue)return null;return{invoice_number:num,invoice_title:document.getElementById('inv_title').value.trim(),receipt_number:num,client_name:client,client_email:document.getElementById('inv_client_email').value.trim(),client_phone:document.getElementById('inv_client_phone').value.trim(),client_address:document.getElementById('inv_client_address').value.trim(),issue_date:issue,due_date:null,currency:document.getElementById('inv_currency').value,status:document.getElementById('inv_status').value,account_name:document.getElementById('inv_account_name').value.trim(),account_number:document.getElementById('inv_account_number').value.trim(),bank_name:document.getElementById('inv_bank_name').value.trim(),notes:document.getElementById('inv_notes').value.trim(),items:JSON.parse(JSON.stringify(invItems))};}
+function openInvoiceForm(invoice){editingInvoiceId=invoice?.id||null;invItems=invoice?.items?.length?JSON.parse(JSON.stringify(invoice.items)):[{desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''},{desc:'',qty:'',rate:''}];document.getElementById('inv_title').value=invoice?.invoice_title||'';document.getElementById('inv_number').value=invoice?.invoice_number||autoInvNumber();document.getElementById('inv_client_name').value=invoice?.client_name||'';document.getElementById('inv_client_email').value=invoice?.client_email||'';document.getElementById('inv_client_phone').value=invoice?.client_phone||'';document.getElementById('inv_client_address').value=invoice?.client_address||'';document.getElementById('inv_issue_date').value=invoice?.issue_date||new Date().toISOString().slice(0,10);document.getElementById('inv_currency').value=invoice?.currency||'NGN';document.getElementById('inv_status').value=invoice?.status||'draft';document.getElementById('inv_account_name').value=invoice?.account_name||'479Code Tech Solutions Ltd';document.getElementById('inv_account_number').value=invoice?.account_number||'0013942057';document.getElementById('inv_bank_name').value=invoice?.bank_name||'TAJ Bank';document.getElementById('inv_notes').value=invoice?.notes||'';document.getElementById('deleteInvoiceBtn').style.display=editingInvoiceId?'block':'none';renderInvItems();document.getElementById('invoiceList').style.display='none';document.getElementById('newInvoiceBtn').style.display='none';document.getElementById('invoiceForm').style.display='block';document.getElementById('invViewTitle').textContent=editingInvoiceId?'Edit Invoice':'New Invoice';}
+function autoInvNumber(){const now=new Date();return`INV/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;}
+function currSymbol(c){return{USD:'$',NGN:'₦',GBP:'£',EUR:'€',KES:'KSh ',GHS:'₵'}[c]||c+' ';}
+function renderInvItems(){const container=document.getElementById('invItemsContainer');container.innerHTML='';invItems.forEach((item,i)=>{const qty=parseFloat(item.qty)||0;const rate=parseFloat(item.rate)||0;const amt=(qty*rate).toFixed(2);const row=document.createElement('div');row.className='inv-split-row';row.innerHTML=`<span style="font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;">[${i+1}]</span><input type="text" placeholder="Description" value="${esc(item.desc||'')}" data-i="${i}" data-f="desc"><input type="number" placeholder="Qty" value="${item.qty||''}" min="0" data-i="${i}" data-f="qty"><input type="number" placeholder="Unit Price" value="${item.rate||''}" min="0" step="0.01" data-i="${i}" data-f="rate"><span class="inv-item-total" style="font-family:var(--mono);font-size:14px;text-align:right;font-weight:700;">${qty&&rate?currSymbol(document.getElementById('inv_currency').value)+parseFloat(amt).toLocaleString():'—'}</span><button class="del" data-rmi="${i}">✕</button>`;container.appendChild(row);});container.querySelectorAll('input').forEach(inp=>{inp.oninput=()=>{const i=parseInt(inp.dataset.i);invItems[i][inp.dataset.f]=inp.value;const q=parseFloat(invItems[i].qty)||0;const r=parseFloat(invItems[i].rate)||0;const sym=currSymbol(document.getElementById('inv_currency').value);inp.closest('.inv-split-row').querySelector('.inv-item-total').textContent=q&&r?sym+(q*r).toLocaleString('en',{minimumFractionDigits:2}):'—';updateInvTotals();};});container.querySelectorAll('[data-rmi]').forEach(btn=>{btn.onclick=()=>{invItems.splice(parseInt(btn.dataset.rmi),1);renderInvItems();};});updateInvTotals();}
+function updateInvTotals(){const cur=document.getElementById('inv_currency')?.value||'NGN';const sym=currSymbol(cur);const subtotal=invItems.reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);const fmt=n=>sym+n.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('invSubtotal').textContent=fmt(subtotal);document.getElementById('invTotal').textContent=fmt(subtotal);}
+document.getElementById('inv_currency').onchange=()=>renderInvItems();
 async function loadInvoices(){
-  const { data, error } = await sb.from('invoices').select('*').eq('created_by', currentUser.id).order('created_at',{ascending:false});
-  if(error){ showError(error.message); return; }
-  const list  = document.getElementById('invoiceList');
-  const empty = document.getElementById('invoicesEmpty');
-  list.innerHTML = '';
-  empty.style.display = (!data||data.length===0) ? 'block' : 'none';
-  (data||[]).forEach(inv => {
-    const total = (inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);
-    const sym   = currSymbol(inv.currency||'NGN');
-    const row   = document.createElement('div');
-    row.className = 'inv-ledger-card';
-    row.innerHTML = `
-      <div>
-        <div class="inv-list-num">${escapeHtml(inv.invoice_number || inv.invoiceNumber)}</div>
-        <div class="inv-list-client" style="font-size:16.5px; font-weight:800; color:var(--text);">${escapeHtml(inv.client_name || inv.clientName)}</div>
-        <div style="font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:4px;">${escapeHtml(inv.invoice_title || inv.invoiceTitle||'')} &nbsp;·&nbsp; ${inv.issue_date || inv.issueDate}</div>
-      </div>
-      <div style="text-align:right;">
-        <div class="inv-amount-label" style="color:var(--accent);">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</div>
-        <span class="inv-status ${inv.status}" style="margin-top:6px; display:inline-block;">${inv.status.toUpperCase()}</span>
-      </div>
-    `;
-    row.onclick = () => openInvoiceForm(inv);
-    list.appendChild(row);
-  });
+  try{
+    const snap=await db.collection('invoices').where('created_by','==',currentUser.id).get();
+    const invs=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+    const list=document.getElementById('invoiceList');const empty=document.getElementById('invoicesEmpty');
+    list.innerHTML='';empty.style.display=invs.length===0?'block':'none';
+    invs.forEach(inv=>{const total=(inv.items||[]).reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.rate)||0),0);const sym=currSymbol(inv.currency||'NGN');const row=document.createElement('div');row.className='inv-ledger-card';row.innerHTML=`<div><div class="inv-list-num">${esc(inv.invoice_number)}</div><div class="inv-list-client" style="font-size:16.5px;font-weight:800;color:var(--text);">${esc(inv.client_name)}</div><div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:4px;">${esc(inv.invoice_title||'')} · ${inv.issue_date}</div></div><div style="text-align:right;"><div class="inv-amount-label" style="color:var(--accent);">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</div><span class="inv-status ${inv.status}" style="margin-top:6px;display:inline-block;">${inv.status.toUpperCase()}</span></div>`;row.onclick=()=>openInvoiceForm(inv);list.appendChild(row);});
+  }catch(e){showError(e.message);}
 }
-
 /* ---- PRINT PDF FUNCTIONS ---- */
 function printInvoice(inv){
   const sym     = currSymbol(inv.currency||'NGN');
@@ -2147,7 +1242,7 @@ function printInvoice(inv){
   const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Invoice Summary ${escapeHtml(inv.invoice_number || inv.invoiceNumber)}</title>
+<title>Invoice Summary ${escapeHtml(inv.invoice_number)}</title>
 <style>
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Times New Roman',Times,serif; color:#1a1a1a; background:#fff; padding:30px 40px; max-width:850px; margin:0 auto; font-size:13px;}
@@ -2201,14 +1296,14 @@ function printInvoice(inv){
     <p>Phone: 07069655288, 07074733491</p>
   </div>
 </div>
-${inv.invoice_title || inv.invoiceTitle ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title || inv.invoiceTitle)}</h2></div>` : ''}
+${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title)}</h2></div>` : ''}
 <div class="meta-row">
-  <div><strong>Invoice Ref:</strong> ${escapeHtml(inv.invoice_number || inv.invoiceNumber)}</div>
-  <div><strong>Date:</strong> ${fmtDate(inv.issue_date || inv.issueDate)}</div>
+  <div><strong>Invoice Ref:</strong> ${escapeHtml(inv.invoice_number)}</div>
+  <div><strong>Date:</strong> ${fmtDate(inv.issue_date)}</div>
 </div>
 <div class="bill-to">
   <div class="label">BILL TO:</div>
-  <div class="client">${escapeHtml(inv.client_name || inv.clientName)}${inv.client_address || inv.clientAddress?'<br><span style="font-weight:400; font-size:12px;">'+escapeHtml(inv.client_address || inv.clientAddress)+'</span>':''}</div>
+  <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400; font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
 </div>
 <table class="items">
   <thead>
@@ -2235,12 +1330,12 @@ ${inv.invoice_title || inv.invoiceTitle ? `<div class="inv-title-bar"><h2>${esca
     <tr><td>NET DUE BALANCE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
   </table>
 </div>
-${(inv.account_name || inv.accountName||inv.account_number || inv.accountNumber||inv.bank_name || inv.bankName) ? `
+${(inv.account_name||inv.account_number||inv.bank_name) ? `
 <div class="payment-section">
   <h3>Payment Details:</h3>
-  ${inv.account_name || inv.accountName   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name || inv.accountName)}</strong></p>` : ''}
-  ${inv.account_number || inv.accountNumber ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number || inv.accountNumber)}</strong></p>` : ''}
-  ${inv.bank_name || inv.bankName      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name || inv.bankName)}</strong></p>` : ''}
+  ${inv.account_name   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
+  ${inv.account_number ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
+  ${inv.bank_name      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
   ${inv.notes          ? `<p style="margin-top:6px;">${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</p>` : ''}
 </div>` : ''}
 <div class="sig-section">
@@ -2258,6 +1353,8 @@ ${(inv.account_name || inv.accountName||inv.account_number || inv.accountNumber|
   w.document.write(html);
   w.document.close();
 }
+
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
