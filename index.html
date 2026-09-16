@@ -13,7 +13,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="479Code Operations">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root {
     --bg: #030507;
@@ -656,9 +658,340 @@
 </div>
 
 <script>
-const SUPABASE_URL = 'https://ztkdzudunwlhkrclejot.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_6okFPeT8x7zuDN_kSF6jyA_XoJOhPEt';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ============ FIREBASE INIT ============
+const firebaseConfig = {
+  apiKey: "AIzaSyB_uhgA65hFgN_Magr9W8bsAT5YKymwyYY",
+  authDomain: "code-tasktracker.firebaseapp.com",
+  projectId: "code-tasktracker",
+  storageBucket: "code-tasktracker.firebasestorage.app",
+  messagingSenderId: "554261579930",
+  appId: "1:554261579930:web:1f1529f476975d89d63723"
+};
+firebase.initializeApp(firebaseConfig);
+const _auth = firebase.auth();
+const _db = firebase.firestore();
+
+// ============ SUPABASE COMPATIBILITY ADAPTER ============
+// Wraps Firebase so all existing sb.* calls work unchanged
+const usersCache2 = {};
+async function _getUser(uid) {
+  if(usersCache2[uid]) return usersCache2[uid];
+  try { const d = await _db.collection('users').doc(uid).get(); if(d.exists) usersCache2[uid] = d.data(); } catch(e){}
+  return usersCache2[uid] || {};
+}
+function _fbErr(e) { return { data: null, error: e }; }
+function _fbOk(data) { return { data, error: null }; }
+
+const sb = {
+  auth: {
+    getUser: async () => {
+      const u = _auth.currentUser;
+      return { data: { user: u ? { id: u.uid, email: u.email } : null } };
+    },
+    getSession: async () => {
+      return new Promise(res => {
+        const unsub = _auth.onAuthStateChanged(u => {
+          unsub();
+          res({ data: { session: u ? { user: { id: u.uid, email: u.email } } : null } });
+        });
+      });
+    },
+    signUp: async ({ email, password, options }) => {
+      try {
+        const cred = await _auth.createUserWithEmailAndPassword(email, password);
+        const u = cred.user;
+        const fullName = options?.data?.full_name || email.split('@')[0];
+        await _db.collection('users').doc(u.uid).set({ email, fullName, username: '', createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        const session = { user: { id: u.uid, email } };
+        return { data: { user: { id: u.uid, email }, session }, error: null };
+      } catch(e) { return { data: { user: null, session: null }, error: e }; }
+    },
+    signInWithPassword: async ({ email, password }) => {
+      try {
+        await _auth.signInWithEmailAndPassword(email, password);
+        return { data: {}, error: null };
+      } catch(e) { return { data: {}, error: e }; }
+    },
+    signOut: async () => { await _auth.signOut(); },
+    resetPasswordForEmail: async (email, opts) => {
+      try {
+        await _auth.sendPasswordResetEmail(email, opts?.redirectTo ? { url: opts.redirectTo } : undefined);
+        return { error: null };
+      } catch(e) { return { error: e }; }
+    },
+    updateUser: async ({ password }) => {
+      try { await _auth.currentUser.updatePassword(password); return { error: null }; }
+      catch(e) { return { error: e }; }
+    },
+    onAuthStateChange: (cb) => {
+      return _auth.onAuthStateChanged(u => {
+        if(u) cb('SIGNED_IN', { user: { id: u.uid, email: u.email } });
+        else cb('SIGNED_OUT', null);
+      });
+    }
+  },
+  from: (collection) => new _SbCollection(collection)
+};
+
+class _SbCollection {
+  constructor(col) { this._col = col; this._filters = []; this._orderField = null; this._orderAsc = true; this._limitN = null; this._selected = null; }
+  select(fields) { this._selected = fields; return this; }
+  eq(field, val) { this._filters.push({ op:'==', field, val }); return this; }
+  neq(field, val) { this._filters.push({ op:'!=', field, val }); return this; }
+  in(field, vals) { this._filters.push({ op:'in', field, val: vals }); return this; }
+  not(field, op2, val) { this._filters.push({ op:'not-'+op2, field, val }); return this; }
+  lte(field, val) { this._filters.push({ op:'<=', field, val }); return this; }
+  gte(field, val) { this._filters.push({ op:'>=', field, val }); return this; }
+  order(field, opts) { this._orderField = field; this._orderAsc = !opts || opts.ascending !== false; return this; }
+  limit(n) { this._limitN = n; return this; }
+  maybeSingle() { this._limitN = 1; return this._exec('single'); }
+  single() { return this._exec('single'); }
+  async _exec(mode) {
+    try {
+      // Handle sub-collections: tasks, notes, project_invites, notifications
+      let ref;
+      if(this._col === 'tasks' || this._col === 'notes') {
+        const projFilter = this._filters.find(f => f.field === 'project_id');
+        if(projFilter) {
+          ref = _db.collection('projects').doc(projFilter.val).collection(this._col);
+          this._filters = this._filters.filter(f => f.field !== 'project_id');
+        } else { ref = _db.collection(this._col); }
+      } else { ref = _db.collection(this._col); }
+
+      // Special joins for project_members
+      if(this._col === 'project_members') return await this._handleProjectMembers();
+      if(this._col === 'project_invites') return await this._handleProjectInvites();
+      if(this._col === 'notifications') return await this._handleNotifications();
+      if(this._col === 'profiles') return await this._handleProfiles();
+
+      // Apply filters
+      for(const f of this._filters) {
+        if(f.op === '==' ) ref = ref.where(f.field, '==', f.val);
+        else if(f.op === '!=') ref = ref.where(f.field, '!=', f.val);
+        else if(f.op === 'in') { if(f.val && f.val.length > 0) ref = ref.where(f.field, 'in', f.val.slice(0,10)); }
+        else if(f.op === '<=') ref = ref.where(f.field, '<=', f.val);
+        else if(f.op === '>=') ref = ref.where(f.field, '>=', f.val);
+        else if(f.op === 'not-is') ref = ref.where(f.field, '!=', null);
+      }
+      if(this._orderField) ref = ref.orderBy(this._orderField, this._orderAsc ? 'asc' : 'desc');
+      if(this._limitN) ref = ref.limit(this._limitN);
+      const snap = await ref.get();
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Convert Firestore timestamps
+      docs.forEach(d => { for(const k in d) { if(d[k] && typeof d[k].toDate === 'function') d[k] = d[k].toDate().toISOString(); } });
+      if(mode === 'single') return _fbOk(docs[0] || null);
+      return _fbOk(docs);
+    } catch(e) { return _fbErr(e); }
+  }
+  async _handleProfiles() {
+    const emailF = this._filters.find(f => f.field === 'email');
+    const usernameF = this._filters.find(f => f.field === 'username');
+    const idF = this._filters.find(f => f.field === 'id');
+    let q = _db.collection('users');
+    if(idF) { const d = await q.doc(idF.val).get(); if(!d.exists) return _fbOk(null); const data = { id: d.id, ...d.data() }; if(data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate().toISOString(); return _fbOk(data); }
+    if(emailF) q = q.where('email', '==', emailF.val);
+    if(usernameF) q = q.where('username', '==', usernameF.val);
+    if(this._limitN) q = q.limit(this._limitN);
+    const snap = await q.get();
+    const docs = snap.docs.map(d => { const data = { id: d.id, ...d.data() }; if(data.createdAt && typeof data.createdAt.toDate === 'function') data.createdAt = data.createdAt.toDate().toISOString(); return data; });
+    return _fbOk(this._limitN === 1 ? (docs[0] || null) : docs);
+  }
+  async _handleProjectMembers() {
+    const projF = this._filters.find(f => f.field === 'project_id');
+    const userF = this._filters.find(f => f.field === 'user_id');
+    if(userF && !projF) {
+      // Get all projects where user is member (memberIds array)
+      const snap = await _db.collection('projects').where('memberIds', 'array-contains', userF.val).get();
+      const result = [];
+      for(const doc of snap.docs) {
+        const p = { id: doc.id, ...doc.data() };
+        const role = p.members?.[userF.val];
+        if(role) {
+          result.push({ role, user_id: userF.val, project_id: doc.id, projects: { id: doc.id, name: p.name, description: p.description, created_by: p.createdBy } });
+        }
+      }
+      return _fbOk(result);
+    }
+    if(projF) {
+      const doc = await _db.collection('projects').doc(projF.val).get();
+      if(!doc.exists) return _fbOk([]);
+      const p = doc.data();
+      const result = [];
+      for(const [uid, role] of Object.entries(p.members || {})) {
+        const u = await _getUser(uid);
+        result.push({ role, user_id: uid, project_id: projF.val, profiles: { full_name: u.fullName, email: u.email, username: u.username || '' } });
+      }
+      return _fbOk(result);
+    }
+    return _fbOk([]);
+  }
+  async _handleProjectInvites() {
+    const projF = this._filters.find(f => f.field === 'project_id');
+    const invitedF = this._filters.find(f => f.field === 'invited_user_id');
+    const idF = this._filters.find(f => f.field === 'id');
+    if(idF) {
+      const d = await _db.collection('project_invites').doc(idF.val).get();
+      return _fbOk(d.exists ? { id: d.id, ...d.data() } : null);
+    }
+    let q = _db.collection('project_invites');
+    if(projF) q = q.where('project_id', '==', projF.val);
+    if(invitedF) q = q.where('invited_user_id', '==', invitedF.val);
+    const statusF = this._filters.find(f => f.field === 'status');
+    if(statusF) q = q.where('status', '==', statusF.val);
+    const snap = await q.get();
+    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return _fbOk(this._limitN === 1 ? (docs[0] || null) : docs);
+  }
+  async _handleNotifications() {
+    const userF = this._filters.find(f => f.field === 'user_id');
+    let q = _db.collection('notifications');
+    if(userF) q = q.where('user_id', '==', userF.val);
+    if(this._limitN) q = q.limit(this._limitN);
+    const snap = await q.get();
+    const docs = snap.docs.map(d => { const data = { id: d.id, ...d.data() }; if(data.created_at && typeof data.created_at.toDate === 'function') data.created_at = data.created_at.toDate().toISOString(); return data; });
+    docs.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    return _fbOk(docs);
+  }
+  insert(data) { this._insertData = Array.isArray(data) ? data : [data]; return this; }
+  update(data) { this._updateData = data; return this; }
+  delete() { this._deleteOp = true; return this; }
+  async then(resolve, reject) { resolve(await this._runMutation()); }
+  async _runMutation() {
+    try {
+      if(this._insertData) {
+        for(const item of this._insertData) {
+          const d = { ...item };
+          // Convert snake_case to Firebase fields for tasks/notes
+          if(this._col === 'tasks') {
+            if(d.project_id) { const pId = d.project_id; delete d.project_id; d.projectId = pId; }
+            if(d.parent_task_id !== undefined) { d.parentId = d.parent_task_id; delete d.parent_task_id; }
+            if(d.assignee_id !== undefined) { d.assigneeId = d.assignee_id; delete d.assignee_id; }
+            if(d.due_date !== undefined) { d.dueDate = d.due_date; delete d.due_date; }
+            if(d.created_by !== undefined) { d.createdBy = d.created_by; delete d.created_by; }
+            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            d.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+            const projId = currentProject?.id;
+            if(projId) { await _db.collection('projects').doc(projId).collection('tasks').add(d); return _fbOk(null); }
+          }
+          if(this._col === 'notes') {
+            if(d.project_id) { delete d.project_id; }
+            if(d.created_by !== undefined) { d.createdBy = d.created_by; delete d.created_by; }
+            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            const projId = currentProject?.id;
+            if(projId) { await _db.collection('projects').doc(projId).collection('notes').add(d); return _fbOk(null); }
+          }
+          if(this._col === 'projects') {
+            const name = d.name; const desc = d.description || ''; const createdBy = d.created_by || currentUser?.id;
+            const uid = createdBy;
+            const ref = await _db.collection('projects').add({ name, description: desc, createdBy: uid, members: { [uid]: 'owner' }, memberIds: [uid], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            return _fbOk({ id: ref.id });
+          }
+          if(this._col === 'project_invites') {
+            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            const ref = await _db.collection('project_invites').add(d);
+            // Create notification for invitee
+            const inviter = await _getUser(d.invited_by);
+            const projDoc = await _db.collection('projects').doc(d.project_id).get();
+            const projName = projDoc.data()?.name || 'a project';
+            await _db.collection('notifications').add({ user_id: d.invited_user_id, type: 'invite', content: (inviter.fullName || inviter.email || 'Someone') + ' invited you to join "' + projName + '"', project_id: d.project_id, invite_id: ref.id, read: false, created_at: new Date().toISOString() });
+            return _fbOk(null);
+          }
+          if(this._col === 'notifications') {
+            d.created_at = d.created_at || new Date().toISOString();
+            await _db.collection('notifications').add(d);
+            return _fbOk(null);
+          }
+          if(this._col === 'invoices') {
+            d.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            await _db.collection('invoices').add(d);
+            return _fbOk(null);
+          }
+          await _db.collection(this._col).add(d);
+        }
+        return _fbOk(null);
+      }
+      if(this._updateData) {
+        const idF = this._filters.find(f => f.field === 'id');
+        const d = { ...this._updateData };
+        if(this._col === 'tasks' || this._col === 'notes') {
+          const projId = currentProject?.id;
+          if(idF && projId) {
+            // Convert snake fields
+            if(d.due_date !== undefined) { d.dueDate = d.due_date; delete d.due_date; }
+            if(d.assignee_id !== undefined) { d.assigneeId = d.assignee_id; delete d.assignee_id; }
+            if(d.updated_at !== undefined) { d.updatedAt = firebase.firestore.FieldValue.serverTimestamp(); delete d.updated_at; }
+            if(d.converted_task_id !== undefined) { d.convertedTaskId = d.converted_task_id; delete d.converted_task_id; }
+            await _db.collection('projects').doc(projId).collection(this._col).doc(idF.val).update(d);
+            return _fbOk(null);
+          }
+        }
+        if(this._col === 'profiles') {
+          const uid = _auth.currentUser?.uid;
+          if(uid) { await _db.collection('users').doc(uid).update(d); delete usersCache2[uid]; return _fbOk(null); }
+        }
+        if(this._col === 'project_invites' && idF) {
+          await _db.collection('project_invites').doc(idF.val).update(d);
+          // Handle accept: add to project members
+          if(d.status === 'accepted') {
+            const inv = (await _db.collection('project_invites').doc(idF.val).get()).data();
+            if(inv) {
+              const projDoc = await _db.collection('projects').doc(inv.project_id).get();
+              const proj = projDoc.data();
+              const newMembers = { ...(proj.members || {}), [inv.invited_user_id]: inv.role };
+              const newIds = [...new Set([...(proj.memberIds || []), inv.invited_user_id])];
+              await _db.collection('projects').doc(inv.project_id).update({ members: newMembers, memberIds: newIds });
+              // notify inviter
+              const invitee = await _getUser(inv.invited_user_id);
+              await _db.collection('notifications').add({ user_id: inv.invited_by, type: 'invite_accepted', content: (invitee.fullName || invitee.email || 'Someone') + ' accepted your invite to "' + (proj?.name || '') + '"', project_id: inv.project_id, read: false, created_at: new Date().toISOString() });
+            }
+          }
+          if(d.status === 'rejected') {
+            const inv = (await _db.collection('project_invites').doc(idF.val).get()).data();
+            if(inv) { const invitee = await _getUser(inv.invited_user_id); const projDoc = await _db.collection('projects').doc(inv.project_id).get(); await _db.collection('notifications').add({ user_id: inv.invited_by, type: 'invite_rejected', content: (invitee.fullName || invitee.email || 'Someone') + ' declined your invite.', project_id: inv.project_id, read: false, created_at: new Date().toISOString() }); }
+          }
+          return _fbOk(null);
+        }
+        if(this._col === 'notifications' && idF) { await _db.collection('notifications').doc(idF.val).update(d); return _fbOk(null); }
+        if(this._col === 'invoices' && idF) { await _db.collection('invoices').doc(idF.val).update(d); return _fbOk(null); }
+        return _fbOk(null);
+      }
+      if(this._deleteOp) {
+        const idF = this._filters.find(f => f.field === 'id');
+        const projF2 = this._filters.find(f => f.field === 'project_id');
+        const userF = this._filters.find(f => f.field === 'user_id');
+        if((this._col === 'tasks' || this._col === 'notes') && idF) {
+          const projId = currentProject?.id;
+          if(projId) { await _db.collection('projects').doc(projId).collection(this._col).doc(idF.val).delete(); return _fbOk(null); }
+        }
+        if(this._col === 'projects' && idF) {
+          // Cascade delete tasks + notes
+          const batch = _db.batch();
+          const tasks = await _db.collection('projects').doc(idF.val).collection('tasks').get();
+          tasks.forEach(d => batch.delete(d.ref));
+          const notes = await _db.collection('projects').doc(idF.val).collection('notes').get();
+          notes.forEach(d => batch.delete(d.ref));
+          await batch.commit();
+          await _db.collection('projects').doc(idF.val).delete();
+          return _fbOk(null);
+        }
+        if(this._col === 'project_members' && projF2 && userF) {
+          const projDoc = await _db.collection('projects').doc(projF2.val).get();
+          const proj = projDoc.data();
+          const newMembers = { ...(proj.members || {}) };
+          delete newMembers[userF.val];
+          const newIds = (proj.memberIds || []).filter(x => x !== userF.val);
+          await _db.collection('projects').doc(projF2.val).update({ members: newMembers, memberIds: newIds });
+          return _fbOk(null);
+        }
+        if(this._col === 'project_invites' && idF) { await _db.collection('project_invites').doc(idF.val).delete(); return _fbOk(null); }
+        if(this._col === 'notes' && idF) { const projId = currentProject?.id; if(projId) await _db.collection('projects').doc(projId).collection('notes').doc(idF.val).delete(); return _fbOk(null); }
+        if(this._col === 'invoices' && idF) { await _db.collection('invoices').doc(idF.val).delete(); return _fbOk(null); }
+        return _fbOk(null);
+      }
+      return this._exec();
+    } catch(e) { return _fbErr(e); }
+  }
+}
 
 let currentUser = null;
 let currentProject = null;
@@ -841,8 +1174,8 @@ function switchModule(module){
 }
 
 async function onLoggedIn(){
-  const { data: { user } } = await sb.auth.getUser();
-  currentUser = user;
+  const fbUser = _auth.currentUser;
+  currentUser = { id: fbUser.uid, email: fbUser.email };
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = 'grid';
   document.getElementById('userEmail').textContent = user.email;
@@ -949,10 +1282,11 @@ document.getElementById('notifBtn').onclick = (e) => {
   if(dd.classList.contains('open')) loadNotifications();
 };
 
-(async function init(){
-  const { data: { session } } = await sb.auth.getSession();
-  if(session){ await onLoggedIn(); }
-})();
+// Firebase auth state listener (replaces Supabase session check)
+_auth.onAuthStateChanged(async (fbUser) => {
+  if(fbUser && !currentUser) { await onLoggedIn(); }
+  else if(!fbUser && currentUser) { currentUser = null; document.getElementById('authScreen').style.display='flex'; document.getElementById('appRoot').style.display='none'; }
+});
 
 /* ---------------- PLATFORM GLOBAL CONTEXT ALERTS & DASHBOARD CALCS ---------------- */
 function showError(msg){
@@ -971,9 +1305,11 @@ function showOk(msg){
 }
 async function getProfile(userId){
   if(profilesCache[userId]) return profilesCache[userId];
-  const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
-  if(data) profilesCache[userId] = data;
-  return data;
+  const u = await _getUser(userId);
+  // Map Firebase user fields to Supabase profile shape expected by the UI
+  const profile = { id: userId, email: u.email, full_name: u.fullName, username: u.username || '' };
+  profilesCache[userId] = profile;
+  return profile;
 }
 
 /* Dynamic Global Telemetry Dashboard Calculations */
@@ -983,11 +1319,15 @@ async function compileGlobalDashboardMetrics(projectIds) {
     return;
   }
 
-  const { data: tasks, error } = await sb.from('tasks')
-    .select('status, due_date')
-    .in('project_id', projectIds);
-
-  if (error || !tasks) return;
+  // Fetch tasks from all project subcollections
+  let tasks = [];
+  for(const pid of projectIds) {
+    try {
+      const snap = await _db.collection('projects').doc(pid).collection('tasks').get();
+      snap.forEach(d => { const t = d.data(); tasks.push({ status: t.status, due_date: t.dueDate }); });
+    } catch(e) {}
+  }
+  if (!tasks) return;
 
   let completed = 0;
   let pending = 0;
@@ -1330,6 +1670,7 @@ async function loadTimeline(){
     .order('due_date', { ascending: true, nullsFirst: false });
   if(error) return;
 
+  (data||[]).forEach(t => { if(t.dueDate && !t.due_date) t.due_date = t.dueDate; });
   const withDue = (data||[]).filter(t => t.due_date);
   const list = document.getElementById('timelineList');
   const empty = document.getElementById('timelineEmpty');
@@ -1365,6 +1706,13 @@ async function loadTasks(){
   const { data, error } = await sb.from('tasks').select('*').eq('project_id', currentProject.id).order('created_at');
   if(error){ showError(error.message); return; }
 
+  // Firebase uses camelCase, normalise to snake_case expected by UI
+  (data||[]).forEach(t => {
+    if(t.parentId !== undefined && t.parent_task_id === undefined) t.parent_task_id = t.parentId;
+    if(t.assigneeId !== undefined && t.assignee_id === undefined) t.assignee_id = t.assigneeId;
+    if(t.dueDate !== undefined && t.due_date === undefined) t.due_date = t.dueDate;
+    if(t.createdBy !== undefined && t.created_by === undefined) t.created_by = t.createdBy;
+  });
   const topTasks = (data||[]).filter(t => !t.parent_task_id);
   const subtasksByParent = {};
   (data||[]).filter(t => t.parent_task_id).forEach(t => {
@@ -1537,7 +1885,7 @@ async function loadNotes(){
       <div class="note-meta">
         <span class="note-author">By: ${escapeHtml(author?.full_name || author?.email || 'Unknown')} · ${new Date(n.created_at).toLocaleString()}</span>
         <div class="note-actions">
-          ${n.converted_task_id ? `<span class="note-converted">✓ Converted to task</span>` : `<button data-convert="${n.id}">Convert to task</button>`}
+          ${(n.converted_task_id || n.convertedTaskId) ? `<span class="note-converted">✓ Converted to task</span>` : `<button data-convert="${n.id}">Convert to task</button>`}
           <button data-notedel="${n.id}">Delete</button>
         </div>
       </div>
@@ -1547,20 +1895,23 @@ async function loadNotes(){
 
   list.querySelectorAll('[data-convert]').forEach(el => el.onclick = () => convertNoteToTask(el.dataset.convert));
   list.querySelectorAll('[data-notedel]').forEach(el => el.onclick = async () => {
-    await sb.from('notes').delete().eq('id', el.dataset.notedel);
+    const pId = currentProject?.id; if(pId) await _db.collection('projects').doc(pId).collection('notes').doc(el.dataset.notedel).delete();
     await loadNotes();
   });
 }
 
 async function convertNoteToTask(noteId){
-  const { data: note } = await sb.from('notes').select('*').eq('id', noteId).single();
+  const projId = currentProject?.id;
+  let note = null;
+  if(projId) { const d = await _db.collection('projects').doc(projId).collection('notes').doc(noteId).get(); if(d.exists) note = { id: d.id, ...d.data() }; }
   if(!note) return;
   const title = note.content.length > 120 ? note.content.slice(0,120)+'…' : note.content;
   const { data: task, error } = await sb.from('tasks').insert({
     project_id: currentProject.id, title, created_by: currentUser.id
   }).select().single();
   if(error){ showError(error.message); return; }
-  await sb.from('notes').update({ converted_task_id: task.id }).eq('id', noteId);
+  const projId2 = currentProject?.id;
+  if(projId2) await _db.collection('projects').doc(projId2).collection('notes').doc(noteId).update({ convertedTaskId: task.id });
   showOk('Converted to task successfully.');
   await loadNotes();
   await loadTasks();
@@ -1745,9 +2096,9 @@ async function loadInvoices(){
     row.className = 'inv-ledger-card';
     row.innerHTML = `
       <div>
-        <div class="inv-list-num">${escapeHtml(inv.invoice_number)}</div>
-        <div class="inv-list-client" style="font-size:16.5px; font-weight:800; color:var(--text);">${escapeHtml(inv.client_name)}</div>
-        <div style="font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:4px;">${escapeHtml(inv.invoice_title||'')} &nbsp;·&nbsp; ${inv.issue_date}</div>
+        <div class="inv-list-num">${escapeHtml(inv.invoice_number || inv.invoiceNumber)}</div>
+        <div class="inv-list-client" style="font-size:16.5px; font-weight:800; color:var(--text);">${escapeHtml(inv.client_name || inv.clientName)}</div>
+        <div style="font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:4px;">${escapeHtml(inv.invoice_title || inv.invoiceTitle||'')} &nbsp;·&nbsp; ${inv.issue_date || inv.issueDate}</div>
       </div>
       <div style="text-align:right;">
         <div class="inv-amount-label" style="color:var(--accent);">${sym}${total.toLocaleString('en',{minimumFractionDigits:2})}</div>
@@ -1796,7 +2147,7 @@ function printInvoice(inv){
   const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<title>Invoice Summary ${escapeHtml(inv.invoice_number)}</title>
+<title>Invoice Summary ${escapeHtml(inv.invoice_number || inv.invoiceNumber)}</title>
 <style>
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Times New Roman',Times,serif; color:#1a1a1a; background:#fff; padding:30px 40px; max-width:850px; margin:0 auto; font-size:13px;}
@@ -1850,14 +2201,14 @@ function printInvoice(inv){
     <p>Phone: 07069655288, 07074733491</p>
   </div>
 </div>
-${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title)}</h2></div>` : ''}
+${inv.invoice_title || inv.invoiceTitle ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_title || inv.invoiceTitle)}</h2></div>` : ''}
 <div class="meta-row">
-  <div><strong>Invoice Ref:</strong> ${escapeHtml(inv.invoice_number)}</div>
-  <div><strong>Date:</strong> ${fmtDate(inv.issue_date)}</div>
+  <div><strong>Invoice Ref:</strong> ${escapeHtml(inv.invoice_number || inv.invoiceNumber)}</div>
+  <div><strong>Date:</strong> ${fmtDate(inv.issue_date || inv.issueDate)}</div>
 </div>
 <div class="bill-to">
   <div class="label">BILL TO:</div>
-  <div class="client">${escapeHtml(inv.client_name)}${inv.client_address?'<br><span style="font-weight:400; font-size:12px;">'+escapeHtml(inv.client_address)+'</span>':''}</div>
+  <div class="client">${escapeHtml(inv.client_name || inv.clientName)}${inv.client_address || inv.clientAddress?'<br><span style="font-weight:400; font-size:12px;">'+escapeHtml(inv.client_address || inv.clientAddress)+'</span>':''}</div>
 </div>
 <table class="items">
   <thead>
@@ -1884,12 +2235,12 @@ ${inv.invoice_title ? `<div class="inv-title-bar"><h2>${escapeHtml(inv.invoice_t
     <tr><td>NET DUE BALANCE</td><td>${sym}${subtotal.toLocaleString('en',{minimumFractionDigits:2})}</td></tr>
   </table>
 </div>
-${(inv.account_name||inv.account_number||inv.bank_name) ? `
+${(inv.account_name || inv.accountName||inv.account_number || inv.accountNumber||inv.bank_name || inv.bankName) ? `
 <div class="payment-section">
   <h3>Payment Details:</h3>
-  ${inv.account_name   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name)}</strong></p>` : ''}
-  ${inv.account_number ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number)}</strong></p>` : ''}
-  ${inv.bank_name      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name)}</strong></p>` : ''}
+  ${inv.account_name || inv.accountName   ? `<p>ACCOUNT NAME: <strong>${escapeHtml(inv.account_name || inv.accountName)}</strong></p>` : ''}
+  ${inv.account_number || inv.accountNumber ? `<p>ACCOUNT NUMBER: <strong>${escapeHtml(inv.account_number || inv.accountNumber)}</strong></p>` : ''}
+  ${inv.bank_name || inv.bankName      ? `<p>BANK NAME: <strong>${escapeHtml(inv.bank_name || inv.bankName)}</strong></p>` : ''}
   ${inv.notes          ? `<p style="margin-top:6px;">${escapeHtml(inv.notes).replace(/\n/g,'<br>')}</p>` : ''}
 </div>` : ''}
 <div class="sig-section">
